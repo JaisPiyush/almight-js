@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
-  "homepage": "https://github.com/Byta-Tigris/almight#readme",
+  "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
   "main": "lib/auth.js",
   "typings": "lib/auth.d.ts",
@@ -16,7 +16,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Byta-Tigris/almight.git"
+    "url": "git+https://github.com/Byta-Tigris/almight-js.git"
   },
   "scripts": {
     "test": "echo \"Error: run tests from root\" && exit 1",
