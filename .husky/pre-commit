@@ -1,5 +1,0 @@
-#!/usr/bin/env python3
-. "$(dirname "$0")/_/husky.sh"
-
-
-

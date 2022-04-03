@@ -1,7 +1,0 @@
-#!/bin/sh
-
-
-remote=$1
-url=$1
-
-echo "remote=${remote} and url=${url}"
