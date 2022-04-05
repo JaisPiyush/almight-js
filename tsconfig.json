@@ -17,7 +17,8 @@
         "paths": {
             "@almight-sdk/core/*": ["core/src/*"],
             "@lamight-sdk/auth/*": ["auth/src/*"],
-            "@lamight-sdk/platform-node/*": ["paltform-node/src/*"]
+            "@lamight-sdk/platform-node/*": ["paltform-node/src/*"],
+            "@almight-sdk/connector/*": ["connector/src/*"]
         }
     },
     "exclude": [
