@@ -3,6 +3,7 @@
   "private": true,
   "devDependencies": {
     "@microsoft/tsdoc": "^0.13.2",
+    "@testing-library/jest-dom": "^5.16.4",
     "@types/jest": "^27.4.1",
     "@types/web": "^0.0.61",
     "jest": "^27.5.1",

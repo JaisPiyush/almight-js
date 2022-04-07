@@ -10,7 +10,7 @@ const packages = readdirSync(basePath).filter(name => {
 
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   moduleNameMapper: {
     ...packages.reduce(
       (acc, name) => ({

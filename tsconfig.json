@@ -18,7 +18,8 @@
             "@almight-sdk/core/*": ["core/src/*"],
             "@lamight-sdk/auth/*": ["auth/src/*"],
             "@lamight-sdk/platform-node/*": ["paltform-node/src/*"],
-            "@almight-sdk/connector/*": ["connector/src/*"]
+            "@almight-sdk/connector/*": ["connector/src/*"],
+            "@almight-sdk/utils/*": ["utils/src/*"]
         }
     },
     "exclude": [
