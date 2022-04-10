@@ -42,6 +42,12 @@ export interface BaseStorageInterface {
      */
     connect(): Promise<void>;
 
+    /**
+     * @virtual
+     * Returns bool indicating @property storage is defined
+     */
+    isStorageDefined(): boolean;
+
 
     /**
      * @virtual
@@ -65,7 +71,10 @@ export interface BaseStorageInterface {
     setItem(key: string, value: any): Promise<void>;
 
 
-    getItem<T = any>(key: string): Promise<T>;
+    getItem<T = any>(key: string): Promise<T | null>;
+
+ 
+    hasKey(key: string): Promise<boolean>;
 
     removeItem(key: string): Promise<void>;
 

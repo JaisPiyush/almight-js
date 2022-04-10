@@ -1,4 +1,5 @@
 import { UnsuitablePlatformException } from "./exceptions";
+import { isWebPlatform } from "./functions";
 import { BaseStorageInterface, BaseStorageOptions, NaiveStorage, StorageType } from "./types";
 
 
@@ -40,6 +41,9 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         }
     }
 
+    isStorageDefined(): boolean {
+        return this.storage !== null && this.storage !== undefined
+    }
 
     isType(type: StorageType): boolean {
         return this.type === type;
@@ -51,7 +55,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     }
 
     async isConnected(): Promise<boolean> {
-        if (this.storage !== null) {
+        if (this.isStorageDefined()) {
             const pingValue = '__test__ping__';
             const pingKey = '__ping__'
             await this.setItem(pingKey, pingValue);
@@ -82,8 +86,19 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     async setItem(key: string, value: any): Promise<void> {
         this.storage.setItem(key, this.serialize(value));
     }
-    async getItem<T = any>(key: string): Promise<T> {
-        return this.deserialize<T>(this.storage.getItem(key));
+    async getItem<T = any>(key: string): Promise<T | null> {
+        const value = this.storage.getItem(key);
+        if (value === null || value === undefined) return null;
+        return this.deserialize<T>(value);
+    }
+    
+    /**
+     * 
+     * @param key 
+     * @returns boolean indicating 
+     */
+    async hasKey(key: string): Promise<boolean>{
+        return (await this.getItem<any>(key)) !== null;
     }
     async removeItem(key: string): Promise<void> {
         this.storage.removeItem(key);
@@ -108,7 +123,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @param name Name of the class instance
      */
     checkPlatform(name: string = "WebStorage"): void {
-        if (window === undefined || window === null) {
+        if (window === undefined || window === null || ! isWebPlatform()) {
             throw new UnsuitablePlatformException(`${name} only supports web platform`)
         }
     }
