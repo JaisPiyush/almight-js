@@ -1,7 +1,11 @@
 import WalletConnect from "@walletconnect/client";
-import { providers } from "ethers";
 
-export type BrowserSessionStruct = Array<{property: string}>;
+export type NetworkData = {
+    name: string,
+    chainId: number
+}
+
+export type BrowserSessionStruct = {path: string, network?: NetworkData};
 
 interface WalletConnectMetaInterface {
     description: string
@@ -36,28 +40,39 @@ export interface ProviderSessionStruct {
 }
 
 
-interface ProviderRequestMethodArguments {
+export interface ProviderRequestMethodArguments {
     method: string
-    id: number
-    jsonrpc: string
-    params: unknown[] | object
+    params: any[] | object
+}
+
+export type BasicExternalProvider = {
+    request: (args: ProviderRequestMethodArguments) => Promise<unknown>
+    on(name: string, callback: (any) => void);
 }
 
 export type Address = string;
 
 export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionStruct
 
-export interface IBaseProvider {
-    _session?: IProviderSessionData;
 
-    chainId?: number;
-    account?: string;
+export enum ConnectorType{
+    BrowserExtension = "browser_extension",
+    WalletConnector = "walletconnect"
+}
+
+export interface SubscriptionCallback {
+    (payload: any): void;
+    (error: Error, payload: any | null): void;
+}
+export interface IBaseProvider {
+
+    
 
     /**
      * Check the connection of session is valid and working
      * @param session 
      */
-    _checkConnection(session: IProviderSessionData): Promise<boolean>;
+    checkConnection(): Promise<boolean>;
 
     /**
      * 
@@ -68,5 +83,12 @@ export interface IBaseProvider {
      * 
      */
     request<T = any>(data: ProviderRequestMethodArguments): Promise<T>;
+
+    /**
+     * Method to subscribe events 
+     */
+    on(name: string, callback: SubscriptionCallback): void;
+
+ 
 
 }
