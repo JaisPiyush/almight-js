@@ -21,7 +21,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "test:e2e": "cypress open"
+    "test:e2e": "cypress open-ct"
   },
   "eslintConfig": {
     "extends": [
@@ -42,9 +42,9 @@
     ]
   },
   "devDependencies": {
-    "cypress": "^9.5.4",
     "@cypress/react": "^5.12.4",
     "@cypress/webpack-dev-server": "^1.8.4",
+    "cypress": "^9.5.4",
     "html-webpack-plugin": "^4.5.2"
   }
 }

@@ -8,3 +8,6 @@ packages/*/lib
 packages/*/.env
 packages/*/node_modules/
 */node_modules/
+*/cypress/videos
+*/cypress/screenshots
+*/.nyc_output

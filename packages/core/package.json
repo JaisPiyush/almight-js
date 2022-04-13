@@ -26,6 +26,5 @@
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "devDependencies": {
-    "cypress": "^9.5.4"
   }
 }
