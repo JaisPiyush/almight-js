@@ -2,7 +2,7 @@ import WalletConnect from "@walletconnect/client";
 import { ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
 import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IBaseProvider, IProviderSessionData, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
-import { isWebPlatform, TimeBoundPromise } from "@almight-sdk/utils";
+import { isWebPlatform,  asyncCallWithTimeBound, AsyncCallTimeOut} from "@almight-sdk/utils";
 export class BaseProvider implements IBaseProvider {
 
 
@@ -17,8 +17,8 @@ export class BaseProvider implements IBaseProvider {
 
     static nextId = 0;
 
-    // Waiting time for request to be approved
-    protected requestTimeout = 6;
+    // Waiting time for request to be approved (in milliseconds)
+    static requestTimeout = 6000;
 
     constructor(session?: IProviderSessionData, opts?: { requestTimeout: number }) {
         this._session = session;
@@ -33,7 +33,7 @@ export class BaseProvider implements IBaseProvider {
         }
 
         if (opts !== undefined) {
-            this.requestTimeout = opts.requestTimeout ?? this.requestTimeout;
+            BaseProvider.requestTimeout = opts.requestTimeout ?? BaseProvider.requestTimeout;
         }
     }
 
@@ -80,8 +80,8 @@ export class BaseProvider implements IBaseProvider {
     * 
     */
     static async pingWalletConnectProvider(provider: WalletConnect | BasicExternalProvider, method: string = "ping"): Promise<boolean> {
-        try {
-            await BaseProvider._unProtectedRequest(ConnectorType.WalletConnector, provider, { method: method, params: [] });
+        try { 
+            return await BaseProvider._timeBoundRequest(ConnectorType.WalletConnector, provider, { method: method, params: [] }, BaseProvider.requestTimeout);
         } catch (e) {
             if (e instanceof ProviderRequestTimeout) {
                 return false
@@ -91,9 +91,6 @@ export class BaseProvider implements IBaseProvider {
         }
         return false
     }
-
-
-
 
     /**
      * Verifies the session's health using different stratigies
@@ -136,9 +133,22 @@ export class BaseProvider implements IBaseProvider {
      * @param data request arguments for provider request
      * @returns result of the request
      */
-    request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
+    async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
         if (!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
-        return TimeBoundPromise.resolveWithTimeout(timeout?? this.requestTimeout, BaseProvider._unProtectedRequest<T>(this.connectorType, this._provider, data), new ProviderRequestTimeout())
+        return BaseProvider._timeBoundRequest<T>(this.connectorType, this._provider, data, timeout?? BaseProvider.requestTimeout)
+        
+    }
+
+    static async _timeBoundRequest<T>(connectorType: ConnectorType, provider: WalletConnect | BasicExternalProvider, data: ProviderRequestMethodArguments, timeout: number): Promise<T> {
+        try {
+            const result = await asyncCallWithTimeBound(BaseProvider._unProtectedRequest<T>(connectorType, provider, data),timeout) as Promise<T>
+            return result
+        }catch(e){
+            if (e instanceof AsyncCallTimeOut){
+                throw new ProviderRequestTimeout()
+            }
+            throw e
+        }
     }
 
     // The request call is un-protected from infinite-time Promise responses
