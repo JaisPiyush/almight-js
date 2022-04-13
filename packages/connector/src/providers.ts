@@ -1,7 +1,7 @@
 import WalletConnect from "@walletconnect/client";
 import { ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
 import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IBaseProvider, IProviderSessionData, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
-        import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
+import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 import { isWebPlatform, TimeBoundPromise } from "@almight-sdk/utils";
 export class BaseProvider implements IBaseProvider {
 
@@ -15,12 +15,12 @@ export class BaseProvider implements IBaseProvider {
 
     protected _isConnected = false;
 
-    public nextId = 0;
-    
-    // Waiting time for request to be approved
-    protected requestTimeout = 10; 
+    static nextId = 0;
 
-    constructor(session?: IProviderSessionData, opts?: {requestTimeout: number}) {
+    // Waiting time for request to be approved
+    protected requestTimeout = 6;
+
+    constructor(session?: IProviderSessionData, opts?: { requestTimeout: number }) {
         this._session = session;
         this._accounts = []
         if (this._session !== undefined) {
@@ -32,11 +32,11 @@ export class BaseProvider implements IBaseProvider {
             }
         }
 
-        if(opts !== undefined) {
+        if (opts !== undefined) {
             this.requestTimeout = opts.requestTimeout ?? this.requestTimeout;
         }
     }
-    
+
 
 
     public get session(): IProviderSessionData | undefined { return this._session }
@@ -64,27 +64,32 @@ export class BaseProvider implements IBaseProvider {
      * @returns boolean indicating session is working or not and walletconnect provider instance
      */
     static async checkWalletConnectorSession(session: WalletConnectSessionStruct): Promise<[boolean, WalletConnect | null]> {
-        
-        const walletconnect = BaseProvider.initialiseWalletConnect({session: session})
-        const _iSess = await walletconnect.connect({ chainId: session.chainId });
-        return [walletconnect.connected && _iSess.chainId == session.chainId, walletconnect]
+
+        const walletconnect = BaseProvider.initialiseWalletConnect({ session: session })
+        const pinged = await BaseProvider.pingWalletConnectProvider(walletconnect)
+        return [walletconnect.connected && pinged, walletconnect]
     }
-
-
-    async pingPorivder(provider: WalletConnect | BasicExternalProvider, method: string = "ping"): Promise<boolean> {
-
-        const timer = setTimeout(() => {
-            throw new ProviderRequestTimeout();
-        }, this.requestTimeout);
-    
+   /** 
+    * Pinging provider to check the health of session.
+    * Whenever WalletConnect Provider is requested with an invalid method
+    * the provider should return JSON-RPC Error.
+    * 
+    * The request method is a TimeBound Promise to keep track of time for each request
+    * and when any request during the 'ping' @throws ProviderRequestTimeout Erro then
+    * the session will considered dead otherwise it'll be considered healthy
+    * 
+    */
+    static async pingWalletConnectProvider(provider: WalletConnect | BasicExternalProvider, method: string = "ping"): Promise<boolean> {
         try {
-            await this.request({method: method, params:[]})
-        }catch(e) {
-            if (e instanceof ProviderRequestTimeout){
-                clearTimeout(timer);
+            await BaseProvider._unProtectedRequest(ConnectorType.WalletConnector, provider, { method: method, params: [] });
+        } catch (e) {
+            if (e instanceof ProviderRequestTimeout) {
+                return false
+            } else if ((e as Error).message.indexOf("Internal JSON-RPC error") != -1) {
                 return true
             }
         }
+        return false
     }
 
 
@@ -131,22 +136,22 @@ export class BaseProvider implements IBaseProvider {
      * @param data request arguments for provider request
      * @returns result of the request
      */
-    request<T = any> (data: ProviderRequestMethodArguments): Promise<T> {
-        return TimeBoundPromise.resolveWithTimeout(this.requestTimeout, this.request<T>(data), new ProviderRequestTimeout())
+    request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
+        if (!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
+        return TimeBoundPromise.resolveWithTimeout(timeout?? this.requestTimeout, BaseProvider._unProtectedRequest<T>(this.connectorType, this._provider, data), new ProviderRequestTimeout())
     }
 
     // The request call is un-protected from infinite-time Promise responses
-    async _unProtectedRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
-        if (!this.isConnected) throw new ProviderConnectionError()
-        if (this.connectorType === ConnectorType.WalletConnector) {
-            return (await (this._provider as WalletConnect).sendCustomRequest({
-                id: this.nextId++,
+    static async _unProtectedRequest<T = any>(connectorType: ConnectorType, provider: WalletConnect | BasicExternalProvider, data: ProviderRequestMethodArguments): Promise<T> {
+        if (connectorType === ConnectorType.WalletConnector) {
+            return (await (provider as WalletConnect).sendCustomRequest({
+                id: BaseProvider.nextId++,
                 jsonrpc: "2.0",
                 method: data.method,
                 params: data.params as any[]
             })) as T;
         } else {
-            return (await (this._provider as BasicExternalProvider).request({ method: data.method, params: data.params })) as T
+            return (await (provider as BasicExternalProvider).request({ method: data.method, params: data.params })) as T
         }
     }
 
@@ -160,14 +165,14 @@ export class BaseProvider implements IBaseProvider {
     }
 
     static preSetUpForWalletConnect(): void {
-        if(isWebPlatform()){
+        if (isWebPlatform()) {
             (window as any).Buffer = require("buffer").Buffer;
         }
     }
 
 
     on(name: string, callback: SubscriptionCallback): void {
-        if(this._provider !== undefined && this.isConnected){
+        if (this._provider !== undefined && this.isConnected) {
             this._provider.on(name, callback);
         }
     }
