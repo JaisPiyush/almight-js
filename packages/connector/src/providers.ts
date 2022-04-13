@@ -1,8 +1,8 @@
 import WalletConnect from "@walletconnect/client";
-import { ProviderConnectionError, SessionIsNotDefined } from "./exceptions";
+import { ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
 import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IBaseProvider, IProviderSessionData, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
         import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
-
+import { isWebPlatform, TimeBoundPromise } from "@almight-sdk/utils";
 export class BaseProvider implements IBaseProvider {
 
 
@@ -16,8 +16,11 @@ export class BaseProvider implements IBaseProvider {
     protected _isConnected = false;
 
     public nextId = 0;
+    
+    // Waiting time for request to be approved
+    protected requestTimeout = 10; 
 
-    constructor(session?: IProviderSessionData) {
+    constructor(session?: IProviderSessionData, opts?: {requestTimeout: number}) {
         this._session = session;
         this._accounts = []
         if (this._session !== undefined) {
@@ -27,6 +30,10 @@ export class BaseProvider implements IBaseProvider {
             } else {
                 this._connectorType = ConnectorType.BrowserExtension;
             }
+        }
+
+        if(opts !== undefined) {
+            this.requestTimeout = opts.requestTimeout ?? this.requestTimeout;
         }
     }
     
@@ -45,7 +52,7 @@ export class BaseProvider implements IBaseProvider {
      */
 
     static async checkBrowserProviderSession(session: BrowserSessionStruct): Promise<[boolean, BasicExternalProvider | null]> {
-        return [(window as any).session.path !== undefined, (window as any).session.path]
+        return [(window as any)[session.path] !== undefined, (window as any)[session.path]]
     }
 
     /**
@@ -57,14 +64,30 @@ export class BaseProvider implements IBaseProvider {
      * @returns boolean indicating session is working or not and walletconnect provider instance
      */
     static async checkWalletConnectorSession(session: WalletConnectSessionStruct): Promise<[boolean, WalletConnect | null]> {
+        
         const walletconnect = BaseProvider.initialiseWalletConnect({session: session})
+        const _iSess = await walletconnect.connect({ chainId: session.chainId });
+        return [walletconnect.connected && _iSess.chainId == session.chainId, walletconnect]
+    }
+
+
+    async pingPorivder(provider: WalletConnect | BasicExternalProvider, method: string = "ping"): Promise<boolean> {
+
+        const timer = setTimeout(() => {
+            throw new ProviderRequestTimeout();
+        }, this.requestTimeout);
+    
         try {
-            const _iSess = await walletconnect.connect({ chainId: session.chainId });
-            return [walletconnect.connected && _iSess.chainId == session.chainId, walletconnect]
-        } catch (e) {
-            return [false, null]
+            await this.request({method: method, params:[]})
+        }catch(e) {
+            if (e instanceof ProviderRequestTimeout){
+                clearTimeout(timer);
+                return true
+            }
         }
     }
+
+
 
 
     /**
@@ -86,13 +109,12 @@ export class BaseProvider implements IBaseProvider {
         let connectionData: [boolean, WalletConnect | BasicExternalProvider | null];
         if (this.connectorType === ConnectorType.WalletConnector) {
             connectionData = await BaseProvider.checkWalletConnectorSession(this._session as WalletConnectSessionStruct);
-
         } else {
             connectionData = await BaseProvider.checkBrowserProviderSession(this._session as BrowserSessionStruct);
         }
         if (connectionData !== undefined && connectionData.length > 1) {
             this._isConnected = connectionData[0];
-            if (connectionData[1] !== null) {
+            if (connectionData[1] !== null && connectionData[1] !== undefined) {
                 this._provider = connectionData[1];
             }
         }
@@ -109,7 +131,12 @@ export class BaseProvider implements IBaseProvider {
      * @param data request arguments for provider request
      * @returns result of the request
      */
-    async request<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
+    request<T = any> (data: ProviderRequestMethodArguments): Promise<T> {
+        return TimeBoundPromise.resolveWithTimeout(this.requestTimeout, this.request<T>(data), new ProviderRequestTimeout())
+    }
+
+    // The request call is un-protected from infinite-time Promise responses
+    async _unProtectedRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
         if (!this.isConnected) throw new ProviderConnectionError()
         if (this.connectorType === ConnectorType.WalletConnector) {
             return (await (this._provider as WalletConnect).sendCustomRequest({
@@ -125,10 +152,17 @@ export class BaseProvider implements IBaseProvider {
 
     // Wrapper method to connect with wallet connect with full configurations
     static initialiseWalletConnect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): WalletConnect {
+        BaseProvider.preSetUpForWalletConnect()
         return new WalletConnect(
             options,
             pushOpts
         )
+    }
+
+    static preSetUpForWalletConnect(): void {
+        if(isWebPlatform()){
+            (window as any).Buffer = require("buffer").Buffer;
+        }
     }
 
 
