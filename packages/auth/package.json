@@ -27,5 +27,8 @@
   },
   "dependencies": {
     "@almight-sdk/core": "^0.0.0"
+  },
+  "devDependencies": {
+    "cypress": "^9.5.4"
   }
 }

@@ -12,6 +12,8 @@
     "typescript": "^4.6.3"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "npm run test:e2e --prefix e2e",
+    "start:e2e": "npm run start --prefix e2e"
   }
 }

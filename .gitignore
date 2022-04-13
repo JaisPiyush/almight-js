@@ -7,3 +7,4 @@ packages/*/lib
 .env
 packages/*/.env
 packages/*/node_modules/
+*/node_modules/

@@ -7,7 +7,6 @@ export class BaseProvider implements IBaseProvider {
 
 
 
-
     protected _session?: IProviderSessionData;
     protected _connectorType?: ConnectorType;
     protected _provider?: WalletConnect | BasicExternalProvider;
