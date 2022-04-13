@@ -7,5 +7,9 @@ export class UnsuitablePlatformException extends Error {
     }
 }
 
-
+export class AsyncCallTimeOut extends Error {
+    constructor(){
+        super("Request timemout for the async call")
+    }
+}
 

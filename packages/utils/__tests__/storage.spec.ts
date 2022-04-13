@@ -1,5 +1,4 @@
 import { WebLocalStorage } from "../src";
-import { UnsuitablePlatformException } from "../src/exceptions";
 import { StorageType } from "../src/types";
 
 
