@@ -1,4 +1,4 @@
-export type NetworkData = {
+export interface NetworkData {
     name: string,
     chainId: number
 }

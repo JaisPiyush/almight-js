@@ -8,3 +8,6 @@
 export function isWebPlatform(): boolean {
     return window !== undefined && window.document !== undefined;
 }
+
+
+

@@ -25,6 +25,6 @@
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
-  "devDependencies": {
+  "dependencies": {
   }
 }

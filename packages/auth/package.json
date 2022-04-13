@@ -27,8 +27,5 @@
   },
   "dependencies": {
     "@almight-sdk/core": "^0.0.0"
-  },
-  "devDependencies": {
-  
   }
 }

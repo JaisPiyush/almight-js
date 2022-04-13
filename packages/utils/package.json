@@ -19,11 +19,12 @@
   },
   "scripts": {
     "test": "echo \"Error: run tests from root\" && exit 1",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "prod": "tsc --outDir=src"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
-  "devDependencies": {
+  "dependencies": {
   }
 }
