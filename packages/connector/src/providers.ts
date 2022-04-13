@@ -22,7 +22,7 @@ export class BaseProvider implements IBaseProvider {
         this._accounts = []
         if (this._session !== undefined) {
             // WalletConnect session will contain the bridge property
-            if (this._session['bridge'] !== undefined) {
+            if ((this._session as WalletConnectSessionStruct).bridge !== undefined) {
                 this._connectorType = ConnectorType.WalletConnector;
             } else {
                 this._connectorType = ConnectorType.BrowserExtension;
@@ -32,8 +32,8 @@ export class BaseProvider implements IBaseProvider {
     
 
 
-    public get session(): IProviderSessionData { return this._session }
-    public get connectorType(): ConnectorType { return this._connectorType }
+    public get session(): IProviderSessionData | undefined { return this._session }
+    public get connectorType(): ConnectorType | undefined { return this._connectorType }
 
     public get isConnected(): boolean { return this._isConnected }
 
@@ -45,7 +45,7 @@ export class BaseProvider implements IBaseProvider {
      */
 
     static async checkBrowserProviderSession(session: BrowserSessionStruct): Promise<[boolean, BasicExternalProvider | null]> {
-        return [window[session.path] !== undefined, window[session.path]]
+        return [(window as any).session.path !== undefined, (window as any).session.path]
     }
 
     /**

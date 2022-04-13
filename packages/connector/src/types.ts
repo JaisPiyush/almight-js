@@ -1,5 +1,3 @@
-import WalletConnect from "@walletconnect/client";
-
 export type NetworkData = {
     name: string,
     chainId: number
@@ -47,7 +45,7 @@ export interface ProviderRequestMethodArguments {
 
 export type BasicExternalProvider = {
     request: (args: ProviderRequestMethodArguments) => Promise<unknown>
-    on(name: string, callback: (any) => void);
+    on(name: string, callback: (value: any) => void): void;
 }
 
 export type Address = string;

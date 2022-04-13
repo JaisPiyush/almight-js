@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import {BaseProvider, BrowserSessionStruct, BasicExternalProvider} from "@almight-sdk/connector/src"
+
+class MetaMaskDerivedProvider extends BaseProvider {
+
+
+
+  static async checkBrowserProviderSession(session: BrowserSessionStruct): Promise<[boolean, BasicExternalProvider | null]> {
+      const [_connected, provider] = await super.checkBrowserProviderSession(session);
+      return [_connected && (provider as any).isMetaMask !== undefined && (provider as any).isMetaMask, provider]
+  }
+}
 
 function App() {
+
+  const provider = new MetaMaskDerivedProvider({path: "ethereum"})
+
+  useEffect(() => {
+    (window as any).provider = provider;
+})
+  
+
   return (
     <div className="App">
       <header className="App-header">
