@@ -1,7 +1,7 @@
 import WalletConnect from "@walletconnect/client";
 import { ProviderConnectionError, SessionIsNotDefined } from "./exceptions";
 import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IBaseProvider, IProviderSessionData, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
-
+        import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 
 export class BaseProvider implements IBaseProvider {
 
@@ -58,10 +58,7 @@ export class BaseProvider implements IBaseProvider {
      * @returns boolean indicating session is working or not and walletconnect provider instance
      */
     static async checkWalletConnectorSession(session: WalletConnectSessionStruct): Promise<[boolean, WalletConnect | null]> {
-        const walletconnect = new WalletConnect({
-            session: session,
-            bridge: session.bridge
-        });
+        const walletconnect = BaseProvider.initialiseWalletConnect({session: session})
         try {
             const _iSess = await walletconnect.connect({ chainId: session.chainId });
             return [walletconnect.connected && _iSess.chainId == session.chainId, walletconnect]
@@ -116,17 +113,25 @@ export class BaseProvider implements IBaseProvider {
     async request<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
         if (!this.isConnected) throw new ProviderConnectionError()
         if (this.connectorType === ConnectorType.WalletConnector) {
-            // return (await (this._provider as WalletConnect).sendCustomRequest({
-            //     id: this.nextId++,
-            //     jsonrpc: "2.0",
-            //     method: data.method,
-            //     params: data.params as any[]
-            // })) as T;
-            //TODO: Test WalletConnect try-catch in async-await
+            return (await (this._provider as WalletConnect).sendCustomRequest({
+                id: this.nextId++,
+                jsonrpc: "2.0",
+                method: data.method,
+                params: data.params as any[]
+            })) as T;
         } else {
             return (await (this._provider as BasicExternalProvider).request({ method: data.method, params: data.params })) as T
         }
     }
+
+    // Wrapper method to connect with wallet connect with full configurations
+    static initialiseWalletConnect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): WalletConnect {
+        return new WalletConnect(
+            options,
+            pushOpts
+        )
+    }
+
 
     on(name: string, callback: SubscriptionCallback): void {
         if(this._provider !== undefined && this.isConnected){
