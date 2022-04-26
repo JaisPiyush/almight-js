@@ -17,7 +17,5 @@ describe("Testing isWebPlatform function", () => {
         expect(isWebPlatform()).toBe(false)
     });
 
-
-
-
 })
+

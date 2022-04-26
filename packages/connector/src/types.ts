@@ -38,6 +38,19 @@ export interface ProviderSessionStruct {
 }
 
 
+export interface ProviderChannelInterface {
+    init(session?: IProviderSessionData): void;
+    checkSession(): Promise<[boolean, any | null]>;
+    connect(options?: any);
+    checkConnection(): Promise<boolean>;
+    ping(method?: string): Promise<boolean>;
+    request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
+    /**
+     * Method to subscribe events 
+     */
+     on(name: string, callback: SubscriptionCallback): void;
+}
+
 export interface ProviderRequestMethodArguments {
     method: string
     params: any[] | object

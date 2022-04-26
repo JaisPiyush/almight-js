@@ -133,7 +133,7 @@ export class BaseProvider implements IBaseProvider {
      * @param data request arguments for provider request
      * @returns result of the request
      */
-    async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
+    async  request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>{
         if (!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
         return BaseProvider._timeBoundRequest<T>(this.connectorType, this._provider, data, timeout?? BaseProvider.requestTimeout)
         

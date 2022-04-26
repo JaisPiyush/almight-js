@@ -1,5 +1,9 @@
 
-
+export class IncompatiblePlatform extends Error {
+    constructor(){
+        super("The platform is in-compatible with the selected provider channel")
+    }
+}
 
 export class ProviderConnectionError extends Error {
     constructor(){
