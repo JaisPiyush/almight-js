@@ -1,7 +1,8 @@
+import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "utils/lib";
 import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
-import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
-
+import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 
 /**
  * Channels are adapter for communication with wallets
@@ -15,7 +16,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 
 
-    static connectorType: ConnectorType;
+    public connectorType: ConnectorType;
     protected _session?: IProviderSessionData;
     protected _provider?: any;
 
@@ -25,7 +26,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 
     // Waiting time for request to be approved (in milliseconds)
-    static requestTimeout = 6000;
+    public requestTimeout = 6000;
 
     public get isConnected(): boolean { return this._isConnected }
     public get session(): IProviderSessionData | undefined { return this._session }
@@ -39,8 +40,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @returns result of the request
      */
     async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
-        if(!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
-        return this._timeBoundRequest<T>(data, timeout);
+        if (!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
+        return this._timeBoundRequest<T>(data, timeout || this.requestTimeout);
     }
     init(session?: IProviderSessionData): void {
         this._session = session;
@@ -58,12 +59,12 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
     // Wrapper method to connect with the provider
-    connect(options?: any) {
+    connect(options?: any): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
     /**
-     * Verifies the session's health and connection
+     * Verifies the session's health and connection and set @property isConnected based on session health
      * The returned data from the check methods is a Tuple containing [isConnected, providerInstance]
      * set @property isConnected  = tuple[0] and if the providerInstance is not null then
      * set @property provider = tuple[1]
@@ -72,7 +73,9 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @returns boolean indicating the provider is connected
      */
     async checkConnection(): Promise<boolean> {
-        throw new Error("Method not implemented.");
+        const connectionData = await this.checkSession();
+        this._isConnected = connectionData[0];
+        return this.isConnected;
     }
 
     /** 
@@ -86,26 +89,31 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     * 
     */
     async ping(method: string = "ping"): Promise<boolean> {
-        throw new Error("Method not implemented.");
+        try {
+            await this.request({ method: method, params: [] })
+        } catch (e) {
+            return this.verifyPingException(e);
+        }
+        return false;
     }
-     /**
-      * Each provider on different platform has different way of telling
-      * the Invalid  request. 
-      * 
-      * This method will verify the exception and indicates whether the exception is 
-      * equivalent to the required execption or not.
-      * @param exception 
-      */
+    /**
+     * Each provider on different platform has different way of telling
+     * the Invalid  request. 
+     * 
+     * This method will verify the exception and indicates whether the exception is 
+     * equivalent to the required execption or not.
+     * @param exception 
+     */
     verifyPingException(exception: Error): boolean {
         throw new Error("Method not implemented.");
     }
 
     async _timeBoundRequest<T>(data: ProviderRequestMethodArguments, timeout: number): Promise<T> {
         try {
-            const result = await asyncCallWithTimeBound(this._rawRequest<T>(data) ,timeout) as Promise<T>
+            const result = await asyncCallWithTimeBound(this._rawRequest<T>(data), timeout) as Promise<T>
             return result
-        }catch(e){
-            if (e instanceof AsyncCallTimeOut){
+        } catch (e) {
+            if (e instanceof AsyncCallTimeOut) {
                 throw new ProviderRequestTimeout()
             }
             throw e
@@ -127,35 +135,110 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 export class BrowserProviderChannel extends BaseProviderChannel {
 
-    static connectorType: ConnectorType = ConnectorType.BrowserExtension;
+    public connectorType: ConnectorType = ConnectorType.BrowserExtension;
     protected _session?: BrowserSessionStruct;
     protected _provider?: BasicExternalProvider;
 
 
-    public get session(): BrowserSessionStruct {return this._session}
-    public get provider(): BasicExternalProvider { return this._provider}
 
-    constructor(session?: BrowserSessionStruct){
+
+    public get session(): BrowserSessionStruct { return this._session }
+    public get provider(): BasicExternalProvider { return this._provider }
+
+    constructor(session?: BrowserSessionStruct) {
         super();
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        (window as any).Buffer = require("buffer").Buffer;
         this.init(session);
     }
 
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
-        return (await this.provider.request({method: data.method, params: data.params})) as T
+        return (await this.provider.request({ method: data.method, params: data.params })) as T
     }
 
-    override async ping(): Promise<boolean> {
-        try {
-            await this.request({method: "ping", params:[]})
-        }catch(e){
-            return this.verifyPingException(e);
+    override async checkSession(): Promise<[boolean, any]> {
+        return [(window as any)[this.session.path] !== undefined, (window as any)[this.session.path]];
+    }
+
+    override async connect(provider: BasicExternalProvider): Promise<void> {
+        this._provider = provider;
+    }
+
+}
+
+
+export class WalletConnectChannel extends BaseProviderChannel {
+
+    public connectorType: ConnectorType = ConnectorType.WalletConnector;
+    protected _session?: WalletConnectSessionStruct;
+    protected _provider?: WalletConnect;
+
+    protected _params?: any;
+
+    static nextId = 0;
+    public bridge = "https://bridge.walletconnect.org";
+
+    public get session(): WalletConnectSessionStruct { return this._session }
+    public get provider(): WalletConnect { return this._provider }
+
+
+    constructor(session?: WalletConnectSessionStruct) {
+        super();
+        if (isWebPlatform()) {
+            (window as any).Buffer = require("buffer").Buffer;
         }
-        return false;
     }
 
+    override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
+        return await this.provider.sendCustomRequest({
+            id: WalletConnectChannel.nextId,
+            jsonrpc: "2.0",
+            method: data.method,
+            params: data.params as any[]
+        }) as T
+    }
+
+    override verifyPingException(exception: Error): boolean {
+        return (!(exception instanceof ProviderRequestTimeout) && (exception.message.indexOf("Internal JSON-RPC error") != -1));
+
+    }
+
+    override async connect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): Promise<void> {
+        // Setting default bridge url if none provided
+        options.bridge = options.bridge || this.bridge;
+        this._provider = new WalletConnect(options, pushOpts);
+        if(options.session === undefined){
+            this._provider.on("connect", (error, payload) => {
+                this.onConnect(error, payload);
+            })
+        }
+
+    }
+
+    /**
+     * Walletconnect protocol generates a unique uri for each session connection
+     * the uri will later be used to redirect Dapps using QR codes or direct visits
+     * 
+     * The function will extract the uri the uri from walletconnect provider
+     * 
+     * @returns uri string for wallet connect connection
+     */
+    getConnectorUri(): string {
+        return this.provider.uri;
+    }
+
+    onConnect(error?: Error, payload?: {params: any[]}) {
+        if (error) throw error;
+        const {accounts} = payload.params[0];
+        this._params = payload.params;
+        this._accounts = accounts;
+        this._session = this._provider.session;
+    }
+
+    override async checkSession(): Promise<[boolean, any]> {
+        await this.connect({session: this.session});
+        return [await this.ping(), this.provider];
+    }
 
 }
