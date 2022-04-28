@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "jest",
-    "test:e2e": "npm run test:e2e --prefix e2e",
+    "test:e2e": "npm run tsc && npm run test:e2e --prefix e2e",
     "start:e2e": "npm run start --prefix e2e",
     "tsc": "tsc"
   }
