@@ -18,5 +18,6 @@ module.exports = {
         [`@almight-sdk/${name}(.*)$`]: `<rootDir>/packages/./${name}/src/$1`
       })
     )
-  }
+  },
+
 };

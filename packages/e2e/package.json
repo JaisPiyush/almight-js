@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest"
   },
   "dependencies": {
     "@almight-sdk/connector": "^0.0.0",
@@ -21,6 +22,8 @@
     "@types/react-dom": "18.0.0",
     "eslint": "8.14.0",
     "eslint-config-next": "12.1.5",
+    "jest-environment-node": "^28.0.2",
+    "jest-puppeteer": "^6.1.0",
     "typescript": "4.6.3"
   }
 }
