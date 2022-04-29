@@ -103,3 +103,11 @@ export interface IBaseProvider {
  
 
 }
+
+
+export interface IProviderAdapter {
+
+    connect?: <T = any, R = any>(options?: R) =>  Promise<T>;
+    checkSession?: <P = any, S = any>(session: S)=> Promise<[boolean, P]>;
+    onConnect?: (options?: any) => void;
+}

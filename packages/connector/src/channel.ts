@@ -1,7 +1,7 @@
 import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "utils/lib";
 import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
-import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderAdapter, IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 
 /**
@@ -47,6 +47,12 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         this._session = session;
     }
 
+
+
+    public async defaultCheckSession(): Promise<[boolean, any]> {
+        throw new Error("Method not implemented.");
+    }
+
     /**
      * Verifies the health of session by initialising a Provider instance
      * with provided session data and calling the Provider#connect
@@ -54,13 +60,25 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * 
      * @returns boolean indicating session is working or not and Provider instance
      */
-    async checkSession(): Promise<[boolean, any]> {
+    async checkSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
+        if(obj !== undefined && (obj as any).checkSession !== undefined && typeof (obj as any)["checkSession"] === "function"){
+            return await obj.checkSession(this.session);
+        }
+        return await this.defaultCheckSession();
+    }
+
+
+    async defaultConnect(options?: any): Promise<void>{
         throw new Error("Method not implemented.");
     }
 
+
     // Wrapper method to connect with the provider
-    connect(options?: any): Promise<void> {
-        throw new Error("Method not implemented.");
+    async connect(options: any, obj?: IProviderAdapter): Promise<void> {
+        if(obj !== undefined && (obj as any).checkSession !== undefined && typeof (obj as any)["connect"] === "function"){
+            await obj.connect(options);
+        }
+        await this.defaultConnect(options);
     }
 
     /**
@@ -72,8 +90,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * 
      * @returns boolean indicating the provider is connected
      */
-    async checkConnection(): Promise<boolean> {
-        const connectionData = await this.checkSession();
+    async checkConnection(obj?: IProviderAdapter): Promise<boolean> {
+        const connectionData = await this.checkSession(obj);
         this._isConnected = connectionData[0];
         return this.isConnected;
     }
@@ -130,6 +148,10 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         }
     }
 
+    onConnect(options: any, obj?: IProviderAdapter): void{
+        
+    }
+
 }
 
 
@@ -157,11 +179,11 @@ export class BrowserProviderChannel extends BaseProviderChannel {
         return (await this.provider.request({ method: data.method, params: data.params })) as T
     }
 
-    override async checkSession(): Promise<[boolean, any]> {
+    override async defaultCheckSession(): Promise<[boolean, any]> {
         return [(window as any)[this.session.path] !== undefined, (window as any)[this.session.path]];
     }
 
-    override async connect(provider: BasicExternalProvider): Promise<void> {
+    override async defaultConnect(provider: BasicExternalProvider): Promise<void> {
         this._provider = provider;
     }
 
@@ -204,13 +226,13 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     }
 
-    override async connect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): Promise<void> {
+    override async defaultConnect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): Promise<void> {
         // Setting default bridge url if none provided
         options.bridge = options.bridge || this.bridge;
         this._provider = new WalletConnect(options, pushOpts);
         if(options.session === undefined){
             this._provider.on("connect", (error, payload) => {
-                this.onConnect(error, payload);
+                this.onConnect({error, payload});
             })
         }
 
@@ -228,17 +250,30 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return this.provider.uri;
     }
 
-    onConnect(error?: Error, payload?: {params: any[]}) {
+    onConnect(options:{error?: Error, payload?: {params: any[]}}, obj?: IProviderAdapter) {
+        const {error, payload} = options;
         if (error) throw error;
         const {accounts} = payload.params[0];
         this._params = payload.params;
         this._accounts = accounts;
         this._session = this._provider.session;
+
+        if(obj !== undefined && (obj as any).onConnect !== undefined && typeof (obj as any)["onConnect"] === "function"){
+            obj.onConnect(options)
+        }
     }
 
-    override async checkSession(): Promise<[boolean, any]> {
+    override async defaultCheckSession(): Promise<[boolean, any]> {
         await this.connect({session: this.session});
         return [await this.ping(), this.provider];
+    }
+
+    override async checkSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
+        if(obj !== undefined && (obj as any).checkSession !== undefined && typeof (obj as any)["checkSession"] === "function"){
+            await this.connect({session: this.session}, obj);
+            return [await this.ping(), this.provider]
+        }
+        return await this.defaultCheckSession();
     }
 
 }
