@@ -1,7 +1,9 @@
 import WalletConnect from "@walletconnect/client";
-import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "utils/lib";
+import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
 import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
-import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderAdapter, IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IProviderAdapter, 
+    IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, 
+    SubscriptionCallback, WalletConnectSessionStruct } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 
 /**
@@ -30,6 +32,11 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
     public get isConnected(): boolean { return this._isConnected }
     public get session(): IProviderSessionData | undefined { return this._session }
+
+
+    constructor(session?: IProviderSessionData){
+        this.init(session)
+    }
 
 
     /**
@@ -162,17 +169,19 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     protected _provider?: BasicExternalProvider;
 
 
-
+    protected _providerPath?: string;
 
     public get session(): BrowserSessionStruct { return this._session }
     public get provider(): BasicExternalProvider { return this._provider }
+    public get providerPath(): string { return (this.session !== undefined && this.session.path !== undefined)? this.session.path: this.providerPath}
+    public set providerPath(_path: string) {this._providerPath = _path}
 
     constructor(session?: BrowserSessionStruct) {
-        super();
+        
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        this.init(session);
+        super(session);
     }
 
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
@@ -180,7 +189,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override async defaultCheckSession(): Promise<[boolean, any]> {
-        return [(window as any)[this.session.path] !== undefined, (window as any)[this.session.path]];
+        return [(globalThis as any)[this.providerPath] !== undefined, (globalThis as any)[this.providerPath]];
     }
 
     override async defaultConnect(provider: BasicExternalProvider): Promise<void> {
@@ -206,10 +215,10 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
 
     constructor(session?: WalletConnectSessionStruct) {
-        super();
         if (isWebPlatform()) {
-            (window as any).Buffer = require("buffer").Buffer;
+            (globalThis as any).Buffer = require("buffer").Buffer;
         }
+        super(session);
     }
 
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {

@@ -20,7 +20,7 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "test": "echo \"Error: run tests from root\" && exit 1"
+    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"

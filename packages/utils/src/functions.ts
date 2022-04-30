@@ -7,7 +7,7 @@ import { AsyncCallTimeOut } from "./exceptions";
  * @returns the  platform is web browser
  */
 export function isWebPlatform(): boolean {
-    return window !== undefined && window.document !== undefined;
+    return globalThis !== undefined && globalThis.document !== undefined;
 }
  /**
   * Call an async function with a maximum time limit (in milliseconds)

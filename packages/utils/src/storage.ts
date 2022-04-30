@@ -123,7 +123,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @param name Name of the class instance
      */
     checkPlatform(name: string = "WebStorage"): void {
-        if (window === undefined || window === null || ! isWebPlatform()) {
+        if (globalThis === undefined || globalThis === null || ! isWebPlatform()) {
             throw new UnsuitablePlatformException(`${name} only supports web platform`)
         }
     }
@@ -138,12 +138,12 @@ export class WebLocalStorage extends BaseWebStorage<BaseStorageOptions> {
      * @override
      * 
      * After the verification of platform, which must be web
-     * store window.localStorage instance in @property storage
+     * store globalThis.localStorage instance in @property storage
      * Call onConnectCallback after connection
      */
     async connect(): Promise<void> {
         this.checkPlatform('WebLocalStorage');
-        this.storage = window.localStorage;
+        this.storage = globalThis.localStorage;
         this.onConnectCallback(this);
     }
 
@@ -159,12 +159,12 @@ export class WebSessionStorage extends BaseWebStorage {
      * @override
      * 
      * After the verification of platform, which must be web
-     * store window.sessionStorage instance in @property storage
+     * store globalThis.sessionStorage instance in @property storage
      * Call onConnectCallback after connection
      */
     async connect(): Promise<void> {
         this.checkPlatform('WebSessionStorage');
-        this.storage = window.sessionStorage;
+        this.storage = globalThis.sessionStorage;
         this.onConnectCallback(this);
     }
 }
@@ -192,16 +192,16 @@ export class WebWindowStore extends BaseWebStorage {
      */
     async connect(): Promise<void> {
         this.checkPlatform('WebSessionStorage');
-        if ((window as any)[this.keyName] === undefined) {
-            (window as any)[this.keyName] = {};
+        if ((globalThis as any)[this.keyName] === undefined) {
+            (globalThis as any)[this.keyName] = {};
         }
-        this.storage = (window as any)._webWindowStoreAlmight
+        this.storage = (globalThis as any)._webWindowStoreAlmight
         this.onConnectCallback(this);
     }
 
 
     async isConnected(): Promise<boolean> {
-        return (this.storage !== null && (window as any)[this.keyName] !== undefined);
+        return (this.storage !== null && (globalThis as any)[this.keyName] !== undefined);
     }
 
     serialize(value: any): any {
@@ -215,10 +215,10 @@ export class WebWindowStore extends BaseWebStorage {
     /**
      * @override 
      * 
-     * Remove the keyName property from window
+     * Remove the keyName property from globalThis
      */
     async clear(): Promise<void> {
-        (window as any)[this.keyName] = {};
+        (globalThis as any)[this.keyName] = {};
     }
 
 

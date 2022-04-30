@@ -1,5 +1,6 @@
 import { WebLocalStorage } from "../src";
 import { StorageType } from "../src/types";
+import {expect} from 'chai';
 
 
 const storageMock = (() => {
@@ -26,7 +27,7 @@ const storageMock = (() => {
 });
 
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(globalThis, 'localStorage', {
     value: storageMock()
 });
 
@@ -40,22 +41,22 @@ describe("Testing WebLocalStorage class", () => {
 
 
     describe("Testing WebLocalStorage#isType", function () {
-        test(`for ${StorageType.Session} expecting to fail`, () => {
-            expect(storage.isType(StorageType.Session)).toBe(false);
+        it(`for ${StorageType.Session} expecting to fail`, () => {
+            expect(storage.isType(StorageType.Session)).to.be.eq(false);
         });
     });
 
-    test("Testing WebLocalStorage#isStorageDefined and expecting to throw false", () => {
-        expect(storage.isStorageDefined()).toBe(false);
+    it("Testing WebLocalStorage#isStorageDefined and expecting to throw false", () => {
+        expect(storage.isStorageDefined()).to.be.eq(false);
     })
 
-    test("Testing WebLocalStorage#isConnected, expecting it to return false", async function () {
-        expect(await storage.isConnected()).toBe(false);
+    it("Testing WebLocalStorage#isConnected, expecting it to return false", async function () {
+        expect(await storage.isConnected()).to.be.eq(false);
     });
 
-    test("Testing WebLocalStorage#connect method expect to pass ", async function () {
+    it("Testing WebLocalStorage#connect method expect to pass ", async function () {
         await storage.connect();
-        expect(await storage.isConnected()).toBe(true);
+        expect(await storage.isConnected()).to.be.eq(true);
     });
 
     describe("Testing WebLocalStorage's #setItem, #getItem, #hasKey, #removeItem, #clear methods", function () {
@@ -65,28 +66,28 @@ describe("Testing WebLocalStorage class", () => {
         type randomType = { name: string, age: number, good: boolean }
         const value: randomType = { name: "JDVE", age: 20, good: true };
 
-        test("Testing WebLocalStorage#getItem method after seting data", async function () {
+        it("Testing WebLocalStorage#getItem method after seting data", async function () {
             await storage.connect()
-            expect(await storage.isConnected()).toBe(true)
+            expect(await storage.isConnected()).to.be.eq(true)
             await storage.setItem(key, value);
-            expect(await storage.getItem<randomType>(key)).toStrictEqual(value);
+            expect(await storage.getItem<randomType>(key)).to.be.deep.eq(value);
         });
 
-        test("Testing WebLocalStorage#hasKey method", async () => {
-            expect(await storage.hasKey(key)).toBe(true);
+        it("Testing WebLocalStorage#hasKey method", async () => {
+            expect(await storage.hasKey(key)).to.be.eq(true);
         });
 
-        test("Tesitng WebLocalStorage#removeItem method", async() => {
+        it("Tesitng WebLocalStorage#removeItem method", async() => {
             await storage.removeItem(key);
-            expect(await storage.hasKey(key)).toBe(false);
+            expect(await storage.hasKey(key)).to.be.eq(false);
         });
 
-        test("Testing WebLocalStorage#clear method", async() => {
+        it("Testing WebLocalStorage#clear method", async() => {
             await storage.setItem(key, value);
-            expect(await storage.hasKey(key)).toBe(true);
+            expect(await storage.hasKey(key)).to.be.equal(true);
             await storage.clear()
-            expect(await storage.hasKey(key)).toBe(false);
-            expect(window.localStorage.getStore()).toStrictEqual({})
+            expect(await storage.hasKey(key)).to.eq(false);
+            expect(globalThis.localStorage.getStore()).to.deep.eq({})
         })
     });
 
