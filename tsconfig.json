@@ -20,7 +20,8 @@
             "@lamight-sdk/platform-node/*": ["paltform-node/src/*"],
             "@almight-sdk/connector/*": ["connector/src/*"],
             "@almight-sdk/utils/*": ["utils/src/*"]
-        }
+        },
+        "skipLibCheck": true
     },
     "exclude": [
         "node_modules",

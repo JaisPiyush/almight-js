@@ -85,6 +85,8 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
         await channel.checkConnection()
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
+        
+        // Testing _rawRequest
         const data = {method:"eth_test", params:["hello"]};
         const expected = `${data.method}__${data.params.join(',')}`
         const _res = await channel._rawRequest(data);
@@ -102,10 +104,6 @@ describe("Mock Testing BrowserProviderChannel with behaviour plugin", function()
 
        async connect<T, R = any>(options?: R):Promise<T>{
            return ({name: "funcky"} as any) as T;
-       }
-
-       verifyPingException(exception: Error):boolean{
-           return (exception.message === "Invalid JSON-RPC error")
        }
     }
 
