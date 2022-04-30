@@ -111,3 +111,13 @@ export interface IProviderAdapter {
     checkSession?: <P = any, S = any>(session: S)=> Promise<[boolean, P]>;
     onConnect?: (options?: any) => void;
 }
+
+
+export interface IChannelBehaviourPlugin {
+    connect?: <T = any, R = any>(options?: R) =>  Promise<T>;
+    checkSession?: <P = any, S = any>(session: S)=> Promise<[boolean, P]>;
+    onConnect?: (options?: any) => void;
+    verifyPingException?: (exception: Error) => boolean;
+}
+
+
