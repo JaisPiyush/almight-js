@@ -39,10 +39,11 @@ export interface ProviderSessionStruct {
 
 
 export interface ProviderChannelInterface {
+
     init(session?: IProviderSessionData): void;
-    checkSession(): Promise<[boolean, any | null]>;
-    connect(options?: any): Promise<void>;
-    checkConnection(): Promise<boolean>;
+    checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
+    connect(options?: any, obj?: IProviderAdapter): Promise<void>;
+    checkConnection(obj?: IProviderAdapter): Promise<boolean>;
     ping(method?: string): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**

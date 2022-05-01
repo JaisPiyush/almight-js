@@ -24,3 +24,9 @@ export class ProviderRequestTimeout extends Error {
         super("Provider request call timeout")
     }
 }
+
+export class ChannelIsNotDefined extends Error {
+    constructor(name: string){
+        super(`${name} provider has no channel defined, requires one channel to communicate`)
+    }
+}

@@ -17,10 +17,16 @@ describe(
       await page.goto('https://google.com');
     });
 
-    it('should load without error', async () => {
+    it('should load without error', async function(){
       const text = await page.evaluate(() => document.body.textContent);
-      expect(text).to.contain("google")
+      expect(text).to.contain("google");
     });
+    it("checking existance of extensions", async function(){
+      const ethereumExists = await page.evaluate(() => {
+        return ethereum !== undefined;
+      });
+      expect(ethereumExists).to.be.true;
+    })
 
     after( async function(){
       await browser.close();

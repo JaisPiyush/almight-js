@@ -1,6 +1,6 @@
 import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
-import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
+import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
 import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter, 
     IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, 
     SubscriptionCallback, WalletConnectSessionStruct } from "./types";
@@ -23,6 +23,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     protected _provider?: any;
 
     protected _accounts: Address[];
+    public get provider(): any { return this._provider }
 
     protected _isConnected = false;
     protected _behaviourPlugin?: IChannelBehaviourPlugin;
@@ -62,10 +63,15 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      */
     async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
         if (!this.isConnected || this._provider === undefined) throw new ProviderConnectionError();
-        return this._timeBoundRequest<T>(data, timeout || this.requestTimeout);
+        return await this._timeBoundRequest<T>(data, timeout || this.requestTimeout);
     }
     init(session?: IProviderSessionData): void {
         this._session = session;
+    }
+
+    // The method is added for making it compatible with ethersjs.BaseProvider
+    async send<T=any>(method, params, timeout?: number): Promise<T> {
+        return await this.request<T>({method:method, params:params}, timeout);
     }
 
 
@@ -98,7 +104,15 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
 
-    // Wrapper method to connect with the provider
+    /**
+     * The method required to test the session's connection or connect with the provider
+     * When overriding the default implementation, proper care of connection procedure must 
+     * be taken care when connecting with or without session
+     * 
+     * @param options 
+     * @param obj 
+     * @returns 
+     */
     async connect<T = void, R = any>(options: R, obj?: IProviderAdapter): Promise<T> {
         const method = this.getBehaviourMethod("connect", obj)
         if(method !== undefined){
