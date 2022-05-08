@@ -1,9 +1,11 @@
+import WalletConnect from "@walletconnect/client";
+
 export interface NetworkData {
-    name: string,
+    name?: string,
     chainId: number
 }
 
-export type BrowserSessionStruct = {path: string, network?: NetworkData};
+export type BrowserSessionStruct = {path: string, network?: NetworkData, chainId: number};
 
 interface WalletConnectMetaInterface {
     description: string
@@ -38,13 +40,21 @@ export interface ProviderSessionStruct {
 }
 
 
+export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
+
 export interface ProviderChannelInterface {
+
+
+    connectorType: ConnectorType;
+    requestTimeout: number;
+
+    setProvider(provider: ExternalProvider): void;
 
     init(session?: IProviderSessionData): void;
     checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
     connect(options?: any, obj?: IProviderAdapter): Promise<void>;
     checkConnection(obj?: IProviderAdapter): Promise<boolean>;
-    ping(method?: string): Promise<boolean>;
+    ping(data?: {method?: string, obj?: IProviderAdapter}): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
      * Method to subscribe events 
@@ -108,14 +118,19 @@ export interface IBaseProvider {
 
 export interface IProviderAdapter {
 
-    connect?: <T = any, R = any>(options?: R) =>  Promise<T>;
+    connect?: <R = any>(options?: R) =>  Promise<void>;
     checkSession?: <P = any, S = any>(session: S)=> Promise<[boolean, P]>;
     onConnect?: (options?: any) => void;
 }
 
 
-export interface IChannelBehaviourPlugin extends IProviderAdapter {
-    verifyPingException?: (exception: Error) => boolean;
+export interface IChannelBehaviourPlugin {
+    connect?: <R = any>(options?: R, channel?: ProviderChannelInterface) =>  Promise<void>;
+    checkSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface)=> Promise<[boolean, P]>;
+    onConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
+    verifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
+    bind(channel: ProviderChannelInterface): void;
+
 }
 
 

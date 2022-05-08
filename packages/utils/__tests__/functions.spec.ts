@@ -1,4 +1,4 @@
-import { isWebPlatform } from "../src"
+import { isWebPlatform} from "../src"
 import {expect} from "chai"
 
 
@@ -14,9 +14,9 @@ describe("Testing isWebPlatform function", () => {
         // console.log(globalThis.document)
         expect(globalThis.document).not.to.undefined;
         expect(isWebPlatform()).to.be.true;
-    })
+    });   
 
-    
+});
 
-})
+
 
