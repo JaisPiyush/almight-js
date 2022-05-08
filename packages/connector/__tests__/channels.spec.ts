@@ -1,7 +1,8 @@
 import { BrowserProviderChannel } from "../src/channel";
 import { IncompatiblePlatform } from "../src/exceptions";
 import {expect, assert} from "chai"
-import { IChannelBehaviourPlugin } from "../src/types";
+import { BasicExternalProvider, ProviderChannelInterface } from "../src/types";
+import {ChannelBehaviourPlugin} from "../src/channel_plugin"
 
 
 let chainName = () => {
@@ -52,7 +53,7 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
         expect(provider).not.to.be.undefined;
     })
     
-    const channel = new BrowserProviderChannel({path: path});
+    const channel = new BrowserProviderChannel({path: path, chainId: 1});
 
     it("without calling connect provider must be undefined", async function(){
         expect(channel.provider).to.be.undefined;
@@ -60,29 +61,28 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
 
     it("testing #connect method", async function(){
         await channel.connect(undefined);
-        expect(channel.provider).to.be.undefined;
-
-        await channel.connect({name: "testing"});
+        expect(channel.provider).not.to.be.undefined;
+        await channel.connect(({name: "testing"}  as unknown)as BasicExternalProvider);
         expect(channel.provider).to.deep.equal({name:"testing"});
         
     });
 
     it("testing checkConnection and #onConnect on insertion", async function(){
 
-        let obj = {
+        let obj: unknown = {
             onConnect: function(options: any){
                 expect(options.isServiceProvider).not.to.be.undefined
                 assert(options.isServiceProvider())
             }
         }
-        await channel.checkConnection(obj);
+        await channel.connect(undefined, obj);
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
         expect(channel.provider).to.have.property("isServiceProvider");
     });
 
     it("testing rawRequest and  request", async function(){
-        await channel.checkConnection()
+        await channel.connect()
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
         
@@ -100,10 +100,10 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
 
 describe("Mock Testing BrowserProviderChannel with behaviour plugin", function(){
 
-    class FunckyBehaviourPlugin implements IChannelBehaviourPlugin {
+    class FunckyBehaviourPlugin extends ChannelBehaviourPlugin {
 
-       async connect<T, R = any>(options?: R):Promise<T>{
-           return ({name: "funcky"} as any) as T;
+       connect = async (options?: any, channel?: BrowserProviderChannel):Promise<void> => {
+           channel.setProvider(options);
        }
     }
 
@@ -116,7 +116,8 @@ describe("Mock Testing BrowserProviderChannel with behaviour plugin", function()
     })
 
     it("testing change in behaviour due to plugin", async function(){
-        expect(await funckyChannel.connect<{name:string}, string>("some_option")).to.deep.eq({name: "funcky"});      
+        await funckyChannel.connect(("some_things" as unknown) as BasicExternalProvider)
+        expect(funckyChannel.provider).to.eq("some_things")
     });
 
 });

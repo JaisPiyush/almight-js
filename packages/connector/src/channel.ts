@@ -116,7 +116,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     async connect<T = void, R = any>(options: R, obj?: IProviderAdapter): Promise<T> {
         const method = this.getBehaviourMethod("connect", obj)
         if(method !== undefined){
-            return await method(this.session);
+            return await method(options);
         }
         await this.defaultConnect(options, obj);
         this.onConnect(options, obj);
@@ -219,9 +219,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
     init(session?: BrowserSessionStruct) {
         
-        if (!isWebPlatform()) {
-            throw new IncompatiblePlatform()
-        }
+        
         super.init(session)
     }
 
@@ -235,6 +233,14 @@ export class BrowserProviderChannel extends BaseProviderChannel {
             this.connect(status[1], obj)
         }
         return status;
+    }
+
+
+    override async checkConnection(obj?: IProviderAdapter): Promise<boolean> {
+        if (!isWebPlatform()) {
+            throw new IncompatiblePlatform()
+        }
+        return await super.checkConnection(obj)
     }
 
     override async defaultConnect(provider: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
