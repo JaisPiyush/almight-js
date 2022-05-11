@@ -70,32 +70,13 @@ export class BaseChainAdapter implements IProviderAdapter {
     async checkConnection(): Promise<boolean> {
         return await this.channel.checkConnection(this);
     }
-
-
-    protected async _getAccounts(provider: BasicExternalProvider): Promise<Address[]> {
-        return await provider.request(
-            {
-                method: this.getMethodName("getAccounts"),
-                params: []
-            }) as Address[];
-    }
-
-    public async getAccounts(): Promise<Address[]> {
-        return await this._getAccounts(this.channel);
-    }
-
-
 }
-
-
 
 export class EthereumChainAdapter extends BaseChainAdapter {
 
     providerPath = "ethereum";
 
-    protected _methodNameMap: Record<string, string> = {
-        "getAccounts": "eth_accounts"
-    }
+    protected _methodNameMap: Record<string, string> = {}
 
     bindChannelDelegations(): void {
         let self = this;
@@ -115,3 +96,6 @@ export class EthereumChainAdapter extends BaseChainAdapter {
     }
 
 }
+
+
+

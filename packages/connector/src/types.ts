@@ -133,4 +133,23 @@ export interface IChannelBehaviourPlugin {
 
 }
 
+export interface IdentityProviderInterface {
+    identityProviderName: string;
+    webVersion: number;
+
+    // chainId or unique id for web2 providers
+    identifier: string | number;
+
+    // Meta Datas such as icon, name, url , etc
+    metaData: Record<string, any>;
+
+    getAdapter(): IProviderAdapter;
+    getChannel(): Promise<ProviderChannelInterface>;
+
+}
+
+export interface IConnector {
+    setAdapter(adapter: IProviderAdapter): void;
+    updateSession(session: ProviderSessionStruct): Promise<void>;
+}
 
