@@ -1,6 +1,6 @@
 import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
 import { ChannelIsNotDefined } from "./exceptions";
-import { Address, BasicExternalProvider, ConnectorType, IProviderAdapter, ProviderChannelInterface, ProviderRequestMethodArguments, ProviderSessionStruct, WalletConnectSessionStruct } from "./types";
+import { IProviderAdapter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -29,12 +29,15 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     protected _methodNameMap: Record<string, string> = {};
 
+    // Allow high-order classes to easily differentiate between an instance and class
+    public  static isAdapterClass = true;
 
 
-    public connect?: <T = any, R = any>(options?: R) => Promise<T>;
-    public checkSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
 
-    public onConnect?: (options?: any) => void;
+    public channelConnect?: <T = any, R = any>(options?: R) => Promise<T>;
+    public channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
+
+    public channelOnConnect?: (options?: any) => void;
 
 
     public onConnectCallback?: (options?: any) => void;
@@ -58,6 +61,15 @@ export class BaseChainAdapter implements IProviderAdapter {
         this.onConnectCallback = options.onConnect;
     }
 
+    async checkSession<P>(): Promise<[boolean, P]> {
+        this.checkChannel()
+        return await this.channel.checkSession(this)
+    }
+    async connect(options?: any): Promise<void> {
+        this.checkChannel()
+        await this.channel.connect(options, this)
+    }
+
     protected checkChannel(): void {
         if (this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name);
     }
@@ -67,8 +79,14 @@ export class BaseChainAdapter implements IProviderAdapter {
         return await this.channel.request<T>(data, timeout);
     }
 
+
     async checkConnection(): Promise<boolean> {
         return await this.channel.checkConnection(this);
+    }
+
+    on(event: string, callback: SubscriptionCallback): void {
+        if(this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name)
+        this.channel.on(event, callback);
     }
 }
 
@@ -84,7 +102,7 @@ export class EthereumChainAdapter extends BaseChainAdapter {
             this.channel.providerPath = this.providerPath;
         }
 
-        this.onConnect = function (options?: any): void {
+        this.channelOnConnect = function (options?: any): void {
             self.onConnectCallback(options);
         }
     }

@@ -1,9 +1,11 @@
 import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
-import { IncompatiblePlatform, ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
-import { Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter, 
-    IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments, 
-    SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
+import {
+    Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter,
+    IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments,
+    SubscriptionCallback, WalletConnectSessionStruct
+} from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
 
 /**
@@ -18,20 +20,35 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 
 
-    public connectorType: ConnectorType;
+    public static connectorType: ConnectorType;
+
+    public static isChannelClass = true;
+
+    public get connectorType(): ConnectorType { return (this.constructor as any).connectorType }
     protected _session?: IProviderSessionData;
     protected _provider?: any;
 
+    protected clientMeta?: Record<string, any> = {};
+
+    public setClientMeta(meta: Record<string, any>): void {
+        this.clientMeta = meta;
+    }
+
     protected _accounts: Address[];
     public get provider(): any { return this._provider }
-    
 
-    public setProvider(provider: BasicExternalProvider | WalletConnect): void{
+
+    public setProvider(provider: BasicExternalProvider | WalletConnect): void {
         this._provider = provider;
     }
 
     protected _isConnected = false;
     protected _behaviourPlugin?: IChannelBehaviourPlugin;
+
+
+    public static validateSession(session: any): boolean {
+        throw new Error("method not implemented")
+    }
 
 
     // Waiting time for request to be approved (in milliseconds)
@@ -41,17 +58,22 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public get session(): IProviderSessionData | undefined { return this._session }
 
 
-    constructor(session?: IProviderSessionData, plugin?: IChannelBehaviourPlugin){
+    constructor(session?: IProviderSessionData, plugin?: IChannelBehaviourPlugin) {
         this.init(session)
-        if(plugin !== undefined){
+        if (plugin !== undefined) {
             this._behaviourPlugin = plugin;
         }
     }
+    checkEnvironment(): Promise<boolean> {
+        throw new Error("Method not implemented.");
+    }
+
+
 
     getBehaviourMethod(name: string, obj?: IProviderAdapter): any {
-        if(obj !== undefined && (obj as any)[name] !== undefined && typeof (obj as any)[name] === "function"){
+        if (obj !== undefined && (obj as any)[name] !== undefined && typeof (obj as any)[name] === "function") {
             return (obj as any)[name];
-        }else if(this._behaviourPlugin !== undefined && (this._behaviourPlugin as any)[name] !== undefined){
+        } else if (this._behaviourPlugin !== undefined && (this._behaviourPlugin as any)[name] !== undefined) {
             return (this._behaviourPlugin as any)[name];
         }
         return undefined;
@@ -74,8 +96,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
     // The method is added for making it compatible with ethersjs.BaseProvider
-    async send<T=any>(method, params, timeout?: number): Promise<T> {
-        return await this.request<T>({method:method, params:params}, timeout);
+    async send<T = any>(method, params, timeout?: number): Promise<T> {
+        return await this.request<T>({ method: method, params: params }, timeout);
     }
 
 
@@ -94,15 +116,16 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @returns boolean indicating session is working or not and Provider instance
      */
     async checkSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
-        const method = this.getBehaviourMethod("checkSession", obj)
-        if(method !== undefined){
+
+        const method = this.getBehaviourMethod("channelCheckSession", obj)
+        if (method !== undefined) {
             return await method(this.session, this);
         }
         return await this.defaultCheckSession(obj);
     }
 
 
-    async defaultConnect(options?: any, obj?: IProviderAdapter): Promise<void>{
+    async defaultConnect(options?: any, obj?: IProviderAdapter): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
@@ -117,8 +140,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @returns 
      */
     async connect(options?: any, obj?: IProviderAdapter): Promise<void> {
-        const method = this.getBehaviourMethod("connect", obj)
-        if(method !== undefined){
+        const method = this.getBehaviourMethod("chanelConnect", obj)
+        if (method !== undefined) {
             return await method(options, this);
         }
         await this.defaultConnect(options, obj);
@@ -133,8 +156,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * 
      */
     async checkConnection(obj?: IProviderAdapter): Promise<boolean> {
-        if(this.provider === undefined) return false;
-        const pingResult = await this.ping({obj: obj});
+        if (this.provider === undefined) return false;
+        const pingResult = await this.ping({ obj: obj });
         this._isConnected = this.provider !== undefined && pingResult;
         return this.isConnected;
     }
@@ -149,15 +172,15 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     * the session will considered dead otherwise it'll be considered healthy
     * 
     */
-    async ping({method = "ping", obj}: {method?: string, obj?: IProviderAdapter}): Promise<boolean> {
+    async ping({ method = "ping", obj }: { method?: string, obj?: IProviderAdapter }): Promise<boolean> {
         try {
-            if(obj !== undefined && (obj as any)["pingMethod"] !== undefined){
+            if (obj !== undefined && (obj as any)["pingMethod"] !== undefined) {
                 method = (obj as any)["pingMethod"]
             }
             await this.request({ method: method, params: [] })
         } catch (e) {
-            const method = this.getBehaviourMethod("verifyPingException", obj);
-            if(method !== undefined) return method(e, this)
+            const method = this.getBehaviourMethod("channelVerifyPingException", obj);
+            if (method !== undefined) return method(e, this)
             return this.verifyPingException(e);
         }
         return false;
@@ -196,9 +219,9 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         }
     }
 
-    onConnect(options: any, obj?: IProviderAdapter): void{
-        const method = this.getBehaviourMethod("onConnect", obj);
-        if(method !== undefined) return method(options, this)
+    onConnect(options: any, obj?: IProviderAdapter): void {
+        const method = this.getBehaviourMethod("channelOnConnect", obj);
+        if (method !== undefined) return method(options, this)
     }
 
 }
@@ -206,7 +229,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 export class BrowserProviderChannel extends BaseProviderChannel {
 
-    public connectorType: ConnectorType = ConnectorType.BrowserExtension;
+    public static connectorType: ConnectorType = ConnectorType.BrowserExtension;
     protected _session?: BrowserSessionStruct;
     protected _provider?: BasicExternalProvider;
 
@@ -215,11 +238,20 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
     public get session(): BrowserSessionStruct { return this._session }
     public get provider(): BasicExternalProvider { return this._provider }
-    public get providerPath(): string { return (this.session !== undefined && this.session.path !== undefined)? this.session.path: this._providerPath}
-    public set providerPath(_path: string) {this._providerPath = _path}
+    public get providerPath(): string { return (this.session !== undefined && this.session.path !== undefined) ? this.session.path : this._providerPath }
+    public set providerPath(_path: string) { this._providerPath = _path }
+
+    public static validateSession(session: any): boolean {
+        if (session['path'] === undefined || session['chainId'] === undefined) throw new IncompatibleSessionData();
+        return true;
+    }
 
     init(session?: BrowserSessionStruct) {
         super.init(session)
+    }
+
+    override async checkEnvironment(): Promise<boolean> {
+        return isWebPlatform();
     }
 
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
@@ -227,6 +259,9 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
+        if(this.session !== undefined){
+            BrowserProviderChannel.validateSession(this.session)
+        }
         return [this.providerPath !== undefined && (globalThis as any)[this.providerPath] !== undefined, (globalThis as any)[this.providerPath]];
     }
 
@@ -234,9 +269,9 @@ export class BrowserProviderChannel extends BaseProviderChannel {
         return await super.checkSession(obj)
     }
 
-    override async connect(options?: BasicExternalProvider , obj?: IProviderAdapter): Promise<void> {
+    override async connect(options?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         await this.defaultConnect(options, obj);
-        await this.checkConnection();       
+        await this.checkConnection();
     }
 
     override verifyPingException(exception: Error): boolean {
@@ -252,12 +287,12 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override async defaultConnect(provider?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
-        if(provider !== undefined){
+        if (provider !== undefined) {
             this._provider = provider;
             return;
         }
         const [isSessionValid, _provider] = await this.checkSession(obj);
-        if(isSessionValid && _provider !== undefined){
+        if (isSessionValid && _provider !== undefined) {
             this._provider = _provider;
         }
         return;
@@ -268,7 +303,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
 export class WalletConnectChannel extends BaseProviderChannel {
 
-    public connectorType: ConnectorType = ConnectorType.WalletConnector;
+    public static connectorType: ConnectorType = ConnectorType.WalletConnector;
     protected _session?: WalletConnectSessionStruct;
     protected _provider?: WalletConnect;
 
@@ -288,6 +323,23 @@ export class WalletConnectChannel extends BaseProviderChannel {
         super.init(session)
     }
 
+    override async checkEnvironment(): Promise<boolean> {
+        return true;
+    }
+
+    public static validateSession(session: any, silent: boolean = false): boolean {
+        for (const prop of ["chainId", "bridge", "key", "clientId", "peerId", "handshakeId", "handshakeTopic"]) {
+            if (session[prop] === undefined) {
+                if (silent) {
+                    return false
+                } else {
+                    throw new IncompatibleSessionData()
+                }
+            }
+        }
+        return true;
+    }
+
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
         return await this.provider.sendCustomRequest({
             id: WalletConnectChannel.nextId,
@@ -302,21 +354,23 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     walletconnect(options: IWalletConnectOptions, pushOpts?: IPushServerOptions): WalletConnect {
+        options.bridge = options.bridge || this.bridge;
+        options.session = options.session || this.session;
+        options.clientMeta = options.clientMeta || this.clientMeta as any;
         return new WalletConnect(options, pushOpts);
     }
 
-    override async defaultConnect({options = {}, pushOpts}:{options?: IWalletConnectOptions, pushOpts?: IPushServerOptions}, obj?: IProviderAdapter): Promise<void> {
+    override async defaultConnect({ options = {}, pushOpts }: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } = {}, obj?: IProviderAdapter): Promise<void> {
         // Setting default bridge url if none provided
-        options.bridge = options.bridge || this.bridge;
-
+        
         let [isSessionValid, provider] = await this.checkSession(obj);
-        if(isSessionValid && provider !== undefined){
+        if (isSessionValid && provider !== undefined) {
             this._provider = provider;
-            this.onConnect({payload: {params: [provider.session]}}, obj);
-        }else{
+            this.onConnect({ payload: { params: [provider.session] } }, obj);
+        } else {
             provider = this.walletconnect(options, pushOpts);
             provider.on("connect", (error, payload) => {
-                this.onConnect({error, payload}, obj)
+                this.onConnect({ error, payload }, obj)
             })
         }
 
@@ -324,11 +378,14 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
 
     override async checkSession(obj?: IProviderAdapter): Promise<[boolean, WalletConnect]> {
+        if (this.session !== undefined) {
+            BrowserProviderChannel.validateSession(this.session);
+        }
         return await super.checkSession(obj)
     }
 
-    override async connect(options?: {options?: IWalletConnectOptions, pushOpts?: IPushServerOptions} , obj?: IProviderAdapter): Promise<void> {
-        await this.defaultConnect(options, obj)        
+    override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
+        await this.defaultConnect(options, obj)
     }
 
     /**
@@ -343,25 +400,25 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return this.provider.uri;
     }
 
-    onConnect(options:{error?: Error, payload?: any}, obj?: IProviderAdapter) {
-        const {error, payload} = options;
+    onConnect(options: { error?: Error, payload?: any }, obj?: IProviderAdapter) {
+        const { error, payload } = options;
         if (error) throw error;
-        const {accounts} = payload.params[0];
+        const { accounts } = payload.params[0];
         this._params = payload.params;
         this._accounts = accounts;
         this._session = this._provider.session;
 
-        const method = this.getBehaviourMethod("onConnect", obj);
-        if(method !== undefined) method(options, this)
+        const method = this.getBehaviourMethod("channelOnConnect", obj);
+        if (method !== undefined) method(options, this)
     }
 
     override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
-        if(this.session !== undefined && this.session.bridge !== undefined && this.session.key !== undefined && this.session.clientMeta !== undefined){
-            return [true, this.walletconnect({session: this.session})];
+        if (this.session !== undefined && WalletConnectChannel.validateSession(this.session)) {
+            return [true, this.walletconnect({ session: this.session })];
         }
         return [false, undefined]
 
-        
+
     }
 
 }

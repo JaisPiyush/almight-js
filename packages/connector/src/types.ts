@@ -1,11 +1,14 @@
 import WalletConnect from "@walletconnect/client";
+import { Class } from "utils/lib";
 
 export interface NetworkData {
     name?: string,
     chainId: number
 }
 
-export type BrowserSessionStruct = {path: string, network?: NetworkData, chainId: number};
+export interface ISession { }
+
+export interface BrowserSessionStruct extends ISession { path: string, network?: NetworkData, chainId: number };
 
 interface WalletConnectMetaInterface {
     description: string
@@ -14,7 +17,7 @@ interface WalletConnectMetaInterface {
     name: string
     ssl?: boolean
 }
-export interface WalletConnectSessionStruct {
+export interface WalletConnectSessionStruct extends ISession {
     connected: boolean,
     accounts: Array<string>
     chainId: number
@@ -35,8 +38,8 @@ export interface WalletConnectSessionStruct {
  * based on the providers
  */
 export interface ProviderSessionStruct {
-    browser: Array<BrowserSessionStruct>;
-    walletconnect: Array<WalletConnectSessionStruct>
+    [ConnectorType.BrowserExtension]: Array<BrowserSessionStruct>;
+    [ConnectorType.WalletConnector]: Array<WalletConnectSessionStruct>
 }
 
 
@@ -49,17 +52,17 @@ export interface ProviderChannelInterface {
     requestTimeout: number;
 
     setProvider(provider: ExternalProvider): void;
-
     init(session?: IProviderSessionData): void;
     checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
+    checkEnvironment(): Promise<boolean>;
     connect(options?: any, obj?: IProviderAdapter): Promise<void>;
     checkConnection(obj?: IProviderAdapter): Promise<boolean>;
-    ping(data?: {method?: string, obj?: IProviderAdapter}): Promise<boolean>;
+    ping(data?: { method?: string, obj?: IProviderAdapter }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
      * Method to subscribe events 
      */
-     on(name: string, callback: SubscriptionCallback): void;
+    on(name: string, callback: SubscriptionCallback): void;
 }
 
 export interface ProviderRequestMethodArguments {
@@ -77,7 +80,7 @@ export type Address = string;
 export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionStruct
 
 
-export enum ConnectorType{
+export enum ConnectorType {
     BrowserExtension = "browser_extension",
     WalletConnector = "walletconnect"
 }
@@ -88,7 +91,7 @@ export interface SubscriptionCallback {
 }
 export interface IBaseProvider {
 
-    
+
 
     /**
      * Check the connection of session is valid and working
@@ -111,24 +114,30 @@ export interface IBaseProvider {
      */
     on(name: string, callback: SubscriptionCallback): void;
 
- 
+
 
 }
 
 
 export interface IProviderAdapter {
 
-    connect?: <R = any>(options?: R) =>  Promise<void>;
-    checkSession?: <P = any, S = any>(session: S)=> Promise<[boolean, P]>;
-    onConnect?: (options?: any) => void;
+    channelConnect?: <R = any>(options?: R) => Promise<void>;
+    channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
+    channelOnConnect?: (options?: any) => void;
+    on(event: string, callback: SubscriptionCallback): void;
+
+    request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
+
+    checkSession<P>(): Promise<[boolean, P]>;
+    connect(): Promise<void>;
 }
 
 
 export interface IChannelBehaviourPlugin {
-    connect?: <R = any>(options?: R, channel?: ProviderChannelInterface) =>  Promise<void>;
-    checkSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface)=> Promise<[boolean, P]>;
-    onConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
-    verifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
+    channelConnect?: <R = any>(options?: R, channel?: ProviderChannelInterface) => Promise<void>;
+    channelCheckSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface) => Promise<[boolean, P]>;
+    channelOnConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
+    channelVerifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
     bind(channel: ProviderChannelInterface): void;
 
 }
@@ -137,19 +146,60 @@ export interface IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
 
+    allowedConnectorTypes: Array<ConnectorType>;
+
     // chainId or unique id for web2 providers
     identifier: string | number;
 
     // Meta Datas such as icon, name, url , etc
     metaData: Record<string, any>;
 
-    getAdapter(): IProviderAdapter;
-    getChannel(): Promise<ProviderChannelInterface>;
+    getAdapterClass(): Class<IProviderAdapter> | null;
+    getChannels(): Class<ProviderChannelInterface>[];
 
 }
 
+
+export interface IConnectorMetaData {
+
+}
+
+export interface IConnectorOptions {
+    idp?: IdentityProviderInterface;
+    adapter?: Class<IProviderAdapter> | IProviderAdapter;
+    channel?: Class<ProviderChannelInterface>;
+    sessions?: ProviderSessionStruct;
+    allowedConnectorTypes?: ConnectorType[];
+    metaData?: Record<string, any>
+}
+
+
+export interface IConnectorSessionFilter {
+    chainId?: number;
+    path?: string;
+    clientId?: string;
+    peerId?: string;
+    handshakeId?: number;
+    handshakeTopic?: string;
+}
+
+export interface IConnectorConnectArguments {
+    channel?: Class<ProviderChannelInterface> | ProviderChannelInterface;
+    session?: BrowserSessionStruct | WalletConnectSessionStruct;
+    filters?: IConnectorSessionFilter
+}
+
 export interface IConnector {
-    setAdapter(adapter: IProviderAdapter): void;
-    updateSession(session: ProviderSessionStruct): Promise<void>;
+
+    findChannels(): Class<ProviderChannelInterface>[];
+    findAdapter(): Class<IProviderAdapter>;
+    connect(args: IConnectorConnectArguments): Promise<void>;
+    getChannels(): Promise<Class<ProviderChannelInterface>[]>;
+    getSessions(): ISession[];
+    validateSessionStructure(session: BrowserSessionStruct | WalletConnectSessionStruct, filters: IConnectorSessionFilter): boolean;
+    validateChannel(channel: Class<ProviderChannelInterface>): Promise<boolean>;
+    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: BrowserSessionStruct | WalletConnectSessionStruct): Promise<boolean>;
+
+
 }
 
