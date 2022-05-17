@@ -2,7 +2,7 @@ import { Class } from "@almight-sdk/utils"
 import { BaseChainAdapter } from "./adapter";
 import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed, NoSuitableAdapterFound } from "./exceptions";
-import { BrowserSessionStruct, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorMetaData, IConnectorOptions, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { BrowserSessionStruct, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorOptions, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
 
 
 export class BaseConnector implements IConnector {
@@ -100,6 +100,7 @@ export class BaseConnector implements IConnector {
                 if(_chan !== undefined){
                     this._adapter = this.bindAdapter(this._adapter_class as Class<BaseChainAdapter>, _chan);
                     await this._adapter.connect();
+                    this._currentSession = session;
                     return;
                 }
             }

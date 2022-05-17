@@ -1,7 +1,7 @@
 import { BrowserProviderChannel } from "../src/channel";
 import { IncompatiblePlatform } from "../src/exceptions";
 import {expect, assert} from "chai"
-import { BasicExternalProvider, ProviderChannelInterface } from "../src/types";
+import { BasicExternalProvider, IProviderAdapter, ProviderChannelInterface } from "../src/types";
 import {ChannelBehaviourPlugin} from "../src/channel_plugin"
 
 
@@ -75,7 +75,7 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
                 assert(options.isServiceProvider())
             }
         }
-        await channel.connect(undefined, obj);
+        await channel.connect(undefined, obj as IProviderAdapter);
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
         expect(channel.provider).to.have.property("isServiceProvider");
@@ -102,18 +102,13 @@ describe("Mock Testing BrowserProviderChannel with behaviour plugin", function()
 
     class FunckyBehaviourPlugin extends ChannelBehaviourPlugin {
 
-       connect = async (options?: any, channel?: BrowserProviderChannel):Promise<void> => {
-           channel.setProvider(options);
+       channelConnect = async <R = any>(options?: R, channel?: BrowserProviderChannel):Promise<void> => {
+           channel.setProvider(options as any);
        }
     }
 
 
     const funckyChannel = new BrowserProviderChannel(undefined, new FunckyBehaviourPlugin());
-
-    it("testing the correct binding of plugin", async function(){
-        expect(funckyChannel.getBehaviourMethod("connect")).not.to.undefined;
-        expect(await funckyChannel.getBehaviourMethod("connect")()).to.deep.equal({name: "funcky"})
-    })
 
     it("testing change in behaviour due to plugin", async function(){
         await funckyChannel.connect(("some_things" as unknown) as BasicExternalProvider)

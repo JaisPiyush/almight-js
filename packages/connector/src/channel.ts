@@ -140,7 +140,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @returns 
      */
     async connect(options?: any, obj?: IProviderAdapter): Promise<void> {
-        const method = this.getBehaviourMethod("chanelConnect", obj)
+        const method = this.getBehaviourMethod("channelConnect", obj)
         if (method !== undefined) {
             return await method(options, this);
         }
@@ -270,7 +270,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override async connect(options?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
-        await this.defaultConnect(options, obj);
+        await super.connect(options, obj)
         await this.checkConnection();
     }
 
@@ -361,8 +361,6 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     override async defaultConnect({ options = {}, pushOpts }: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } = {}, obj?: IProviderAdapter): Promise<void> {
-        // Setting default bridge url if none provided
-        
         let [isSessionValid, provider] = await this.checkSession(obj);
         if (isSessionValid && provider !== undefined) {
             this._provider = provider;
@@ -385,7 +383,8 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
-        await this.defaultConnect(options, obj)
+        await super.connect(options, obj)
+        await this.checkConnection();
     }
 
     /**
