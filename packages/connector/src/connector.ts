@@ -69,6 +69,8 @@ export class BaseConnector implements IConnector {
         if(this._adapter_class !== undefined){
             this._adapter_class = this.findAdapter();
         }
+
+        if (this._adapter_class === undefined) throw new AdapterIsNotDefined()
         
         let channel = (args.channel !== undefined)? args.channel : this._channel;
 

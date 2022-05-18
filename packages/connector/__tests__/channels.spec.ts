@@ -1,7 +1,7 @@
 import { BrowserProviderChannel } from "../src/channel";
 import { IncompatiblePlatform } from "../src/exceptions";
 import {expect, assert} from "chai"
-import { BasicExternalProvider, IProviderAdapter, ProviderChannelInterface } from "../src/types";
+import { BasicExternalProvider, IProviderAdapter } from "../src/types";
 import {ChannelBehaviourPlugin} from "../src/channel_plugin"
 
 
