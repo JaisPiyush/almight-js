@@ -2,7 +2,18 @@ import { Class } from "@almight-sdk/utils"
 import { BaseChainAdapter } from "./adapter";
 import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed, NoSuitableAdapterFound } from "./exceptions";
-import { BrowserSessionStruct, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorOptions, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { BrowserSessionStruct, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+
+export interface IConnectorOptions {
+    idp?: IdentityProviderInterface;
+    adapter?: Class<IProviderAdapter> | IProviderAdapter;
+    channel?: Class<ProviderChannelInterface>;
+    sessions?: ProviderSessionStruct;
+    allowedConnectorTypes?: ConnectorType[];
+    metaData?: Record<string, any>;
+    onConnect?: (options?: any) => void;
+}
+
 
 
 export class BaseConnector implements IConnector {
@@ -21,6 +32,8 @@ export class BaseConnector implements IConnector {
 
     public get sortedChannels(): Class<BaseProviderChannel>[] { return this._sortedChannels };
 
+    protected _onConnect: (options?: any) => void = (options?: any) => { }
+
     public get adapter(): BaseChainAdapter { return this._adapter as BaseChainAdapter }
 
     constructor(args: IConnectorOptions) {
@@ -29,7 +42,7 @@ export class BaseConnector implements IConnector {
             if ((args.adapter as any).isAdapterClass === true) {
                 this._adapter_class = args.adapter as Class<IProviderAdapter>;
 
-            } else if( args.adapter instanceof BaseChainAdapter) {
+            } else if (args.adapter instanceof BaseChainAdapter) {
                 this._adapter = args.adapter as IProviderAdapter;
             }
         }
@@ -37,6 +50,7 @@ export class BaseConnector implements IConnector {
         this.sessions = args.sessions;
         this.allowedConnectorTypes = args.allowedConnectorTypes;
         this.metaData = args.metaData;
+        this._onConnect = args.onConnect ?? function (options?: any) { };
     }
 
     findChannels(): Class<BaseProviderChannel>[] {
@@ -50,7 +64,9 @@ export class BaseConnector implements IConnector {
         throw new NoSuitableAdapterFound();
     }
 
-    onConnectCallback(options?: any): void { }
+    onConnectCallback(options?: any): void {
+        this._onConnect(options)
+    }
 
     bindAdapter(adapter: Class<BaseChainAdapter>, channel: BaseProviderChannel): BaseChainAdapter {
         channel.setClientMeta(this.metaData);
@@ -60,55 +76,71 @@ export class BaseConnector implements IConnector {
 
     protected async _baseConnect(args: IConnectorConnectArguments): Promise<void> {
         if (this._adapter !== undefined) {
-            if (!(this._adapter as BaseChainAdapter).channel.isConnected){
+            if (!(this._adapter as BaseChainAdapter).channel.isConnected) {
                 await this._adapter.connect();
             }
             return;
         }
 
-        if(this._adapter_class !== undefined){
-            this._adapter_class = this.findAdapter();
+        if (this._adapter_class === undefined) {
+            const _adapter_class = this.findAdapter();
+            if (_adapter_class === undefined) throw new AdapterIsNotDefined();
+            this._adapter_class = _adapter_class;
         }
 
-        if (this._adapter_class === undefined) throw new AdapterIsNotDefined()
-        
-        let channel = (args.channel !== undefined)? args.channel : this._channel;
 
-        if(channel !== undefined && channel instanceof BaseProviderChannel){
-            this._adapter = this.bindAdapter(this._adapter_class as Class<BaseChainAdapter>, channel)
-            await this._adapter.connect()
-            return;
+        // Argument guard to force user to define atleast one thing
+        if (args.channel === undefined && args.session === undefined && args.filters === undefined) {
+            throw new Error("Must provider either channel, session or filters to proceed")
         }
 
-        let channels = [];
-        if(channel !== undefined && (channel as any).isChannelClass === true){
-            channels.push(channel);
-        }else{
-            channels = await this.getChannels();
-        }
-
-        if(channels.length === 0){
-            throw new ConnectionEstablishmentFailed("No suitable channel found for creating connection")
-        }
-
-        const sessions = this.getSessions();
-        if(sessions.length === 0){
-            throw new ConnectionEstablishmentFailed("No suitable session found for creating connection")
-        }
-
-        for(const channel of channels){
-            for (const session of sessions){
-                const _chan = await this.mountSessionOnChannel(channel, session, args.filters);
-                if(_chan !== undefined){
-                    this._adapter = this.bindAdapter(this._adapter_class as Class<BaseChainAdapter>, _chan);
-                    await this._adapter.connect();
-                    this._currentSession = session;
-                    return;
-                }
+        let session = args.session ?? this._currentSession;
+        if (session === undefined && args.filters !== undefined && this.sessions !== undefined) {
+            const sessions = this.getSessions().filter((session) => this.validateSessionStructure(session as any, args.filters));
+            if (sessions.length > 0) {
+                session = sessions[0] as any;
+                this._currentSession = session;
             }
         }
 
-        throw new ConnectionEstablishmentFailed();
+
+        let channel_class = args.channel ?? this._channel;
+        let channel: BaseProviderChannel;
+
+
+
+        if (channel_class === undefined) {
+            // If session is not defined then throw the error
+            if (this._currentSession === undefined) {
+                throw new ConnectionEstablishmentFailed("A valid session must be provided to establish the connection");
+            }
+
+            let channel_classes = await this.getChannels();
+            for (const channel_cls of channel_classes) {
+                const _channel = await this.mountSessionOnChannel(channel_cls as any, session);
+                if (_channel !== undefined) {
+                    this._channel = channel_cls;
+                    channel_class = this._channel;
+                    this._currentSession = session;
+                    channel = _channel;
+                    break;
+                }
+            }
+        } else if (channel_class instanceof BaseProviderChannel) {
+            channel = channel_class as BaseProviderChannel;
+        } else if ((channel_class as any).isChannelClass === true) {
+            channel = new (channel_class as Class<BaseProviderChannel>)(this._currentSession);
+        }
+
+
+        if (channel === undefined) {
+            throw new ConnectionEstablishmentFailed("Not able to find any suitable channel for connection establishment")
+        }
+
+
+        this._adapter = this.bindAdapter(this._adapter_class as any, channel);
+        await this._adapter.connect();
+
     }
 
 
@@ -214,7 +246,7 @@ export class BaseConnector implements IConnector {
             }
             filterTruthy[filterTruthy.length - 1] = subFilterTruthy.every((val, index, arr) => val)
         }
-        return filterTruthy.length === 0 ? true:  filterTruthy.every((val, index, arr) => val);
+        return filterTruthy.length === 0 ? true : filterTruthy.every((val, index, arr) => val);
     }
 
     /**

@@ -160,18 +160,9 @@ export interface IdentityProviderInterface {
 }
 
 
-export interface IConnectorMetaData {
 
-}
 
-export interface IConnectorOptions {
-    idp?: IdentityProviderInterface;
-    adapter?: Class<IProviderAdapter> | IProviderAdapter;
-    channel?: Class<ProviderChannelInterface>;
-    sessions?: ProviderSessionStruct;
-    allowedConnectorTypes?: ConnectorType[];
-    metaData?: Record<string, any>
-}
+
 
 
 export interface IConnectorSessionFilter {
@@ -188,6 +179,7 @@ export interface IConnectorConnectArguments {
     session?: BrowserSessionStruct | WalletConnectSessionStruct;
     filters?: IConnectorSessionFilter
 }
+
 
 export interface IConnector {
 

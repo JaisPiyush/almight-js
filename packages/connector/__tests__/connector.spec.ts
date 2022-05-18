@@ -1,6 +1,6 @@
 import {expect, assert} from "chai"
 import {EthereumChainAdapter} from "../src/adapter";
-import { BrowserProviderChannel, WalletConnectChannel } from "../src/channel";
+import { BrowserProviderChannel, WalletConnectChannel, IdentityProvider} from "../src";
 
 
 /**
@@ -9,7 +9,14 @@ import { BrowserProviderChannel, WalletConnectChannel } from "../src/channel";
  */
 
 describe('Unit-testing Connector Class', () => { 
-
+    const metamask = new IdentityProvider({
+        name: "Metamask",
+        webVersion: 3.0,
+        identifier: "meta-mask",
+        adapter_class: EthereumChainAdapter,
+        channels: [BrowserProviderChannel, WalletConnectChannel]
+    });
     
+
 
 })
