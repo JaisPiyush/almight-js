@@ -2,6 +2,5 @@
 
 
 module.exports = {
-    spec: ['__tests__/**/*.spec.js'],
-    'watch-files': ['__tests__/**/*.spec.js', 'src/**/*.ts']
+    spec: ['__tests__/**/*.spec.ts'],
 }

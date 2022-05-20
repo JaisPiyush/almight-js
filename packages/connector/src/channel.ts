@@ -36,6 +36,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
     protected _accounts: Address[];
     public get provider(): any { return this._provider }
+    public get accounts(): Address[] {return this._accounts}
 
 
     public setProvider(provider: BasicExternalProvider | WalletConnect): void {
@@ -236,7 +237,9 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
     protected _providerPath?: string;
 
-    public get session(): BrowserSessionStruct { return this._session }
+    public get session(): BrowserSessionStruct {
+        return this._session
+    }
     public get provider(): BasicExternalProvider { return this._provider }
     public get providerPath(): string { return (this.session !== undefined && this.session.path !== undefined) ? this.session.path : this._providerPath }
     public set providerPath(_path: string) { this._providerPath = _path }
@@ -259,7 +262,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
-        if(this.session !== undefined){
+        if (this.session !== undefined) {
             BrowserProviderChannel.validateSession(this.session)
         }
         return [this.providerPath !== undefined && (globalThis as any)[this.providerPath] !== undefined, (globalThis as any)[this.providerPath]];
@@ -415,7 +418,8 @@ export class WalletConnectChannel extends BaseProviderChannel {
         if (this.session !== undefined && WalletConnectChannel.validateSession(this.session)) {
             return [true, this.walletconnect({ session: this.session })];
         }
-        return [false, undefined]
+        // Create empty walletconnect instance
+        return [true, this.walletconnect({})];
 
 
     }

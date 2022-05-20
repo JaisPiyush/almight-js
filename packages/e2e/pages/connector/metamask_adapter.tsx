@@ -1,4 +1,4 @@
-import {BasicExternalProvider, BrowserProviderChannel, EthereumChainAdapter} from "@almight-sdk/connector"
+import {BaseConnector, IdentityProvider, WalletConnectChannel , BrowserProviderChannel, EthereumChainAdapter, BaseChainAdapter} from "@almight-sdk/connector"
 import { useEffect } from "react";
 
 
@@ -7,13 +7,37 @@ class MetaMaskBrowserAdapter extends EthereumChainAdapter {
     bindChannelDelegations(): void {
         let self = this;
         super.bindChannelDelegations();
-        this.connect = async function <T = any, R = any>(options?: R):Promise<T> {
-            if(options !== undefined && (options as any).providers !== undefined){
-                self.channel.defaultConnect((options as any).providers[4]);
+        this.channelConnect = async function <T = any, R = any>(options?: R):Promise<T> {
+            const [isSessionValid, _provider] = await self.channel.checkSession(self);
+            if(isSessionValid && _provider !== undefined && (_provider as any).providers !== undefined){
+                self.channel.defaultConnect((_provider as any).providers[4]);
+            }else{
+                self.channel.defaultConnect(_provider);
             }
             return {} as T;
         }     
     }
+}
+
+
+class PantomAdapter extends BaseChainAdapter {
+
+    public static providerPath = "solana";
+
+    bindChannelDelegations(): void {
+        let self = this;
+        super.bindChannelDelegations();
+        this.channelConnect = async function <T = any, R = any>(options?: R):Promise<T> {
+            const [isSessionValid, _provider] = await self.checkSession();
+            if(isSessionValid && _provider !== undefined && (_provider as any).isPhantom === true){
+                await (_provider as any).connect();
+                self.channel.defaultConnect(_provider);
+            }
+            return {} as T
+
+        }
+    }
+
 }
 
 
@@ -26,6 +50,11 @@ const MetamaskAdapter: React.FC = () => {
 
     useEffect(() => {
         (window as any).adapter = adapter;
+        (window as any).toolset = {
+            adapterClass: PantomAdapter,
+            channelClasses: [BrowserProviderChannel, WalletConnectChannel],
+            connector: BaseConnector
+        }
     })
 
     

@@ -32,9 +32,12 @@ export class BaseConnector implements IConnector {
 
     public get sortedChannels(): Class<BaseProviderChannel>[] { return this._sortedChannels };
 
-    protected _onConnect: (options?: any) => void = (options?: any) => { }
+    protected _onConnect: (options?: any) => void = (options?: any) => { ; }
 
     public get adapter(): BaseChainAdapter { return this._adapter as BaseChainAdapter }
+
+    public get idp(): IdentityProviderInterface { return this._idp }
+    public get session(): ISession { return this._currentSession }
 
     constructor(args: IConnectorOptions) {
         this._idp = args.idp;
@@ -48,9 +51,14 @@ export class BaseConnector implements IConnector {
         }
         this._channel = args.channel;
         this.sessions = args.sessions;
-        this.allowedConnectorTypes = args.allowedConnectorTypes;
+        this.allowedConnectorTypes = args.allowedConnectorTypes ?? [];
+        if (this.allowedConnectorTypes.length === 0 && this._idp !== undefined) {
+            this.allowedConnectorTypes = this._idp.allowedConnectorTypes;
+        }
         this.metaData = args.metaData;
-        this._onConnect = args.onConnect ?? function (options?: any) { };
+        if (args.onConnect !== undefined) {
+            this._onConnect = args.onConnect;
+        }
     }
 
     findChannels(): Class<BaseProviderChannel>[] {
@@ -64,17 +72,14 @@ export class BaseConnector implements IConnector {
         throw new NoSuitableAdapterFound();
     }
 
-    onConnectCallback(options?: any): void {
-        this._onConnect(options)
-    }
 
     bindAdapter(adapter: Class<BaseChainAdapter>, channel: BaseProviderChannel): BaseChainAdapter {
         channel.setClientMeta(this.metaData);
-        return new adapter({ channel: channel, onConnect: this.onConnectCallback });
+        return new adapter({ channel: channel, onConnect: this._onConnect });
     }
 
 
-    protected async _baseConnect(args: IConnectorConnectArguments): Promise<void> {
+    protected async _baseConnect(args: IConnectorConnectArguments = {}): Promise<void> {
         if (this._adapter !== undefined) {
             if (!(this._adapter as BaseChainAdapter).channel.isConnected) {
                 await this._adapter.connect();
@@ -88,9 +93,10 @@ export class BaseConnector implements IConnector {
             this._adapter_class = _adapter_class;
         }
 
-
+        let channel_class = args.channel ?? this._channel;
+        let channel: BaseProviderChannel;
         // Argument guard to force user to define atleast one thing
-        if (args.channel === undefined && args.session === undefined && args.filters === undefined) {
+        if (channel_class === undefined && args.session === undefined && args.filters === undefined) {
             throw new Error("Must provider either channel, session or filters to proceed")
         }
 
@@ -104,8 +110,8 @@ export class BaseConnector implements IConnector {
         }
 
 
-        let channel_class = args.channel ?? this._channel;
-        let channel: BaseProviderChannel;
+
+
 
 
 
@@ -144,7 +150,7 @@ export class BaseConnector implements IConnector {
     }
 
 
-    async connect(args: IConnectorConnectArguments): Promise<void> {
+    async connect(args?: IConnectorConnectArguments): Promise<void> {
         await this._baseConnect(args)
     }
 

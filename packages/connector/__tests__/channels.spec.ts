@@ -33,8 +33,8 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
     const path = "darwin"
 
     // Mocking browser behaviour
-    Object.defineProperty(globalThis, "document", {value: {}})
-    Object.defineProperty(globalThis, path, {value: chainName()})
+    Object.defineProperty(globalThis, "document", {value: {}, writable: true})
+    Object.defineProperty(globalThis, path, {value: chainName(), writable: true})
 
     
     

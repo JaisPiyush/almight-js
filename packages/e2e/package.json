@@ -8,16 +8,18 @@
     "tsc": "",
     "start": "next start",
     "lint": "next lint",
-    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r jsdom-global/register",
+    "test": "node ./node_modules/mocha/bin/mocha --require ./ts_hook.js --timeout=30000 __tests__/**/*.spec.ts",
     "e2e": "start-server-and-test dev http://localhost:3000 test"
   },
   "dependencies": {
     "@almight-sdk/connector": "^0.0.0",
+    "mocha": "^10.0.0",
     "next": "12.1.5",
     "puppeteer-core": "^13.7.0",
     "react": "18.1.0",
     "react-dom": "18.1.0",
-    "start-server-and-test": "^1.14.0"
+    "start-server-and-test": "^1.14.0",
+    "ts-node": "^10.7.0"
   },
   "devDependencies": {
     "@types/node": "17.0.29",

@@ -25,6 +25,10 @@ interface IChainAdapterOptions {
 }
 export class BaseChainAdapter implements IProviderAdapter {
 
+    public static providerPath = null;
+
+    public get providerPath(): string { return (this.constructor as any).providerPath}
+
     protected _channel: BaseProviderChannel;
 
     protected _methodNameMap: Record<string, string> = {};
@@ -55,10 +59,24 @@ export class BaseChainAdapter implements IProviderAdapter {
     public set channel(_channel: BaseProviderChannel) { this._channel = _channel }
 
 
+    public bindChannelDelegations(): void {
+        let self = this;
+        if (this.channel instanceof BrowserProviderChannel) {
+            this.channel.providerPath = this.providerPath;
+        }
+
+        this.channelOnConnect = function (options?: any): void {
+            self.onConnectCallback(options);
+        }
+    }
+
+
 
     constructor(options: IChainAdapterOptions) {
         this.channel = options.channel;
         this.onConnectCallback = options.onConnect;
+        this.checkChannel()
+        this.bindChannelDelegations();
     }
 
     async checkSession<P>(): Promise<[boolean, P]> {
@@ -92,26 +110,7 @@ export class BaseChainAdapter implements IProviderAdapter {
 
 export class EthereumChainAdapter extends BaseChainAdapter {
 
-    providerPath = "ethereum";
-
-    protected _methodNameMap: Record<string, string> = {}
-
-    bindChannelDelegations(): void {
-        let self = this;
-        if (this.channel instanceof BrowserProviderChannel) {
-            this.channel.providerPath = this.providerPath;
-        }
-
-        this.channelOnConnect = function (options?: any): void {
-            self.onConnectCallback(options);
-        }
-    }
-
-    constructor(options: IChainAdapterOptions) {
-        super(options);
-        this.checkChannel()
-        this.bindChannelDelegations();
-    }
+    public static providerPath = "ethereum";
 
 }
 
