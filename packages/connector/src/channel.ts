@@ -36,7 +36,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
     protected _accounts: Address[];
     public get provider(): any { return this._provider }
-    public get accounts(): Address[] {return this._accounts}
+    public get accounts(): Address[] { return this._accounts }
 
 
     public setProvider(provider: BasicExternalProvider | WalletConnect): void {
@@ -363,30 +363,44 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return new WalletConnect(options, pushOpts);
     }
 
-    override async defaultConnect({ options = {}, pushOpts }: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } = {}, obj?: IProviderAdapter): Promise<void> {
-        let [isSessionValid, provider] = await this.checkSession(obj);
-        if (isSessionValid && provider !== undefined) {
-            this._provider = provider;
-            this.onConnect({ payload: { params: [provider.session] } }, obj);
+    override async defaultConnect(args: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } | WalletConnect = {}, obj?: IProviderAdapter): Promise<void> {
+
+        if (args instanceof WalletConnect) {
+            this._provider = args;
+            this.onConnect({ payload: { params: [this._provider.session] } }, obj);
         } else {
-            provider = this.walletconnect(options, pushOpts);
-            provider.on("connect", (error, payload) => {
-                this.onConnect({ error, payload }, obj)
-            })
+            const { options, pushOpts } = args;
+            const [isSessionValid, provider] = await this.checkSession(obj);
+            if (isSessionValid && provider !== undefined) {
+                this._provider = provider;
+                this.onConnect({ payload: { params: [provider.session] } }, obj);
+            } else {
+                this._provider = this.walletconnect(options, pushOpts);
+                this._provider.on("connect", (error, payload) => {
+                    if (error) throw error
+                    this.onConnect({ error, payload }, obj)
+                });
+            }
+
         }
+
+
+
 
     }
 
 
     override async checkSession(obj?: IProviderAdapter): Promise<[boolean, WalletConnect]> {
         if (this.session !== undefined) {
-            BrowserProviderChannel.validateSession(this.session);
+            WalletConnectChannel.validateSession(this.session);
         }
         return await super.checkSession(obj)
     }
 
     override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
+        
         await super.connect(options, obj)
+
         await this.checkConnection();
     }
 
@@ -403,15 +417,15 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     onConnect(options: { error?: Error, payload?: any }, obj?: IProviderAdapter) {
-        const { error, payload } = options;
-        if (error) throw error;
-        const { accounts } = payload.params[0];
-        this._params = payload.params;
-        this._accounts = accounts;
-        this._session = this._provider.session;
-
-        const method = this.getBehaviourMethod("channelOnConnect", obj);
-        if (method !== undefined) method(options, this)
+        if (options !== undefined && (options.payload !== undefined)) {
+            const { payload } = options;
+            const { accounts } = payload.params[0];
+            this._params = payload.params;
+            this._accounts = accounts;
+            this._session = this._provider.session;
+            const method = this.getBehaviourMethod("channelOnConnect", obj);
+            if (method !== undefined) method(options, this)
+        }
     }
 
     override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {

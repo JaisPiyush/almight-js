@@ -125,8 +125,7 @@ export class BaseConnector implements IConnector {
             for (const channel_cls of channel_classes) {
                 const _channel = await this.mountSessionOnChannel(channel_cls as any, session);
                 if (_channel !== undefined) {
-                    this._channel = channel_cls;
-                    channel_class = this._channel;
+                    this._channel = this._channel ?? channel_cls;
                     this._currentSession = session;
                     channel = _channel;
                     break;
@@ -136,7 +135,9 @@ export class BaseConnector implements IConnector {
             channel = channel_class as BaseProviderChannel;
         } else if ((channel_class as any).isChannelClass === true) {
             channel = new (channel_class as Class<BaseProviderChannel>)(this._currentSession);
+            this._channel = this._channel ?? (channel_class as Class<BaseProviderChannel>);
         }
+
 
 
         if (channel === undefined) {

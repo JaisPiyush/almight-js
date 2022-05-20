@@ -27,14 +27,14 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     public static providerPath = null;
 
-    public get providerPath(): string { return (this.constructor as any).providerPath}
+    public get providerPath(): string { return (this.constructor as any).providerPath }
 
     protected _channel: BaseProviderChannel;
 
     protected _methodNameMap: Record<string, string> = {};
 
     // Allow high-order classes to easily differentiate between an instance and class
-    public  static isAdapterClass = true;
+    public static isAdapterClass = true;
 
 
 
@@ -85,7 +85,9 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
     async connect(options?: any): Promise<void> {
         this.checkChannel()
+
         await this.channel.connect(options, this)
+
     }
 
     protected checkChannel(): void {
@@ -103,7 +105,7 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 
     on(event: string, callback: SubscriptionCallback): void {
-        if(this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name)
+        if (this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name)
         this.channel.on(event, callback);
     }
 }

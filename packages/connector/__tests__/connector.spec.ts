@@ -87,12 +87,21 @@ describe('Unit-testing Connector Class', () => {
         expect(connector2.adapter.channel.isConnected).to.be.true;
     });
 
-    
+});
 
 
+describe("Testing connector with walletchannel connector", () => {
 
+    it("Testing with providing adapter and channel", async() => {
+        const connector = new BaseConnector({adapter: EthereumChainAdapter});
+        await connector.connect({channel: WalletConnectChannel});
+        expect(connector.adapter).not.to.undefined;
+        expect(connector.adapter.channel).not.to.be.undefined;
+        expect(connector.adapter.channel.provider).not.to.be.undefined;
+        expect((connector.adapter.channel.provider as any).session).not.to.be.undefined;
+        expect(connector.adapter.channel.isConnected).to.be.false;
+        expect((connector.adapter.channel as WalletConnectChannel).getConnectorUri()).not.to.be.undefined;
+        expect((connector.adapter.channel as WalletConnectChannel).getConnectorUri().length).to.be.greaterThan(0);
 
-    
-
-
+    })
 })
