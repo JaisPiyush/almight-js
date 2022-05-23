@@ -1,6 +1,7 @@
 import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
 import { ChannelIsNotDefined } from "./exceptions";
-import { IProviderAdapter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
+import { BaseProtocolDefination } from "./protocol_definition";
+import { Address, IProtocolDefinition, IProviderAdapter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -21,6 +22,7 @@ import { IProviderAdapter, ProviderRequestMethodArguments, SubscriptionCallback 
 
 interface IChainAdapterOptions {
     channel: BaseProviderChannel,
+    protocolDefination?: BaseProtocolDefination,
     onConnect?: (options?: any) => void
 }
 export class BaseChainAdapter implements IProviderAdapter {
@@ -30,11 +32,14 @@ export class BaseChainAdapter implements IProviderAdapter {
     public get providerPath(): string { return (this.constructor as any).providerPath }
 
     protected _channel: BaseProviderChannel;
-
-    protected _methodNameMap: Record<string, string> = {};
+    public protocol?: IProtocolDefinition;
 
     // Allow high-order classes to easily differentiate between an instance and class
     public static isAdapterClass = true;
+
+    public accounts?: Address[];
+    public chainId?: number;
+    public networkId?: number;
 
 
 
@@ -46,17 +51,15 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     public onConnectCallback?: (options?: any) => void;
 
-    protected getMethodName(name: string): string {
-        return this._methodNameMap[name] ?? name;
-    }
-
-    public setMethodName(key: string, value: string): void {
-        this._methodNameMap[key] = value;
-    }
 
     public get channel(): BaseProviderChannel { return this._channel }
 
     public set channel(_channel: BaseProviderChannel) { this._channel = _channel }
+
+
+    isConnected(): boolean {
+        return this._channel !== undefined && this._channel.isConnected;
+    }
 
 
     public bindChannelDelegations(): void {
@@ -74,15 +77,24 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     constructor(options: IChainAdapterOptions) {
         this.channel = options.channel;
+        if(options.protocolDefination !== undefined ){
+            this.bindProtocol(options.protocolDefination);
+        }
         this.onConnectCallback = options.onConnect;
         this.checkChannel()
         this.bindChannelDelegations();
+    }
+    
+    bindProtocol(protocol: IProtocolDefinition): void {
+        this.protocol = protocol;
+        this.protocol.bindAdapter(this);
     }
 
     async checkSession<P>(): Promise<[boolean, P]> {
         this.checkChannel()
         return await this.channel.checkSession(this)
     }
+
     async connect(options?: any): Promise<void> {
         this.checkChannel()
 

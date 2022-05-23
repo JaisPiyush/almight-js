@@ -1,7 +1,7 @@
 import { Class } from "utils/lib";
 import { BaseChainAdapter } from "./adapter";
 import { BaseProviderChannel } from "./channel";
-import { ConnectorType, IdentityProviderInterface, IProviderAdapter, ProviderChannelInterface } from "./types";
+import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProviderAdapter, ProviderChannelInterface } from "./types";
 
 interface IdentityProviderConstructor { 
     name: string, 
@@ -30,6 +30,9 @@ export class IdentityProvider implements IdentityProviderInterface {
         this.metaData = data.metaData;
         this.adapter_class = data.adapter_class;
         this.channels = data.channels;
+    }
+    getProtocolDefination(): Class<IProtocolDefinition> {
+        throw new Error("Method not implemented.");
     }
 
     getAdapterClass(): Class<IProviderAdapter> {

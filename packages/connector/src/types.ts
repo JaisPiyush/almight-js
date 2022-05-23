@@ -121,6 +121,12 @@ export interface IBaseProvider {
 
 export interface IProviderAdapter {
 
+    isConnected(): boolean;
+
+    protocol?: IProtocolDefinition;
+
+    bindProtocol(protocol: IProtocolDefinition): void;
+
     channelConnect?: <R = any>(options?: R) => Promise<void>;
     channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
     channelOnConnect?: (options?: any) => void;
@@ -156,6 +162,7 @@ export interface IdentityProviderInterface {
 
     getAdapterClass(): Class<IProviderAdapter> | null;
     getChannels(): Class<ProviderChannelInterface>[];
+    getProtocolDefination(): Class<IProtocolDefinition>;
 
 }
 
@@ -195,3 +202,41 @@ export interface IConnector {
 
 }
 
+export interface TransactionData {}
+
+
+export interface SignMessageArgument {}
+
+
+export interface TransactionReturnType {}
+export interface SignMessageReturnType {}
+export interface AccountsReturnType {}
+export interface BalanceReturnType {}
+
+
+export interface IProtocolDefinition {
+
+    adapter?: IProviderAdapter;
+
+    bindAdapter(adapter: IProviderAdapter): void;
+
+    request<T = any>(args: ProviderRequestMethodArguments): Promise<T>;
+
+    sendTransaction(data: TransactionData): Promise<TransactionReturnType>;
+
+    signTransaction(data: TransactionData): Promise<TransactionReturnType>;
+
+    signPersonalMessage(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    sign(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    signTypedData(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    getNetworkId(): Promise<number>;
+    getChainId(): Promise<number>;
+    getAccounts(): Promise<AccountsReturnType>;
+    getBalance(): Promise<BalanceReturnType>;
+
+
+
+}

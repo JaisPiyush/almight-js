@@ -17,6 +17,11 @@
     "corejs": "^1.0.0",
     "jsdom": "^19.0.0",
     "jsdom-global": "^3.0.2",
+    "karma": "^6.3.20",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^3.1.1",
+    "karma-mocha": "^2.0.1",
+    "karma-typescript-preprocessor": "^0.4.0",
     "lerna": "^4.0.0",
     "mocha": "^9.2.2",
     "ts-node": "^10.7.0",
@@ -26,7 +31,8 @@
     "build": "lerna run tsc",
     "test:e2e": "npm run build && lerna run e2e --scope=e2e",
     "start:e2e": "npm run build && npm run dev --prefix packages/e2e",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "test:karma": "karma start --single-run --browser ChromeHeadless karma.conf.js"
   },
   "dependencies": {
     "js-sha3": "^0.8.0"
