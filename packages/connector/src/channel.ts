@@ -279,7 +279,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
     override async connect(options?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         await super.connect(options, obj)
-        await this.checkConnection();
+        await this.checkConnection(obj);
     }
 
     override verifyPingException(exception: Error): boolean {
@@ -287,11 +287,11 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
-    override async checkConnection(): Promise<boolean> {
+    override async checkConnection(obj): Promise<boolean> {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        return await super.checkConnection()
+        return await super.checkConnection(obj)
     }
 
     override async defaultConnect(provider?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
@@ -406,7 +406,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
         
         await super.connect(options, obj)
 
-        await this.checkConnection();
+        await this.checkConnection(obj);
     }
 
     /**

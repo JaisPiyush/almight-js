@@ -92,6 +92,7 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
 
 export class KardiaChainAdapter extends MetaMaskAdapter {
 
+    public static providerPath = "kardiachain";
 
     bindChannelDelegations(): void {
         super.bindChannelDelegations();

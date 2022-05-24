@@ -64,6 +64,9 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 
 
+  
+
+
     public bindChannelDelegations(): void {
         let self = this;
         if (this.channel instanceof BrowserProviderChannel) {
@@ -99,7 +102,6 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     async connect(options?: any): Promise<void> {
         this.checkChannel()
-
         await this.channel.connect(options, this)
 
     }
