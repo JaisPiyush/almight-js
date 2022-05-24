@@ -1,7 +1,7 @@
 import { Class } from "utils/lib";
 import { BaseChainAdapter } from "./adapter";
-import { KardiaChainAdapter } from "./adapters/kardiachain";
-import { MetaMaskAdapter } from "./adapters/metamask_adapter";
+import { KardiaChainAdapter } from "./adapters";
+import { MetaMaskAdapter } from "./adapters";
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { BaseProtocolDefination } from "./protocol_definition";
 import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProviderAdapter, ProviderChannelInterface } from "./types";
