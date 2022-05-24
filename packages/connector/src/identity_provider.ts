@@ -1,6 +1,9 @@
 import { Class } from "utils/lib";
 import { BaseChainAdapter } from "./adapter";
-import { BaseProviderChannel } from "./channel";
+import { KardiaChainAdapter } from "./adapters/kardiachain";
+import { MetaMaskAdapter } from "./adapters/metamask_adapter";
+import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
+import { BaseProtocolDefination } from "./protocol_definition";
 import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProviderAdapter, ProviderChannelInterface } from "./types";
 
 interface IdentityProviderConstructor { 
@@ -9,8 +12,9 @@ interface IdentityProviderConstructor {
     webVersion: number, 
     allowedConnectorTypes?: ConnectorType[], 
     metaData?: Record<string, any>
-    adapter_class: Class<BaseChainAdapter>,
-    channels: Class<BaseProviderChannel>[]
+    adapterClass: Class<BaseChainAdapter>,
+    channels: Class<BaseProviderChannel>[],
+    protocolDefinition?: Class<BaseProtocolDefination>;
 }
 
 export class IdentityProvider implements IdentityProviderInterface {
@@ -19,8 +23,9 @@ export class IdentityProvider implements IdentityProviderInterface {
     allowedConnectorTypes: ConnectorType[];
     identifier: string | number;
     metaData: Record<string, any>;
-    adapter_class: Class<BaseChainAdapter>;
+    adapterClass: Class<BaseChainAdapter>;
     channels: Class<BaseProviderChannel>[];
+    protocolDefinition?: Class<BaseProtocolDefination>;
 
     constructor({ allowedConnectorTypes = [], ...data }: IdentityProviderConstructor) {
         this.identityProviderName = data.name;
@@ -28,18 +33,42 @@ export class IdentityProvider implements IdentityProviderInterface {
         this.webVersion = data.webVersion;
         this.allowedConnectorTypes = allowedConnectorTypes;
         this.metaData = data.metaData;
-        this.adapter_class = data.adapter_class;
+        this.adapterClass = data.adapterClass;
         this.channels = data.channels;
+        this.protocolDefinition = data.protocolDefinition;
     }
     getProtocolDefination(): Class<IProtocolDefinition> {
-        throw new Error("Method not implemented.");
+        return this.protocolDefinition;
     }
 
     getAdapterClass(): Class<IProviderAdapter> {
-        return this.adapter_class;
+        return this.adapterClass;
     }
     getChannels(): Class<BaseProviderChannel>[] {
         return this.channels;
     }
 
 }
+
+
+
+const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
+    "metamask": new IdentityProvider({
+        name: "Meta Mask",
+        webVersion: 3,
+        identifier: "metamask",
+        metaData: {},
+        adapterClass: MetaMaskAdapter,
+        channels: [BrowserProviderChannel, WalletConnectChannel]
+    }),
+    "kardiachain": new IdentityProvider({
+        name: "Kardia Chain",
+        webVersion: 3,
+        identifier: "kardiachain",
+        metaData: {},
+        adapterClass: KardiaChainAdapter,
+        channels: [BrowserProviderChannel, WalletConnectChannel]
+    })
+}
+
+export {IDENTITY_PROVIDERS}
