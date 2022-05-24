@@ -129,6 +129,7 @@ export interface IProviderAdapter {
 
     channelConnect?: <R = any>(options?: R) => Promise<void>;
     channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
+    channelPing? :(options?: any) => Promise<boolean>;
     channelOnConnect?: (options?: any) => void;
     on(event: string, callback: SubscriptionCallback): void;
 
@@ -212,11 +213,13 @@ export interface TransactionReturnType {}
 export interface SignMessageReturnType {}
 export interface AccountsReturnType {}
 export interface BalanceReturnType {}
+export interface RequestReturnType {}
 
 
 export interface IProtocolDefinition {
 
     adapter?: IProviderAdapter;
+    chainIds: number[];
 
     bindAdapter(adapter: IProviderAdapter): void;
 
@@ -232,8 +235,8 @@ export interface IProtocolDefinition {
 
     signTypedData(data: SignMessageArgument): Promise<SignMessageReturnType>;
 
-    getNetworkId(): Promise<number>;
-    getChainId(): Promise<number>;
+    getNetworkId(): Promise<RequestReturnType>;
+    getChainId(): Promise<RequestReturnType>;
     getAccounts(): Promise<AccountsReturnType>;
     getBalance(): Promise<BalanceReturnType>;
 

@@ -1,10 +1,11 @@
 import { AdapterIsNotDefined } from "./exceptions";
-import { AccountsReturnType, BalanceReturnType, IProtocolDefinition, IProviderAdapter, ProviderRequestMethodArguments, SignMessageArgument, SignMessageReturnType, TransactionData, TransactionReturnType } from "./types";
+import { AccountsReturnType, BalanceReturnType, IProtocolDefinition, IProviderAdapter, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, TransactionData, TransactionReturnType } from "./types";
 
 
 
 export class BaseProtocolDefination implements IProtocolDefinition {
     adapter?: IProviderAdapter;
+    chainIds: number[] = [];
 
     constructor (adapter?: IProviderAdapter) {
        if(adapter !== undefined){
@@ -50,11 +51,11 @@ export class BaseProtocolDefination implements IProtocolDefinition {
         throw new Error("Method not implemented.");
     }
 
-    async getNetworkId(): Promise<number> {
+    async getNetworkId(): Promise<RequestReturnType> {
         throw new Error("Method not implemented.");
     }
 
-    async getChainId(): Promise<number> {
+    async getChainId(): Promise<RequestReturnType> {
         throw new Error("Method not implemented.");
     }
 

@@ -48,6 +48,8 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     public channelOnConnect?: (options?: any) => void;
 
+    public channelPing?: (options?: any) => Promise<boolean>;
+
 
     public onConnectCallback?: (options?: any) => void;
 

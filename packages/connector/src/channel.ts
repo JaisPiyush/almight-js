@@ -174,6 +174,11 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     * 
     */
     async ping({ method = "ping", obj }: { method?: string, obj?: IProviderAdapter }): Promise<boolean> {
+        const _method = this.getBehaviourMethod("channelPing", obj)
+        if (_method !== undefined) {
+            return await _method({}, this);
+        }
+
         try {
             if (obj !== undefined && (obj as any)["pingMethod"] !== undefined) {
                 method = (obj as any)["pingMethod"]
