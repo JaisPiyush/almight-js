@@ -146,7 +146,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
             return await method(options, this);
         }
         await this.defaultConnect(options, obj);
-        this.onConnect(options, obj);
+        // this.onConnect(options, obj);
     }
 
     /**
@@ -297,11 +297,13 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     override async defaultConnect(provider?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         if (provider !== undefined) {
             this._provider = provider;
+            this.onConnect(this._provider, obj);
             return;
         }
         const [isSessionValid, _provider] = await this.checkSession(obj);
         if (isSessionValid && _provider !== undefined) {
             this._provider = _provider;
+            this.onConnect(this._provider, obj);
         }
         return;
     }
@@ -384,7 +386,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
                 this._provider = provider;
                 this.onConnect({ payload: { params: [provider.session] } }, obj);
             } else {
-                this._provider = this.walletconnect(options, pushOpts);
+                this._provider = this.walletconnect(options?? {}, pushOpts);
                 this._provider.on("connect", (error, payload) => {
                     if (error) throw error
                     this.onConnect({ error, payload }, obj)
@@ -410,7 +412,9 @@ export class WalletConnectChannel extends BaseProviderChannel {
         
         await super.connect(options, obj)
 
-        await this.checkConnection(obj);
+       if(this._provider.session !== undefined){
+           await this.checkConnection(obj);
+       }
     }
 
     /**
