@@ -74,7 +74,7 @@ export class BaseChainAdapter implements IProviderAdapter {
         }
 
         this.channelOnConnect = function (options?: any): void {
-            if(self.onConnectCallback === undefined){
+            if(self.onConnectCallback !== undefined){
                 self.onConnectCallback({
                     data: options,
                     accounts: self.accounts,

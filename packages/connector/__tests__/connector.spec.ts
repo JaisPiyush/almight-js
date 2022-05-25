@@ -80,7 +80,7 @@ describe('Unit-testing Connector Class', () => {
 
     it("Testing constructor only by providing adapter and channel along with onConnect", async() => {
         const connector2 = new BaseConnector({adapter: EthereumChainAdapter, onConnect: (options) => {
-            expect(options).to.be.undefined;
+            expect(options).not.to.be.undefined;
         }});
 
         expect(connector2.adapter).to.be.undefined;
