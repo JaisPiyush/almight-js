@@ -220,7 +220,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
     on(name: string, callback: SubscriptionCallback): void {
-        if (this._provider !== undefined && this.isConnected) {
+        if (this._provider !== undefined) {
             this._provider.on(name, callback);
         }
     }
@@ -280,6 +280,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     override async connect(options?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         await super.connect(options, obj)
         await this.checkConnection(obj);
+        
     }
 
     override verifyPingException(exception: Error): boolean {
@@ -297,13 +298,17 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     override async defaultConnect(provider?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         if (provider !== undefined) {
             this._provider = provider;
-            this.onConnect(this._provider, obj);
+            this.on("connect", (options?: any) => {
+                this.onConnect(options, obj);
+            })
             return;
         }
         const [isSessionValid, _provider] = await this.checkSession(obj);
         if (isSessionValid && _provider !== undefined) {
             this._provider = _provider;
-            this.onConnect(this._provider, obj);
+            this.on("connect", (options?: any) => {
+                this.onConnect(options, obj);
+            })
         }
         return;
     }
@@ -368,9 +373,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
         options.session = options.session || this.session;
         options.clientMeta = options.clientMeta || this.clientMeta as any;
         const wallet =  new WalletConnect(options, pushOpts);
-        if(wallet.key === undefined){
-            wallet.createSession();
-        }
+        
         return wallet
     }
 
@@ -387,6 +390,9 @@ export class WalletConnectChannel extends BaseProviderChannel {
                 this.onConnect({ payload: { params: [provider.session] } }, obj);
             } else {
                 this._provider = this.walletconnect(options?? {}, pushOpts);
+                if(this.provider.key === undefined){
+                    await this.provider.createSession();
+                }
                 this._provider.on("connect", (error, payload) => {
                     if (error) throw error
                     this.onConnect({ error, payload }, obj)
@@ -446,7 +452,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
             return [true, this.walletconnect({ session: this.session })];
         }
         // Create empty walletconnect instance
-        return [true, this.walletconnect({})];
+        return [false, undefined];
 
 
     }

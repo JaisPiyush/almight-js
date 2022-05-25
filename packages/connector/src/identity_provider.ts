@@ -58,7 +58,7 @@ const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
         webVersion: 3,
         identifier: "metamask",
         metaData: {
-            icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/MetaMask_Fox.svg/1024px-MetaMask_Fox.svg.pn",
+            icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/MetaMask_Fox.svg/1024px-MetaMask_Fox.svg.png",
 
         },
         adapterClass: MetaMaskAdapter,

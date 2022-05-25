@@ -13,6 +13,9 @@ let chainName = () => {
                 throw new Error("Invalid JSON-RPC error")
             }
             return `${data.method}__${data.params.join("..")}`;
+        },
+        on: (name: string, callback: Function): void => {
+            callback();
         }
     }
 }
@@ -60,10 +63,15 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
     });
 
     it("testing #connect method", async function(){
-        await channel.connect(undefined);
+        try{
+            await channel.connect(undefined);
+            fail("Must fail becuase of .on listener")
+        }catch(e){
+            expect(e).not.to.be.undefined;
+        }
         expect(channel.provider).not.to.be.undefined;
-        await channel.connect(({name: "testing"}  as unknown)as BasicExternalProvider);
-        expect(channel.provider).to.deep.equal({name:"testing"});
+        await channel.connect(({name: "testing", on: (name: string, callback: Function) => {callback()}}  as unknown)as BasicExternalProvider);
+        expect(channel.provider).to.have.property("name")
         
     });
 
@@ -98,21 +106,3 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
 });
 
 
-describe("Mock Testing BrowserProviderChannel with behaviour plugin", function(){
-
-    class FunckyBehaviourPlugin extends ChannelBehaviourPlugin {
-
-       channelConnect = async <R = any>(options?: R, channel?: BrowserProviderChannel):Promise<void> => {
-           channel.setProvider(options as any);
-       }
-    }
-
-
-    const funckyChannel = new BrowserProviderChannel(undefined, new FunckyBehaviourPlugin());
-
-    it("testing change in behaviour due to plugin", async function(){
-        await funckyChannel.connect(("some_things" as unknown) as BasicExternalProvider)
-        expect(funckyChannel.provider).to.eq("some_things")
-    });
-
-});

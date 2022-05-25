@@ -11,7 +11,7 @@ describe('Testing IdentityProvider class', () => {
             name: "TestIdentityProvider",
             identifier: "test-identity-provider",
             webVersion: 3.0,
-            adapter_class: EthereumChainAdapter,
+            adapterClass: EthereumChainAdapter,
             channels: [BrowserProviderChannel]
         });
 

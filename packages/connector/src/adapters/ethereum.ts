@@ -1,6 +1,6 @@
 import { BaseChainAdapter } from "../adapter";
 import { BaseProtocolDefination } from "../protocol_definition";
-import { IProviderAdapter, TransactionData, TransactionReturnType, SignMessageArgument, SignMessageReturnType, BalanceReturnType, Address, ProviderChannelInterface } from "../types";
+import { IProviderAdapter, TransactionData, TransactionReturnType, SignMessageArgument, SignMessageReturnType, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType } from "../types";
 
 
 export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDefination {
@@ -23,11 +23,17 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
 
         this.channelCheckSession = async <P = any, S = any>(session: S, channel?: ProviderChannelInterface) : Promise<[boolean, P]> => {
             let [isSessionValid, _provider] = await self.channel.defaultCheckSession();
-            if(isSessionValid && _provider !== undefined && (_provider as any).isMetaMask) {
-                return [true, _provider];
+            if(self.channel.connectorType === ConnectorType.BrowserExtension){
+                if(isSessionValid && _provider !== undefined && (_provider as any).isMetaMask) {
+                    return [true, _provider];
+                }
+                return [false, undefined]
             }
-            return [false, undefined]
+            return [isSessionValid, _provider];
+            
         }
+
+        
 
 
     }

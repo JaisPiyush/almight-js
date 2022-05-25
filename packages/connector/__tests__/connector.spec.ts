@@ -11,6 +11,9 @@ let chainName = () => {
                 throw new Error("Invalid JSON-RPC error")
             }
             return `${data.method}__${data.params.join("..")}`;
+        },
+        on: (name: string, callback: Function): void => {
+            callback()
         }
     }
 }
@@ -28,7 +31,7 @@ describe('Unit-testing Connector Class', () => {
         name: "Metamask",
         webVersion: 3.0,
         identifier: "meta-mask",
-        adapter_class: EthereumChainAdapter,
+        adapterClass: EthereumChainAdapter,
         channels: [BrowserProviderChannel, AnotherBroweserChannel, WalletConnectChannel]
     });
 
