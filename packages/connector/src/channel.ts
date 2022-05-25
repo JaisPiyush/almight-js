@@ -53,7 +53,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 
     // Waiting time for request to be approved (in milliseconds)
-    public requestTimeout = 6000;
+    // 5 minutes of waiting time
+    public requestTimeout = 300000;
 
     public get isConnected(): boolean { return this._isConnected }
     public get session(): IProviderSessionData | undefined { return this._session }
