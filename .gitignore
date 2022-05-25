@@ -11,3 +11,4 @@ packages/*/node_modules/
 */cypress/videos
 */cypress/screenshots
 */.nyc_output
+packages/auth-delegate/

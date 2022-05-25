@@ -1,5 +1,5 @@
 import WalletConnect from "@walletconnect/client";
-import { Class } from "utils/lib";
+import { Class } from "@almight-sdk/utils";
 
 export interface NetworkData {
     name?: string,
@@ -127,8 +127,8 @@ export interface IProviderAdapter {
 
     bindProtocol(protocol: IProtocolDefinition): void;
 
-    channelConnect?: <R = any>(options?: R) => Promise<void>;
-    channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
+    channelConnect?: (options?: any) => Promise<void>;
+    channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
     channelPing? :(options?: any) => Promise<boolean>;
     channelOnConnect?: (options?: any) => void;
     on(event: string, callback: SubscriptionCallback): void;

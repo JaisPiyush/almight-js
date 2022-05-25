@@ -1,4 +1,5 @@
 import { BaseChainAdapter } from "../adapter";
+import { WalletConnectChannel } from "../channel";
 import { BaseProtocolDefination } from "../protocol_definition";
 import { IProviderAdapter, TransactionData, TransactionReturnType, SignMessageArgument, SignMessageReturnType, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType } from "../types";
 
@@ -9,6 +10,17 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
 
     adapter?: IProviderAdapter;
     chainIds: number[];
+
+    override async checkConnection(): Promise<boolean> {
+        const result  = await super.checkConnection();
+        if(this.channel.connectorType === ConnectorType.BrowserExtension){
+            this.channel.onConnect({
+                accounts: this.accounts,
+                chainId: this.chainId
+            }, this)
+        }
+        return result;
+    }
 
     public bindChannelDelegations(): void {
         super.bindChannelDelegations();
@@ -33,14 +45,23 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
             
         }
 
-        this.channelConnect =  async <T = any, R = any>(options?: R):Promise<T> => {
-            await self.channel.defaultConnect(options);
-            self.accounts = await this.request<Address[]>({method: "eth_requestAccounts", params: []});
-            await self.channel.checkConnection(self);
-            return {} as T
+
+        this.channelConnect = async (options?: any): Promise<void> => {
+            await self.channel.defaultConnect(options, self)
+            if(self.channel.connectorType === ConnectorType.WalletConnector){
+                await self.channel.defaultConnect(options, self);
+                if((self.channel as WalletConnectChannel).isSessionConnected()) await self.checkConnection();
+                return;
+            }
+            await self.channel.defaultConnect(options, self)
+            self.accounts = await self.request<Address[]>({method: "eth_requestAccounts", params:[]});
+            self.checkConnection();
+
         }
 
-        
+
+
+       
 
 
     }
@@ -114,12 +135,7 @@ export class KardiaChainAdapter extends MetaMaskAdapter {
             return [false, undefined]
         }
 
-        this.channelConnect =  async <T = any, R = any>(options?: R):Promise<T> => {
-            await self.channel.defaultConnect(options);
-            self.accounts = await this.request<Address[]>({method: "eth_requestAccounts", params: []});
-            await self.channel.checkConnection(self);
-            self.channel.onConnect(self.channel.provider, self);
-            return {} as T
-        }
     }
+
+    
 }

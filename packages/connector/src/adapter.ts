@@ -43,8 +43,8 @@ export class BaseChainAdapter implements IProviderAdapter {
 
 
 
-    public channelConnect?: <T = any, R = any>(options?: R) => Promise<T>;
-    public channelCheckSession?: <P = any, S = any>(session: S) => Promise<[boolean, P]>;
+    public channelConnect?: (options?: any) => Promise<void>;
+    public channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
 
     public channelOnConnect?: (options?: any) => void;
 

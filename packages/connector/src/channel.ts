@@ -293,23 +293,19 @@ export class BrowserProviderChannel extends BaseProviderChannel {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        return await super.checkConnection(obj)
+        const result =  await super.checkConnection(obj);
+        this.onConnect({}, obj);
+        return result
     }
 
     override async defaultConnect(provider?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         if (provider !== undefined) {
             this._provider = provider;
-            this.on("connect", (options?: any) => {
-                this.onConnect(options, obj);
-            })
             return;
         }
         const [isSessionValid, _provider] = await this.checkSession(obj);
         if (isSessionValid && _provider !== undefined) {
             this._provider = _provider;
-            this.on("connect", (options?: any) => {
-                this.onConnect(options, obj);
-            })
         }
         return;
     }
@@ -399,9 +395,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
                 }
                 this._provider.on("connect", (error, payload) => {
                     if (error) throw error
-                    this.checkConnection(obj).then((value) => {
-                        this.onConnect({ error, payload }, obj)
-                    })
+                    this.onConnect({ error, payload }, obj)
                     
                 });
             }
@@ -421,11 +415,15 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return await super.checkSession(obj)
     }
 
+    isSessionConnected(): boolean {
+        return this._provider !== undefined && this.provider.session !== undefined && this.provider.key.length > 0 && this.provider.connected;
+    }
+
     override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
         
         await super.connect(options, obj)
 
-       if(this._provider !== undefined && this.provider.session !== undefined && this.provider.key.length > 0 && this.provider.connected){
+       if(this.isSessionConnected()){
            await this.checkConnection(obj);
        }
     }
@@ -443,14 +441,25 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     onConnect(options: { error?: Error, payload?: any }, obj?: IProviderAdapter) {
+        
+        const method = this.getBehaviourMethod("channelOnConnect", obj);
+        console.log(options, method)
         if (options !== undefined && (options.payload !== undefined)) {
             const { payload } = options;
             const { accounts } = payload.params[0];
             this._params = payload.params;
             this._accounts = accounts;
             this._session = this._provider.session;
-            const method = this.getBehaviourMethod("channelOnConnect", obj);
-            if (method !== undefined) method(options, this)
+            const chainId = this._provider.chainId;
+            
+            if (method !== undefined){
+                method({
+                    accounts: accounts,
+                    chainId: chainId
+                });
+            }
+        }else{
+            method(options);
         }
     }
 
