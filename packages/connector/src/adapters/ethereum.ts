@@ -33,6 +33,13 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
             
         }
 
+        this.channelConnect =  async <T = any, R = any>(options?: R):Promise<T> => {
+            await self.channel.defaultConnect(options);
+            self.accounts = await this.request<Address[]>({method: "eth_requestAccounts", params: []});
+            await self.channel.checkConnection(self);
+            return {} as T
+        }
+
         
 
 
@@ -105,6 +112,14 @@ export class KardiaChainAdapter extends MetaMaskAdapter {
                 return [true, _provider];
             }
             return [false, undefined]
+        }
+
+        this.channelConnect =  async <T = any, R = any>(options?: R):Promise<T> => {
+            await self.channel.defaultConnect(options);
+            self.accounts = await this.request<Address[]>({method: "eth_requestAccounts", params: []});
+            await self.channel.checkConnection(self);
+            self.channel.onConnect(self.channel.provider, self);
+            return {} as T
         }
     }
 }

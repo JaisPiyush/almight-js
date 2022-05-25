@@ -387,15 +387,21 @@ export class WalletConnectChannel extends BaseProviderChannel {
             const [isSessionValid, provider] = await this.checkSession(obj);
             if (isSessionValid && provider !== undefined) {
                 this._provider = provider;
-                this.onConnect({ payload: { params: [provider.session] } }, obj);
+                this.checkConnection(obj).then((value) => {
+                    this.onConnect({ payload: [provider.session] }, obj);
+                })
             } else {
+                // Empty WalletConnect Instance
                 this._provider = this.walletconnect(options?? {}, pushOpts);
                 if(this.provider.key === undefined){
                     await this.provider.createSession();
                 }
                 this._provider.on("connect", (error, payload) => {
                     if (error) throw error
-                    this.onConnect({ error, payload }, obj)
+                    this.checkConnection(obj).then((value) => {
+                        this.onConnect({ error, payload }, obj)
+                    })
+                    
                 });
             }
 
