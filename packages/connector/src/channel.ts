@@ -365,7 +365,11 @@ export class WalletConnectChannel extends BaseProviderChannel {
         options.bridge = options.bridge || this.bridge;
         options.session = options.session || this.session;
         options.clientMeta = options.clientMeta || this.clientMeta as any;
-        return new WalletConnect(options, pushOpts);
+        const wallet =  new WalletConnect(options, pushOpts);
+        if(wallet.key === undefined){
+            wallet.createSession();
+        }
+        return wallet
     }
 
     override async defaultConnect(args: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } | WalletConnect = {}, obj?: IProviderAdapter): Promise<void> {
