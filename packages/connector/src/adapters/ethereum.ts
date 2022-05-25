@@ -14,15 +14,11 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
         super.bindChannelDelegations();
         let self = this;
         this.channelPing = async (options?: any): Promise<boolean>  => {
-            try {
-                const accounts = await self.getAccounts();
-                self.accounts = accounts;
-                const chainId = await self.getChainId();
-                self.chainId = chainId;
-                return true;
-            }catch(e){
-                return false;
-            }
+            const accounts = await self.getAccounts();
+            self.accounts = accounts;
+            const chainId = await self.getChainId();
+            self.chainId = chainId;
+            return true;
         }
 
         this.channelCheckSession = async <P = any, S = any>(session: S, channel?: ProviderChannelInterface) : Promise<[boolean, P]> => {
