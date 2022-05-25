@@ -412,7 +412,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
         
         await super.connect(options, obj)
 
-       if(this._provider.session !== undefined){
+       if(this._provider !== undefined && this.provider.session !== undefined && this.provider.key.length > 0 && this.provider.connected){
            await this.checkConnection(obj);
        }
     }
