@@ -1,7 +1,7 @@
 import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
 import { ChannelIsNotDefined } from "./exceptions";
 import { BaseProtocolDefination } from "./protocol_definition";
-import { Address, IProtocolDefinition, IProviderAdapter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
+import { Address, IProtocolDefinition, IProviderAdapter, ISession, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -94,6 +94,13 @@ export class BaseChainAdapter implements IProviderAdapter {
         this.onConnectCallback = options.onConnect;
         this.checkChannel()
         this.bindChannelDelegations();
+    }
+    getSession(): ISession {
+        let sesion = this.channel.getCompleteSessionForStorage();
+        if(this.chainId !== undefined){
+            sesion["chainId"] = this.chainId
+        }
+        return sesion;
     }
     
     bindProtocol(protocol: IProtocolDefinition): void {

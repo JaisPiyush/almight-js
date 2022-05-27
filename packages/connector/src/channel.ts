@@ -3,7 +3,7 @@ import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almigh
 import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
 import {
     Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter,
-    IProviderSessionData, ProviderChannelInterface, ProviderRequestMethodArguments,
+    IProviderSessionData, ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
     SubscriptionCallback, WalletConnectSessionStruct
 } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
@@ -65,6 +65,9 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         if (plugin !== undefined) {
             this._behaviourPlugin = plugin;
         }
+    }
+    getCompleteSessionForStorage(): ISession {
+        throw new Error("Method not implemented.");
     }
     checkEnvironment(): Promise<boolean> {
         throw new Error("Method not implemented.");
@@ -246,6 +249,11 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     public get session(): BrowserSessionStruct {
         return this._session
     }
+
+    public getCompleteSessionForStorage(): BrowserSessionStruct {
+        return {path: this.providerPath, chainId: 0}
+    }
+
     public get provider(): BasicExternalProvider { return this._provider }
     public get providerPath(): string { return (this.session !== undefined && this.session.path !== undefined) ? this.session.path : this._providerPath }
     public set providerPath(_path: string) { this._providerPath = _path }
@@ -326,6 +334,11 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     public get session(): WalletConnectSessionStruct { return this._session }
     public get provider(): WalletConnect { return this._provider }
+
+
+    public getCompleteSessionForStorage(): WalletConnectSessionStruct {
+        return this._provider.session;
+    }
 
 
     init(session?: WalletConnectSessionStruct) {

@@ -51,6 +51,8 @@ export interface ProviderChannelInterface {
     connectorType: ConnectorType;
     requestTimeout: number;
 
+    getCompleteSessionForStorage(): ISession;
+
     setProvider(provider: ExternalProvider): void;
     init(session?: IProviderSessionData): void;
     checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
@@ -126,6 +128,8 @@ export interface IProviderAdapter {
     protocol?: IProtocolDefinition;
 
     bindProtocol(protocol: IProtocolDefinition): void;
+
+    getSession(): ISession;
 
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
