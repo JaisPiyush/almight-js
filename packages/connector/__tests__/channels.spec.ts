@@ -89,10 +89,16 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
         expect(channel.provider).to.have.property("isServiceProvider");
     });
 
-    it("testing rawRequest and  request", async function(){
+    it("testing rawRequest, getSessionForStorage and  request", async function(){
         await channel.connect()
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
+
+        // Test getSessionForStorage
+        expect(channel.getCompleteSessionForStorage()).to.deep.equal({
+            path: channel.providerPath,
+            chainId: 0
+        })
         
         // Testing _rawRequest
         const data = {method:"eth_test", params:["hello"]};

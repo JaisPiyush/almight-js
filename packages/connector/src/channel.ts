@@ -403,7 +403,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
             } else {
                 // Empty WalletConnect Instance
                 this._provider = this.walletconnect(options?? {}, pushOpts);
-                if(this.provider.key === undefined){
+                if(this.provider.key.length  === 0){
                     await this.provider.createSession();
                 }
                 this._provider.on("connect", (error, payload) => {
