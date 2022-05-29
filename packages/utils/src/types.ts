@@ -91,3 +91,6 @@ export interface BaseStorageInterface {
 
 
 }
+
+// Class constructor signature
+export type Class<T> = new (...args: any[]) => T;

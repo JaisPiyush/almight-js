@@ -1,5 +1,6 @@
 import { AsyncCallTimeOut } from "../src/exceptions";
 import { asyncCallWithTimeBound } from "../src/functions";
+import {expect} from "chai"
 
 describe("Testing asyncCallWithTimeBound function", () => {
 
@@ -11,20 +12,20 @@ describe("Testing asyncCallWithTimeBound function", () => {
         return 23;
     }
 
-    test("Testing for async functions, successfull execution", async () => {
+    it("Testing for async functions, successfull execution", async () => {
 
 
-        expect(await asyncCallWithTimeBound(getAsyncMethod(), 3000)).toBe(23);
+        expect(await asyncCallWithTimeBound(getAsyncMethod(), 3000)).to.eq(23);
     });
 
-    test("Testing for async functions, failed due to timeout", async () => {
+    it("Testing for async functions, failed due to timeout", async () => {
         try {
             await asyncCallWithTimeBound(getAsyncMethod(), 100);
         }catch(e){
-            expect(e).toBeInstanceOf(AsyncCallTimeOut);
+            expect(e).to.be.instanceOf(AsyncCallTimeOut);
         }
     });
-    test("Testing for regular error in async functions", async() => {
+    it("Testing for regular error in async functions", async() => {
         async function errorProne() {
             await getAsyncMethod();
             throw new Error("random_error")
@@ -34,9 +35,9 @@ describe("Testing asyncCallWithTimeBound function", () => {
             await asyncCallWithTimeBound(errorProne(), 3000);
             fail("Function is not throwing expected error")
         }catch(e){
-            expect(e).not.toBeInstanceOf(AsyncCallTimeOut)
-            expect(e.message).toBeDefined();
-            expect(e.message).toBe("random_error")
+            expect(e).not.to.be.instanceOf(AsyncCallTimeOut)
+            expect(e.message).not.to.be.undefined;
+            expect(e.message).to.be.eq("random_error")
         }
     });
 })
