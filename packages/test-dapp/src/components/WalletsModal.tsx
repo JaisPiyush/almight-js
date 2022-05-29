@@ -47,6 +47,8 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
 
     }
 
+    avatars.push(<WalletAvatar src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/2048px-Google_%22G%22_Logo.svg.png" name="Google" provider='google' onClick={() => {}} key="google" />)
+
 
     return (
         <Modal
