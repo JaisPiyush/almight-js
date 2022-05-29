@@ -1,11 +1,12 @@
+import { AuthenticationApp } from "./auth";
 import { AuthenticationAppIsNotDefinedProperly } from "./exceptions";
-import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationApp, IAuthenticationFrame, RespondMessageData, RespondMessageType, RespondType } from "./types";
+import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationFrame, RespondMessageData, RespondMessageType, RespondType } from "./types";
 
 
 export class AuthenticationFrame implements IAuthenticationFrame {
 
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
-    app?: IAuthenticationApp;
+    app?: AuthenticationApp;
 
     async initAuth(data: Record<string, string>): Promise<void> {
         data[AllowedQueryParams.RespondStrategy] = this.respondStrategy;
@@ -21,17 +22,14 @@ export class AuthenticationFrame implements IAuthenticationFrame {
     }
 
     async captureResponse(data: RespondMessageData): Promise<void> {
-        // if (data.messageType === RespondMessageType.CloseEvent) {
-        //     await this.close();
-        //     return;
-        // }
         await this.close();
         this.onResponsCallback(data);
     }
 
     onResponsCallback(data: RespondMessageData): void {
+        console.log("response", data, this.app)
         if (this.app === undefined) throw new AuthenticationAppIsNotDefinedProperly()
-        if (data.respondType === RespondType.Error) {
+        if ((data.respondType === RespondType.Error && data[AllowedQueryParams.Error] !== "Request aborted") || data.access === undefined) {
             this.app.onFailureCallback({
                 [AllowedQueryParams.Error]: data[AllowedQueryParams.Error],
                 [AllowedQueryParams.ErrorCode]: data[AllowedQueryParams.ErrorCode]
@@ -44,7 +42,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
 
     async handleSuccessResponse(data: RespondMessageData): Promise<void> {
         // TODO: Set Tokens, store data and other things setup Axios to use cookie in case
-        console.log(data)
+
         delete data.messageType;
         delete data.respondType;
         this.app.onSuccessCallback(data);
@@ -71,11 +69,8 @@ export class WebWindowAuthenticationFrame extends AuthenticationFrame {
     frame: Window;
     override bindListener(): void {
         globalThis.addEventListener("message", (event) => {
-            console.log(event.data, event.origin);
-            
-            if(event.origin === window.location.origin && event.data.channel === "almight_communication_channel"){
-                console.log(event.data);
-                this.onResponsCallback(event.data);
+            if (event.data.channel === "almight_communication_channel") {
+                this.captureResponse(event.data)
             }
         })
     }
@@ -89,7 +84,17 @@ export class WebWindowAuthenticationFrame extends AuthenticationFrame {
     }
 
     override async close(): Promise<void> {
-        if(!this.frame.closed) this.frame.close();
+        if (!this.frame.closed) this.frame.close();
+    }
+
+    override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
+        if(data.access === undefined) return;
+        const userData = await this.app.getUserData(data.access);
+        await this.app.saveUserData(userData);
+        data.user = userData;
+        super.handleSuccessResponse(data);
+
+       
     }
 
 

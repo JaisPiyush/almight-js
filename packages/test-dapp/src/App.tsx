@@ -4,6 +4,9 @@ import { AlmightClient } from "@almight-sdk/core"
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, WebWindowAuthenticationFrame } from "@almight-sdk/auth"
 import { WebLocalStorage } from '@almight-sdk/utils';
 import { SessionsModal } from './components/SessionsModal';
+import WalletModal from './components/WalletsModal';
+import ActionsBox from './components/ActionsBox';
+import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter } from '@almight-sdk/connector';
 
 declare global {
   interface Window {
@@ -23,11 +26,31 @@ const App: React.FC<{}> = () => {
   const auth = new AuthenticationApp({
     almightClient: almight,
     frame: new WebWindowAuthenticationFrame(),
-    onSuccessCallback: (data: ResponseMessageCallbackArgument): void => { },
-    onFailureCallback: (data: ErrorResponseMessageCallbackArgument): void => { }
+    onSuccessCallback: (data: ResponseMessageCallbackArgument): void => {
+      console.log("success", data)
+    },
+    onFailureCallback: (data: ErrorResponseMessageCallbackArgument): void => {
+      console.log("error", data)
+    }
   });
 
   window.auth = auth;
+
+  window.auth.connector = new BaseConnector({
+    adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
+  })
+
+  function getMetamaskConnector(): BaseConnector {
+    return new BaseConnector({
+      adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
+    })
+  }
+
+  function getKardiaChainConnector(): BaseConnector {
+    return new BaseConnector({
+      adapter: new KardiaChainAdapter({channel: new BrowserProviderChannel()})
+    })
+  }
 
 
 
@@ -38,8 +61,15 @@ const App: React.FC<{}> = () => {
 
 
   return (
-    <div className="App w-screen h-screen bg-blue-400">
-      <SessionsModal show={showModal} onClose={() => {setShowModel(false)}} />
+    <div className="App w-screen h-screen">
+      <div className='w-full h-full flex flex-col justify-center'>
+        <div className='flex flex-row w-full justify-center'>
+          {/* <ActionsBox /> */}
+          <button onClick={() => {setShowModel(true)}} className='bg-blue-600 w-auto px-4 py-2 rounded-md shadow-md text-white'>Login</button>
+        </div>
+      </div>
+      <WalletModal show={showModal} onClose={() => { setShowModel(false) }} />
+
     </div>
   );
 }
