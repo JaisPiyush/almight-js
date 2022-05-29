@@ -456,7 +456,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
     onConnect(options: { error?: Error, payload?: any }, obj?: IProviderAdapter) {
         
         const method = this.getBehaviourMethod("channelOnConnect", obj);
-        console.log(options, method)
+        // console.log(options, method)
         if (options !== undefined && (options.payload !== undefined)) {
             const { payload } = options;
             const { accounts } = payload.params[0];
