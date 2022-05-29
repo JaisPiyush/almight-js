@@ -1,10 +1,9 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
 import { AlmightClient } from "@almight-sdk/core"
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, WebWindowAuthenticationFrame } from "@almight-sdk/auth"
-import { Providers, WebLocalStorage } from '@almight-sdk/utils';
-
+import { WebLocalStorage } from '@almight-sdk/utils';
+import { SessionsModal } from './components/SessionsModal';
 
 declare global {
   interface Window {
@@ -12,22 +11,6 @@ declare global {
   }
 }
 
-function Default() {
-  return <header className="App-header">
-    <img src={logo} className="App-logo" alt="logo" />
-    <p>
-      Edit <code>src/App.tsx</code> and save to reload.
-    </p>
-    <a
-      className="App-link"
-      href="https://reactjs.org"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-
-    </a>
-  </header>
-}
 
 
 const App: React.FC<{}> = () => {
@@ -46,20 +29,17 @@ const App: React.FC<{}> = () => {
 
   window.auth = auth;
 
-  const onClick = function(){
-    auth.startAuthentication(Providers.MetaMask).then(() => {})
-  }
+
+
+  const [showModal, setShowModel] = useState<boolean>(true)
 
 
 
 
 
   return (
-    <div className="App">
-      <header className="App-header">
-
-        <button className='px-10 py-8 bg-white text-black rounded-md' onClick={onClick}>Click</button>
-      </header>
+    <div className="App w-screen h-screen bg-blue-400">
+      <SessionsModal show={showModal} onClose={() => {setShowModel(false)}} />
     </div>
   );
 }

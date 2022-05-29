@@ -21,10 +21,11 @@ export class AuthenticationFrame implements IAuthenticationFrame {
     }
 
     async captureResponse(data: RespondMessageData): Promise<void> {
-        if (data.messageType === RespondMessageType.CloseEvent) {
-            await this.close();
-            return;
-        }
+        // if (data.messageType === RespondMessageType.CloseEvent) {
+        //     await this.close();
+        //     return;
+        // }
+        await this.close();
         this.onResponsCallback(data);
     }
 
