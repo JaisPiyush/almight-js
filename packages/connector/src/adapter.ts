@@ -77,8 +77,8 @@ export class BaseChainAdapter implements IProviderAdapter {
             if(self.onConnectCallback !== undefined){
                 self.onConnectCallback({
                     data: options,
-                    accounts: self.accounts,
-                    chainId: self.chainId
+                    accounts: options.accounts ?? self.accounts,
+                    chainId: options.chainId ?? self.chainId
                 });
             }
         }
