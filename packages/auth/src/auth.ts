@@ -42,7 +42,6 @@ export class AuthenticationApp implements IAuthenticationApp{
 
     async storeJWTToken(token: string): Promise<void>{
         await this.convertTokenToCookie(token)
-        await this.storage.setItem("access_token", token)
     }
 
 
@@ -86,7 +85,19 @@ export class AuthenticationApp implements IAuthenticationApp{
             [AllowedQueryParams.Provider]: provider
         });
     }
-    async setCurrentSession(session: ISession): Promise<void> {
+    /**
+     * In case of web3 session data, update the current session on server
+     * Fetch new User data and setup connector
+     * 
+     * 
+     * @param data 
+     */
+    async setCurrentSession(data: {
+        uid: string,
+        provider: string,
+        session: ISession,
+        connector_type: string
+    }): Promise<void> {
         throw new Error("Method not implemented.");
     }
 

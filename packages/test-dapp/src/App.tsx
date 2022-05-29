@@ -3,10 +3,8 @@ import './App.css';
 import { AlmightClient } from "@almight-sdk/core"
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, WebWindowAuthenticationFrame } from "@almight-sdk/auth"
 import { WebLocalStorage } from '@almight-sdk/utils';
-import { SessionsModal } from './components/SessionsModal';
 import WalletModal from './components/WalletsModal';
-import ActionsBox from './components/ActionsBox';
-import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter } from '@almight-sdk/connector';
+import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter, WalletConnectChannel } from '@almight-sdk/connector';
 
 declare global {
   interface Window {
@@ -34,29 +32,20 @@ const App: React.FC<{}> = () => {
     }
   });
 
+  
+
   window.auth = auth;
 
-  window.auth.connector = new BaseConnector({
-    adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
-  })
 
-  function getMetamaskConnector(): BaseConnector {
-    return new BaseConnector({
-      adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
-    })
+
+
+  (window as any).toolset = {
+    connector: BaseConnector,
+    adapters: [MetaMaskAdapter, KardiaChainAdapter],
+    channels: [BrowserProviderChannel, WalletConnectChannel]
   }
-
-  function getKardiaChainConnector(): BaseConnector {
-    return new BaseConnector({
-      adapter: new KardiaChainAdapter({channel: new BrowserProviderChannel()})
-    })
-  }
-
-
 
   const [showModal, setShowModel] = useState<boolean>(true)
-
-
 
 
 

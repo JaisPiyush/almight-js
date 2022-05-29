@@ -122,7 +122,7 @@ export interface IAuthenticationApp {
     getUserIdentifier(): Promise<string>;
     getUserData(token: string): Promise<UserData>;
     startAuthentication(provider: Providers): Promise<void>;
-    setCurrentSession(session: ISession): Promise<void>;
+   
     getAuthenticationHeader(): Promise<[string, string]>;
     saveUserData(userData: UserData): Promise<void>;
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
