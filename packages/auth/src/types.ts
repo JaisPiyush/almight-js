@@ -1,5 +1,6 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
 import { BaseConnector, ISession } from "connector/lib";
+import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
     Web = "web",
@@ -62,6 +63,9 @@ export interface ResponseMessageCallbackArgument {
     [AllowedQueryParams.ErrorCode]?: string
 }
 
+
+export type ErrorResponseMessageCallbackArgument = Required<Omit<ResponseMessageCallbackArgument, "access" | "refresh">>
+
 export interface RespondMessageData extends ResponseMessageCallbackArgument {
     respondType?: RespondType,
     messageType: RespondMessageType
@@ -86,6 +90,9 @@ export interface UserData {}
 export interface IAuthenticationApp {
     storage: BaseStorageInterface;
     connector?: BaseConnector;
+    core: IAlmightClient
+    frame: IAuthenticationFrame;
+    baseAuthenticationURL: string;
     onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string>;
@@ -93,6 +100,7 @@ export interface IAuthenticationApp {
     getUserData(): Promise<UserData>;
     startAuthentication(provider: Providers): Promise<void>;
     setCurrentSession(session: ISession): Promise<void>;
+    getAuthenticationHeader(): Promise<[string, string]>;
 }
 
 export interface IAuthenticationDelegate { }

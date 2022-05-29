@@ -43,13 +43,14 @@ export class AuthenticationFrame implements IAuthenticationFrame {
 
     async handleSuccessResponse(data: RespondMessageData): Promise<void> {
         // TODO: Set Tokens, store data and other things setup Axios to use cookie in case
+        console.log(data)
         delete data.messageType;
         delete data.respondType;
         this.app.onSuccessCallback(data);
     }
 
     generateFrameUri(data: Record<string, string>): string {
-        const baseUrl = `${process.env.AUTHENTICATION_URL}`;
+        const baseUrl = `${this.app.baseAuthenticationURL}/auth/v1/init`;
         const url = new URL(baseUrl);
         for (const [key, value] of Object.entries(data)) {
             if (value !== undefined) {
@@ -69,8 +70,11 @@ export class WebWindowAuthenticationFrame extends AuthenticationFrame {
     frame: Window;
     override bindListener(): void {
         globalThis.addEventListener("message", (event) => {
-            if(event.origin === globalThis.location.origin){
-                this.onResponsCallback(JSON.parse(event.data));
+            console.log(event.data, event.origin);
+            
+            if(event.origin === window.location.origin && event.data.channel === "almight_communication_channel"){
+                console.log(event.data);
+                this.onResponsCallback(event.data);
             }
         })
     }
