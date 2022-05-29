@@ -5,6 +5,10 @@ import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData } from ".
 export class AuthenticationApp implements IAuthenticationApp{
     storage: BaseStorageInterface;
     connector?: BaseConnector;
+    sessions: ISession = [];
+
+
+    
     onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string> {

@@ -28,6 +28,8 @@
   "dependencies": {
     "@almight-sdk/connector": "^0.0.0",
     "@almight-sdk/core": "^0.0.0",
-    "@almight-sdk/utils": "^0.0.0"
+    "@almight-sdk/utils": "^0.0.0",
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.1"
   }
 }

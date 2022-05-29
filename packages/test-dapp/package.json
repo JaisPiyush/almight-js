@@ -8,6 +8,7 @@
     "@reduxjs/toolkit": "^1.8.1",
     "@walletconnect/qrcode-modal": "^1.7.8",
     "axios": "^0.27.2",
+    "dotenv": "^16.0.1",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "react-loading": "^2.0.3",
