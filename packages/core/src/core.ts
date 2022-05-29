@@ -17,6 +17,7 @@ export class AlmightClient implements IAlmightClient {
     constructor(options: AlmightClientConstructorOptions){
         this.apiKey = options.apiKey;
         this.storage = options.storage;
+        this.storage.connect().then()
     }
     async isAPIKeyValid(): Promise<boolean> {
         const res = await projectAxiosInstance.post<{is_valid: boolean}>("/project/verify/api_key",{

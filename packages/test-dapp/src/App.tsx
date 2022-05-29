@@ -1,10 +1,12 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
 import { AlmightClient } from "@almight-sdk/core"
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, WebWindowAuthenticationFrame } from "@almight-sdk/auth"
-import { Providers, WebLocalStorage } from '@almight-sdk/utils';
-
+import { WebLocalStorage } from '@almight-sdk/utils';
+import { SessionsModal } from './components/SessionsModal';
+import WalletModal from './components/WalletsModal';
+import ActionsBox from './components/ActionsBox';
+import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter } from '@almight-sdk/connector';
 
 declare global {
   interface Window {
@@ -12,22 +14,6 @@ declare global {
   }
 }
 
-function Default() {
-  return <header className="App-header">
-    <img src={logo} className="App-logo" alt="logo" />
-    <p>
-      Edit <code>src/App.tsx</code> and save to reload.
-    </p>
-    <a
-      className="App-link"
-      href="https://reactjs.org"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-
-    </a>
-  </header>
-}
 
 
 const App: React.FC<{}> = () => {
@@ -40,26 +26,50 @@ const App: React.FC<{}> = () => {
   const auth = new AuthenticationApp({
     almightClient: almight,
     frame: new WebWindowAuthenticationFrame(),
-    onSuccessCallback: (data: ResponseMessageCallbackArgument): void => { },
-    onFailureCallback: (data: ErrorResponseMessageCallbackArgument): void => { }
+    onSuccessCallback: (data: ResponseMessageCallbackArgument): void => {
+      console.log("success", data)
+    },
+    onFailureCallback: (data: ErrorResponseMessageCallbackArgument): void => {
+      console.log("error", data)
+    }
   });
 
   window.auth = auth;
 
-  const onClick = function(){
-    auth.startAuthentication(Providers.MetaMask).then(() => {})
+  window.auth.connector = new BaseConnector({
+    adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
+  })
+
+  function getMetamaskConnector(): BaseConnector {
+    return new BaseConnector({
+      adapter: new MetaMaskAdapter({ channel: new BrowserProviderChannel() })
+    })
   }
+
+  function getKardiaChainConnector(): BaseConnector {
+    return new BaseConnector({
+      adapter: new KardiaChainAdapter({channel: new BrowserProviderChannel()})
+    })
+  }
+
+
+
+  const [showModal, setShowModel] = useState<boolean>(true)
 
 
 
 
 
   return (
-    <div className="App">
-      <header className="App-header">
+    <div className="App w-screen h-screen">
+      <div className='w-full h-full flex flex-col justify-center'>
+        <div className='flex flex-row w-full justify-center'>
+          {/* <ActionsBox /> */}
+          <button onClick={() => {setShowModel(true)}} className='bg-blue-600 w-auto px-4 py-2 rounded-md shadow-md text-white'>Login</button>
+        </div>
+      </div>
+      <WalletModal show={showModal} onClose={() => { setShowModel(false) }} />
 
-        <button className='px-10 py-8 bg-white text-black rounded-md' onClick={onClick}>Click</button>
-      </header>
     </div>
   );
 }

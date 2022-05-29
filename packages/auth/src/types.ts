@@ -1,5 +1,5 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
-import { BaseConnector, ISession } from "connector/lib";
+import { BaseConnector, BrowserSessionStruct, ConnectorType, ISession, WalletConnectSessionStruct } from "@almight-sdk/connector";
 import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
@@ -60,11 +60,12 @@ export interface ResponseMessageCallbackArgument {
     access?: string;
     refresh?: string;
     [AllowedQueryParams.Error]?: string;
-    [AllowedQueryParams.ErrorCode]?: string
+    [AllowedQueryParams.ErrorCode]?: string;
+    user?: UserData
 }
 
 
-export type ErrorResponseMessageCallbackArgument = Required<Omit<ResponseMessageCallbackArgument, "access" | "refresh">>
+export type ErrorResponseMessageCallbackArgument = Required<Omit<ResponseMessageCallbackArgument, "access" | "refresh" | "user">>
 
 export interface RespondMessageData extends ResponseMessageCallbackArgument {
     respondType?: RespondType,
@@ -83,8 +84,30 @@ export interface IAuthenticationFrame {
     onResponsCallback(data: RespondMessageData): void;
 }
 
+export interface ServerSentIdentityProvider {
+    uid: string;
+    user: string;
+    web_version: number,
+    provider: string,
+    meta_data: {
+        sessions: {
+            [ConnectorType.BrowserExtension]?: BrowserSessionStruct[],
+            [ConnectorType.WalletConnector]?: WalletConnectSessionStruct[]
+        }
+    }
+}
+export interface User {
 
-export interface UserData {}
+    user_id: string;
+    project: string;
+    auth_app: number;
+    is_active: boolean
+}
+
+export interface UserData{
+    user: User;
+    idps: ServerSentIdentityProvider[]
+}
 
 
 export interface IAuthenticationApp {
@@ -97,10 +120,12 @@ export interface IAuthenticationApp {
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string>;
     getUserIdentifier(): Promise<string>;
-    getUserData(): Promise<UserData>;
+    getUserData(token: string): Promise<UserData>;
     startAuthentication(provider: Providers): Promise<void>;
     setCurrentSession(session: ISession): Promise<void>;
     getAuthenticationHeader(): Promise<[string, string]>;
+    saveUserData(userData: UserData): Promise<void>;
+    getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
 }
 
 export interface IAuthenticationDelegate { }
