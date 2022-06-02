@@ -65,6 +65,7 @@ describe("Testing WebLocalStorage class", () => {
         const key = "arg"
         type randomType = { name: string, age: number, good: boolean }
         const value: randomType = { name: "JDVE", age: 20, good: true };
+        storage.prefix = "eth"
 
         it("Testing WebLocalStorage#getItem method after seting data", async function () {
             await storage.connect()

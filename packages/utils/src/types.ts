@@ -11,8 +11,8 @@ export enum StorageType {
 
 
 export interface BaseStorageOptions<T = any> {
-    onConnectCallback?: (self: ThisType<T>) => Promise<void>,
-    beforeDisconnectCallback?: (self: ThisType<T>) => Promise<void>
+    onConnectCallback?: (self: ThisType<T>) => void,
+    beforeDisconnectCallback?: (self: ThisType<T>) => void
 }
 
 /**
@@ -26,6 +26,10 @@ export interface BaseStorageInterface {
 
 
     readonly type: StorageType;
+    prefix?: string;
+
+
+    getPrefixedName(name: string): string;
 
 
     /**

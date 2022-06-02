@@ -12,34 +12,6 @@ interface SessionsModalProps {
 
 export function SessionsModal(props: SessionsModalProps) {
 
-    const userData: UserData = {
-        "user": {
-            "user_id": "project_i7AERu3QigB-V-aqYDv9KcQETOd9BBQTa90hxS9e_vApn0JmPwFRlT56WVaYX1JhoUzYXck7ZySQgSJulGCB7lerFnrI2E6jHPu7XfETNZvo6fJJbqY-BkcdW",
-            "project": "project_i7AERu3QigB-V-aqYDv9KcQETOd9BBQTa90hxS9e",
-            "auth_app": 1,
-            "is_active": true
-        },
-        "idps": [
-            {
-                "uid": "0xcf13e1a5dcfde85d6d77a17f837f33154e35bee1",
-                "user": "project_i7AERu3QigB-V-aqYDv9KcQETOd9BBQTa90hxS9e_vApn0JmPwFRlT56WVaYX1JhoUzYXck7ZySQgSJulGCB7lerFnrI2E6jHPu7XfETNZvo6fJJbqY-BkcdW",
-                "web_version": 3,
-                "provider": "metamask",
-                "meta_data": {
-                    "sessions": {
-                        "browser_extension": [
-                            {
-                                "path": "ethereum",
-                                "chainId": 1
-                            }
-                        ]
-                    }
-                }
-            }
-        ]
-    }
-
-
     function transformSessions(userData: UserData): IdentityProviderData[] {
         return userData.idps.map<IdentityProviderData>((idp: ServerSentIdentityProvider) => {
             const sessions: any[] = []

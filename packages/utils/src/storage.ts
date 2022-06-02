@@ -9,6 +9,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
 
     protected storage: NaiveStorage | Record<string, any>;
     readonly type: StorageType;
+    public prefix?: string;
 
     /**
     * @callback onConnectCallback will be called after the connection is established
@@ -17,8 +18,8 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     * @callback beforeDisconnectCallback will be called just before the connection is established
     * @defaultValue empty function
     */
-    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => Promise<void>;
-    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => Promise<void>;
+    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
+    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
 
     /**
      * Set default values for the class properties
@@ -83,11 +84,15 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         return JSON.parse(value) as T;
     }
 
+    getPrefixedName(name: string): string {
+        return this.prefix === undefined ? name: `${this.prefix}__${name}`
+    }
+
     async setItem(key: string, value: any): Promise<void> {
-        this.storage.setItem(key, this.serialize(value));
+        this.storage.setItem(this.getPrefixedName(key), this.serialize(value));
     }
     async getItem<T = any>(key: string): Promise<T | null> {
-        const value = this.storage.getItem(key);
+        const value = this.storage.getItem(this.getPrefixedName(key));
         if (value === null || value === undefined) return null;
         return this.deserialize<T>(value);
     }
@@ -101,7 +106,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         return (await this.getItem<any>(key)) !== null;
     }
     async removeItem(key: string): Promise<void> {
-        this.storage.removeItem(key);
+        this.storage.removeItem(this.getPrefixedName(key));
     }
 
     async clear(): Promise<void> {

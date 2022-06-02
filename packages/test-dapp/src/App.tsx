@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { AlmightClient } from "@almight-sdk/core"
-import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, WebWindowAuthenticationFrame } from "@almight-sdk/auth"
+import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument } from "@almight-sdk/auth"
 import { WebLocalStorage } from '@almight-sdk/utils';
 import WalletModal from './components/WalletsModal';
 import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter, WalletConnectChannel } from '@almight-sdk/connector';
@@ -23,7 +23,6 @@ const App: React.FC<{}> = () => {
 
   const auth = new AuthenticationApp({
     almightClient: almight,
-    frame: new WebWindowAuthenticationFrame(),
     onSuccessCallback: (data: ResponseMessageCallbackArgument): void => {
       console.log("success", data)
     },
@@ -32,9 +31,9 @@ const App: React.FC<{}> = () => {
     }
   });
 
+  window.auth = auth;
   
 
-  window.auth = auth;
 
 
 
