@@ -1,6 +1,6 @@
 import { ConnectorModalData, IConnectorModal } from "../types";
 
-export default class WebConnectorModal implements IConnectorModal {
+export class WebConnectorModal implements IConnectorModal {
 
     el?: HTMLDivElement;
     readonly id = "almight__authentication_dialog"
@@ -15,7 +15,10 @@ export default class WebConnectorModal implements IConnectorModal {
         <div class="almight__modal-content">
          <div class="almight__inner-conent">
             <div class="almight__header">
-                <img onclick="handleCloseClick()" class="almight__close-button" src="/src/assets/close.png" alt="close" />
+            <button onclick="handleCloseClick()" class="almight__close-button">
+            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><title>Close</title><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M368 368L144 144M368 144L144 368"/></svg>
+            </button>
+                <!-- <img onclick="handleCloseClick()" class="almight__close-button" src="/src/assets/close.png" alt="close" /> -->
             </div>
             <div class="almight__banner">
                 <div class="almight__banner_child">
@@ -35,26 +38,67 @@ export default class WebConnectorModal implements IConnectorModal {
             </div>
         </div>
         <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-            function mountQRCode(){
-                const canvas = document.getElementById("almight__qrcode")
-                QRCode.toCanvas(canvas, ${data.uri}, function () {})
-                canvas.setAttribute("style", "width:90%;")
-            }
+        <script>
+        function mountQRCode(){
+            console.log("runned")
+            const canvas = document.getElementById("almight__qrcode")
+            new QRCode(canvas, "${data.uri}");
+            // QRCode.toCanvas(canvas, , function () {})
+            canvas.setAttribute("style", "width:90%;")
+        }
 
-            function handleCloseClick() {
-                const event = new CustomEvent("almight-modal-close-click");
-                document.dispatchEvent(event);
-            }
+        function handleCloseClick() {
+            const event = new CustomEvent("almight-modal-close-click");
+            document.dispatchEvent(event);
+        }
 
-            function handleConnectClick() {
-                const event = new CustomEvent("almight-modal-connect-click");
-                document.dispatchEvent(event);
-            }
-        
-        <script type="text/javascript">
+        function handleConnectClick() {
+            const event = new CustomEvent("almight-modal-connect-click");
+            document.dispatchEvent(event);
+        }
+
+        mountQRCode();
 
         </script>
     </div>`
+    }
+
+
+    script(data: ConnectorModalData): void {
+        // const featherIcon = document.createElement("script")
+        // featherIcon.src = "https://unpkg.com/ionicons@5.0.0/dist/ionicons.js"
+        const qrCodeLoader = document.createElement("script");
+        qrCodeLoader.src = "https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"
+
+        const jsfunctions = document.createElement("script");
+        const handleCloseClickFunction = document.createTextNode(`function handleCloseClick() {
+            const event = new CustomEvent("almight-modal-close-click");
+            document.dispatchEvent(event);
+        }`)
+
+        const handleConnectClickFunction = document.createTextNode(`function handleConnectClick() {
+            const event = new CustomEvent("almight-modal-connect-click");
+            document.dispatchEvent(event);
+        }`)
+
+        const mountQRCodeFunction = document.createTextNode(`function mountQRCode(){
+            console.log("runned")
+            const canvas = document.getElementById("almight__qrcode")
+            new QRCode(canvas, "${data.uri}");
+            // QRCode.toCanvas(canvas, , function () {})
+            canvas.setAttribute("style", "width:90%;")
+        }
+        mountQRCode();
+        `)
+
+        jsfunctions.appendChild(handleCloseClickFunction)
+        jsfunctions.appendChild(handleConnectClickFunction)
+        jsfunctions.appendChild(mountQRCodeFunction)
+        if(this.el !== undefined){
+            // this.el.appendChild(featherIcon)
+            this.el.appendChild(qrCodeLoader);
+            this.el.appendChild(jsfunctions)
+        }
     }
 
 
@@ -65,29 +109,31 @@ export default class WebConnectorModal implements IConnectorModal {
         document.body.appendChild(div);
         this.el = div;
         this.onConnectClick = data.onConnectClick;
+        this.script(data)
 
-        document.addEventListener("almight-modal-close-click", this.close);
+        document.addEventListener("almight-modal-close-click", () => {this.close()});
         document.addEventListener("almight-modal-connect-click", () => {
-            if(this.onConnectClick !== undefined) this.onConnectClick();
+            if (this.onConnectClick !== undefined) this.onConnectClick();
         })
     }
 
 
-    close(): void {
-        if(this.el !== undefined){
-            document.removeEventListener("almight-modal-close-click", this.close);
+    close(el?: HTMLElement): void {
+        if (this.el !== undefined) {
+            document.removeEventListener("almight-modal-close-click", () => {this.close(this.el)});
             document.removeEventListener("almight-modal-connect-click", () => {
-                if(this.onConnectClick !== undefined) this.onConnectClick();
+                if (this.onConnectClick !== undefined) this.onConnectClick();
             })
             document.body.removeChild(this.el);
+
         }
     }
 
 
 
     css(data: ConnectorModalData): string {
-        return  `
-        almight__connector_modal {
+        return `
+        .almight__connector_modal {
             display: block; /* Hidden by default */
             position: fixed; /* Stay in place */
             z-index: 10; /* Sit on top */
@@ -116,7 +162,7 @@ export default class WebConnectorModal implements IConnectorModal {
         .almight__btn-holder {
             width: 100%:
             height: auto;
-            display: ${(data.hasConnectorButton ? 'flex': 'none')};
+            display: ${(data.hasConnectorButton ? 'flex' : 'none')};
             justify-content: center;
     
         }
@@ -134,6 +180,11 @@ export default class WebConnectorModal implements IConnectorModal {
             line-height: 1.75rem;
               
         }
+
+        .ionicon {
+            width: 32px;
+            height: 32px;
+        }
         
        
     
@@ -146,7 +197,7 @@ export default class WebConnectorModal implements IConnectorModal {
     
         .almight__close-button {
             background-color: #f4f4f5;
-            padding: 1rem;
+            /*padding: 1rem; */
             border-radius: 1rem; /* 16px */
         }
     
@@ -204,21 +255,21 @@ export default class WebConnectorModal implements IConnectorModal {
     
     
         @media (min-width: 1024px){
-              .modal-content {
+              .almight__modal-content {
                 padding-left: 2rem; /* 32px */
                 padding-right: 2rem; /* 32px */
                 width: 45%;
                 margin:5% auto;
               }
-              .banner_child {
+              .almight__banner_child {
                 font-size: 1.875rem/* 30px */;
                 line-height: 2.25rem/* 36px */;
               }
-              .avatar {
+              .almight__avatar {
                   width: 4rem;
                   height: 4rem;
               }
-              .connect {
+              .almight__connect {
                   padding: 1.25rem 0;
                   border-radius: .5rem;
                   
@@ -226,13 +277,13 @@ export default class WebConnectorModal implements IConnectorModal {
           }
     
           @media (min-width: 1280px){
-            .modal-content {
+            .almight__modal-content {
               padding-left: 2.5rem; /* 32px */
               padding-right: 2.5rem; /* 32px */
               width: 35%;
               margin: 3% auto;
             }
-            .connect {
+            .almight__connect {
                 font-size: 1.575rem; /* 30px */
                 line-height: 2.25rem;
             }

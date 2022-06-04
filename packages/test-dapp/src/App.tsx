@@ -5,14 +5,14 @@ import './App.css';
 // import { WebLocalStorage } from '@almight-sdk/utils';
 // import WalletModal from './components/WalletsModal';
 // import { BaseConnector, BrowserProviderChannel, KardiaChainAdapter, MetaMaskAdapter, WalletConnectChannel } from '@almight-sdk/connector';
+import {WebConnectorModal} from "@almight-sdk/auth"
 
 
-
-// declare global {
-//   interface Window {
-//     auth: AuthenticationApp
-//   }
-// }
+declare global {
+  interface Window {
+    auth: any
+  }
+}
 
 
 
@@ -33,7 +33,7 @@ const App: React.FC<{}> = () => {
   //   }
   // });
 
-  // window.auth = auth;
+  window.auth = undefined;
   
 
 
@@ -51,6 +51,19 @@ const App: React.FC<{}> = () => {
 
   const handleClick = () => {
     // setShowModel(true)
+
+    const modal = new WebConnectorModal();
+    modal.open({
+      icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/MetaMask_Fox.svg/1024px-MetaMask_Fox.svg.png",
+      provider: "Metamask",
+      hasConnectorButton: true,
+      hasQRCode: true,
+      buttonText: "Connect",
+      uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/MetaMask_Fox.svg/1024px-MetaMask_Fox.svg.png",
+      onConnectClick: () => {
+        console.log("Clicking bait")
+      }
+    })
 
   }
 
