@@ -221,4 +221,21 @@ export interface IOriginFrameCommunicator {
 }
 
 
+export interface ConnectorModalData {
+    icon: string;
+    provider: string;
+    hasConnectorButton: boolean;
+    hasQRCode: boolean;
+    buttonText?: string;
+    uri?: string;
+    onConnectClick?: () => void;
+}
+
+
+export interface IConnectorModal {
+    open(data: ConnectorModalData): void;
+    close(): void;
+    onConnectClick?: () => void;
+}
+
 

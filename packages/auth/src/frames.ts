@@ -22,6 +22,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
     }
 
     async close(): Promise<void> {
+        
         throw new Error("Method not implemented.");
     }
 
@@ -120,6 +121,12 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
                 }
             })
         });
+
+        await this.delegate.clean();
+        
+        await this.delegate.setStates(data)
+
+        await this.delegate.captureData()
 
         // TODO: Show UI for authentication for web
         if(isWebPlatform()) {

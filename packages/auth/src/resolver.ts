@@ -1,5 +1,5 @@
-import { Address, ConnectorType, IdentityProvider } from "@almight-sdk/connector";
-import { WebLocalStorage } from "@almight-sdk/utils";
+import { Address, ConnectorType, IdentityProvider, IDENTITY_PROVIDERS } from "@almight-sdk/connector";
+import { Providers, WebLocalStorage } from "@almight-sdk/utils";
 import { AuthenticationDelegate } from "./delegate";
 import { AllowedQueryParams, IdentityResolverInterface, UserRegistrationArgument, Web3UserRegistrationArgument } from "./types";
 
@@ -192,7 +192,13 @@ export class Web3IdentityResolver extends IdentityResolver {
 
 
 
-const IDENTITY_RESOLVERS: Record<string, IdentityResolver> = {}
+const IDENTITY_RESOLVERS: Record<string, IdentityResolver> = {
+   
+}
+
+for(const [provider, Idp] of Object.entries(IDENTITY_PROVIDERS)){
+    IDENTITY_RESOLVERS[provider] = new Web3IdentityResolver(Idp)
+}
 
 
 export { IDENTITY_RESOLVERS }

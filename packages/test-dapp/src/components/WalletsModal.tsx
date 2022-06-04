@@ -26,7 +26,7 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
 
     function onWalletClick(provider: string): void {
         if(window.auth !== undefined){
-            window.auth.startAuthentication(provider).then(() => {
+            window.auth.startAuthentication(provider as Providers).then(() => {
                 props.onClose()
             })
         }

@@ -12,3 +12,4 @@ packages/*/node_modules/
 */cypress/screenshots
 */.nyc_output
 packages/auth-delegate/
+packages/web-components/
