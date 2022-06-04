@@ -166,6 +166,7 @@ export interface IdentityResolverInterface {
     onAuthenticationRedirect(options?: any): void;
     authenticateAndRespond(data: Record<string, string>): Promise<void>;
     getUserRegistrationArguments(): Promise<UserRegistrationArgument>;
+    getItemFromStorage<T=any>(key: string): Promise<T | null>;
 }
 
 export interface UserRegistrationArgument{

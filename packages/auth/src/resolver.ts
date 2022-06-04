@@ -12,6 +12,12 @@ export class IdentityResolver implements IdentityResolverInterface {
     public delegate: AuthenticationDelegate;
 
 
+    async getItemFromStorage<T = any>(key: string): Promise<T | null> {
+        if (this.delegate === undefined) return null;
+        return this.delegate.storage.getItem<T>(key);
+    }
+
+
     isWebVersion(version: number): boolean {
         return this.provider.webVersion === version;
     }
@@ -78,8 +84,6 @@ export class Web3IdentityResolver extends IdentityResolver {
         }
         await this.delegate.freeze();
         // TODO: Init Authe implementation for different platform
-        // const url = this.generateRedirectUrl(data);
-        // this.delegate.redirectTo(url);
     }
 
 
@@ -87,17 +91,6 @@ export class Web3IdentityResolver extends IdentityResolver {
 
 
     override generateRedirectUrl(data?: Record<string, any>, pathname?: string): string {
-        // let url = pathname ?? "/auth/v1/connector_page";
-        // if (data !== undefined) {
-        //     url += "?"
-        //     for (const [key, value] of Object.entries(data)) {
-        //         if (value !== undefined) {
-        //             url += `${key}=${value}&`
-        //         }
-        //     }
-
-        // }
-        // return encodeURI(url);
         throw new Error("Method not implemented")
     }
 
@@ -132,14 +125,27 @@ export class Web3IdentityResolver extends IdentityResolver {
             }
             options[this.serverRequestTickKey] = false //Guard method against race condition
             const data = {
-                [AllowedQueryParams.Address]: options.accounts, [AllowedQueryParams.ChainId]: options.chainId,
-                [AllowedQueryParams.Error]: options.data[AllowedQueryParams.Error],
-                [AllowedQueryParams.ErrorCode]: options.data[AllowedQueryParams.ErrorCode],
+                "data": options
 
             }
-            this.delegate.setStates(options).then(() => {
-                // const url = this.generateRedirectUrl(data, "/");
-                // this.delegate.redirectTo(url);
+
+            if (options.accounts !== undefined) {
+                data[AllowedQueryParams.Address] = options.accounts[0];
+            }
+            if (options.chainId !== undefined) {
+                data[AllowedQueryParams.ChainId] = options.chainId
+            }
+            if (options.data.error !== undefined) {
+                data[AllowedQueryParams.Error] = options.data.error;
+            }
+            if (options.data.error_code !== undefined) {
+                data[AllowedQueryParams.ErrorCode] = options.data.error_code
+            }
+            if (options.session !== undefined) {
+                data["session"] = options.session;
+            }
+            this.delegate.setStates(data).then(() => {
+                this.authenticateAndRespond().then(() => { });
             })
 
         }
@@ -158,32 +164,41 @@ export class Web3IdentityResolver extends IdentityResolver {
         return data
     }
 
-    override async authenticateAndRespond(data: Record<string, string>): Promise<void> {
-        // if (data[AllowedQueryParams.Address] !== undefined && data[AllowedQueryParams.ChainId] !== undefined) {
-        //     /// Authenticate the user using user handle registration
-        //     /// respond with data
-        //     try {
-        //         if (await this.delegate.storage.hasKey(this.serverRequestTickKey) && !(await this.delegate.storage.getItem<boolean>(this.serverRequestTickKey))) {
-        //             const res = await this.delegate.handleUserRegistration();
-        //             await this.delegate.storage.setItem(this.serverRequestTickKey, true);
-        //             await this.delegate.respondFrame.respondSuccess({
-        //                 "access": res.access,
-        //                 "refresh": res.refresh
-        //             });
-        //         }
+    override async authenticateAndRespond(): Promise<void> {
+        if (!(await this.delegate.storage.isConnected())) return;
+        const account = await this.getItemFromStorage<string>(AllowedQueryParams.Address);
+        const chainId = await this.getItemFromStorage<string>(AllowedQueryParams.ChainId);
+        const error = await this.getItemFromStorage<string>(AllowedQueryParams.Error);
+        const errorCode = await this.getItemFromStorage<string>(AllowedQueryParams.ErrorCode)
 
-        //     } catch (e) {
-        //         await this.delegate.respondFrame.respondFailure({
-        //             [AllowedQueryParams.Error]: (e as Error).message,
-        //             [AllowedQueryParams.ErrorCode]: "10000"
-        //         });
+        if (account !== null && chainId !== null) {
+            try {
+                const res = await this.delegate.handleUserRegistration();
+                console.log(res);
+                await this.delegate.respondFrame.respondSuccess({
+                    "access": res.access,
+                    "refresh": res.refresh
+                });
+            } catch (e) {
+                await this.delegate.respondFrame.respondFailure({
+                    [AllowedQueryParams.Error]: (e as Error).message,
+                    [AllowedQueryParams.ErrorCode]: "10000"
+                });
+            }
 
-        //     }
-        // } else if (data[AllowedQueryParams.Error] !== undefined) {
-        //     await this.delegate.respondFrame.respondFailure(data);
 
-        // }
-        // await this.delegate.close()
+        } else if (error !== undefined) {
+            await this.delegate.respondFrame.respondFailure({
+                error: error,
+                errorCode: errorCode !== null? errorCode: "10000"
+            });
+        } else {
+            await this.delegate.respondFrame.respondFailure({
+                error: "Authentication Failed due to unknown reason",
+                errorCode: errorCode !== null? errorCode: "10000"
+            });
+         }
+        await this.delegate.close()
     }
 
 
@@ -193,10 +208,10 @@ export class Web3IdentityResolver extends IdentityResolver {
 
 
 const IDENTITY_RESOLVERS: Record<string, IdentityResolver> = {
-   
+
 }
 
-for(const [provider, Idp] of Object.entries(IDENTITY_PROVIDERS)){
+for (const [provider, Idp] of Object.entries(IDENTITY_PROVIDERS)) {
     IDENTITY_RESOLVERS[provider] = new Web3IdentityResolver(Idp)
 }
 

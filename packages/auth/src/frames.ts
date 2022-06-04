@@ -1,10 +1,11 @@
 import { Class, isWebPlatform } from "@almight-sdk/utils";
-import { BaseChainAdapter, BaseProviderChannel, ConnectorType } from "@almight-sdk/connector";
+import { BaseChainAdapter, BaseProviderChannel, ConnectorType, WalletConnectChannel } from "@almight-sdk/connector";
 import { AuthenticationApp } from "./auth";
 import { Web3AuthenticationDelegate } from "./delegate";
 import { AuthenticationAppIsNotDefinedProperly } from "./exceptions";
 import { Web3NativeOriginFrameCommunicator } from "./frame_communicator";
 import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationFrame, RespondMessageData, RespondType } from "./types";
+import { WebConnectorModal } from "./components";
 
 
 export class AuthenticationFrame implements IAuthenticationFrame {
@@ -72,9 +73,13 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
     delegate?: Web3AuthenticationDelegate;
 
+    connectionCount: number = 0;
+
     browserAdapter?: BaseChainAdapter;
     walletconnectAdapter?: BaseChainAdapter;
     deeplinkAdapter?: BaseChainAdapter;
+
+    modal: WebConnectorModal = new WebConnectorModal();
 
     override bindListener(): void {
         
@@ -82,29 +87,66 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     // Element will dispatch 'buttonclick' event on button click
     mountModal(): void {
-        throw new Error("Method not implemented")
+        this.modal.open({
+            hasConnectorButton: this.browserAdapter !== undefined,
+            hasQRCode: this.walletconnectAdapter !== undefined,
+            buttonText: (this.browserAdapter !== undefined)? "Connect Browser Wallet": "Connect",
+            uri: (this.walletconnectAdapter !== undefined)? (this.walletconnectAdapter.channel as WalletConnectChannel).getConnectorUri(): undefined,
+            icon: this.delegate.identityResolver.provider.metaData.icon,
+            provider: this.delegate.identityResolver.provider.identityProviderName,
+            onConnectClick:() => {
+                if (this.browserAdapter !== undefined && this.browserAdapter.channel.connectorType === ConnectorType.BrowserExtension) {
+                    this.browserAdapter.connect().catch(err => {
+                        if(this.browserAdapter !== undefined && this.browserAdapter.onConnectCallback !== undefined){
+                            this.connectionCount += 1;
+                            this.browserAdapter?.onConnectCallback({data:{
+                                [AllowedQueryParams.Error]: err.message,
+                                [AllowedQueryParams.ErrorCode]: err.code
+                            }})
+                        }
+                    })
+        
+                }
+            }
+        });
     }
 
     async handleAuthenticationOnWebNativePlatform(): Promise<void> {
         const adapterClass: Class<BaseChainAdapter> = this.delegate.identityResolver.provider.getAdapterClass() as Class<BaseChainAdapter>;
         const channelClasses: Class<BaseProviderChannel>[] = this.delegate.identityResolver.provider.getChannels();
 
+        const allAdaptersConnectd = [];
+
         
         for (const channelClass of channelClasses){
             const adapter = new adapterClass({
                 channel :new channelClass(),
-                onConnect: (options?: any) => {
+                onConnect: (options?: any) => {    
+                    // TODO: Multiple connect event fire guard  
+                    if(this.connectionCount !== 0) return;
+                    this.connectionCount += 1;
+                    this.modal.close();
                     options[AllowedQueryParams.ConnectorType] = adapter.channel.connectorType;
                     options["session"] = adapter.getSession();
                     this.delegate.identityResolver.onAuthenticationRedirect(options);
                 }
-            }); 
+            });
+
+            // TODO: Implement method to allow only passing channels for mounting
 
             if(adapter.channel.connectorType === ConnectorType.BrowserExtension){
                 this.browserAdapter = adapter;
+                allAdaptersConnectd.push(true);
+                if(allAdaptersConnectd.length === channelClasses.length){
+                    this.mountModal();
+                }
             }else if(adapter.channel.connectorType === ConnectorType.WalletConnector){
                 adapter.connect().then(() => {
-                    this.walletconnectAdapter = adapter
+                    this.walletconnectAdapter = adapter;
+                    allAdaptersConnectd.push(true);
+                    if(allAdaptersConnectd.length === channelClasses.length){
+                        this.mountModal();
+                    }
                 })
             }
         }
@@ -134,6 +176,18 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         }
         
 
+    }
+
+    override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
+            
+        if(data.access === undefined) return;
+            await this.app.storeJWTToken(data.access);
+            const userData = await this.app.getUserData(data.access);
+            await this.app.saveUserData(userData);
+            data.user = userData;
+            super.handleSuccessResponse(data);
+        
+               
     }
 
 

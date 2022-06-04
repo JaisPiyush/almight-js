@@ -18,7 +18,7 @@ export class WebConnectorModal implements IConnectorModal {
             <button onclick="handleCloseClick()" class="almight__close-button">
             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><title>Close</title><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M368 368L144 144M368 144L144 368"/></svg>
             </button>
-                <!-- <img onclick="handleCloseClick()" class="almight__close-button" src="/src/assets/close.png" alt="close" /> -->
+               
             </div>
             <div class="almight__banner">
                 <div class="almight__banner_child">
@@ -27,7 +27,7 @@ export class WebConnectorModal implements IConnectorModal {
                 </div>
             </div>
             <div class="almight__qr-box">
-                <canvas onload="mountQRCode()" id="almight__qrcode"></canvas>
+                <canvas  id="almight__qrcode"></canvas>
             </div>
 
             <div class="almight__btn-holder">
@@ -39,13 +39,7 @@ export class WebConnectorModal implements IConnectorModal {
         </div>
         <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
         <script>
-        function mountQRCode(){
-            console.log("runned")
-            const canvas = document.getElementById("almight__qrcode")
-            new QRCode(canvas, "${data.uri}");
-            // QRCode.toCanvas(canvas, , function () {})
-            canvas.setAttribute("style", "width:90%;")
-        }
+
 
         function handleCloseClick() {
             const event = new CustomEvent("almight-modal-close-click");
@@ -57,7 +51,7 @@ export class WebConnectorModal implements IConnectorModal {
             document.dispatchEvent(event);
         }
 
-        mountQRCode();
+
 
         </script>
     </div>`
@@ -65,12 +59,27 @@ export class WebConnectorModal implements IConnectorModal {
 
 
     script(data: ConnectorModalData): void {
-        // const featherIcon = document.createElement("script")
-        // featherIcon.src = "https://unpkg.com/ionicons@5.0.0/dist/ionicons.js"
         const qrCodeLoader = document.createElement("script");
-        qrCodeLoader.src = "https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"
+        qrCodeLoader.src = "https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
+
+        qrCodeLoader.onload = function() {
+            if((window as any).QRious !== undefined) {
+                const canvas = document.getElementById("almight__qrcode")
+                canvas.setAttribute("style", "width:90%;")
+                const dims = canvas.getBoundingClientRect()
+                new (window as any).QRious({element:canvas, value:data.uri,
+                    level: "H",
+                    size: dims.width,
+                
+                })
+                
+               
+            }
+        }
 
         const jsfunctions = document.createElement("script");
+        jsfunctions.type = "text/javascript"
+
         const handleCloseClickFunction = document.createTextNode(`function handleCloseClick() {
             const event = new CustomEvent("almight-modal-close-click");
             document.dispatchEvent(event);
@@ -82,7 +91,7 @@ export class WebConnectorModal implements IConnectorModal {
         }`)
 
         const mountQRCodeFunction = document.createTextNode(`function mountQRCode(){
-            console.log("runned")
+            console.log("runned", QRCode)
             const canvas = document.getElementById("almight__qrcode")
             new QRCode(canvas, "${data.uri}");
             // QRCode.toCanvas(canvas, , function () {})
@@ -93,9 +102,7 @@ export class WebConnectorModal implements IConnectorModal {
 
         jsfunctions.appendChild(handleCloseClickFunction)
         jsfunctions.appendChild(handleConnectClickFunction)
-        jsfunctions.appendChild(mountQRCodeFunction)
         if(this.el !== undefined){
-            // this.el.appendChild(featherIcon)
             this.el.appendChild(qrCodeLoader);
             this.el.appendChild(jsfunctions)
         }
@@ -111,21 +118,24 @@ export class WebConnectorModal implements IConnectorModal {
         this.onConnectClick = data.onConnectClick;
         this.script(data)
 
-        document.addEventListener("almight-modal-close-click", () => {this.close()});
-        document.addEventListener("almight-modal-connect-click", () => {
-            if (this.onConnectClick !== undefined) this.onConnectClick();
-        })
+        const closeButton: HTMLButtonElement = document.querySelector('.almight__close-button')
+        let self = this;
+        closeButton.onclick = function() {
+            document.body.removeChild(div);
+            document.removeEventListener("almight-modal-connect-click", self.onConnectClick, true)
+        }
+
+
+        
+
+        document.addEventListener("almight-modal-connect-click", this.onConnectClick, {once: true})
     }
 
 
     close(el?: HTMLElement): void {
         if (this.el !== undefined) {
-            document.removeEventListener("almight-modal-close-click", () => {this.close(this.el)});
-            document.removeEventListener("almight-modal-connect-click", () => {
-                if (this.onConnectClick !== undefined) this.onConnectClick();
-            })
+            document.removeEventListener("almight-modal-connect-click", this.onConnectClick, true)
             document.body.removeChild(this.el);
-
         }
     }
 
@@ -214,6 +224,7 @@ export class WebConnectorModal implements IConnectorModal {
             height: auto;
             flex-direction: row;
             justify-content: center;
+            padding: 0.85rem 0;
         }
     
         .almight__font-koulen {

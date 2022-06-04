@@ -97,6 +97,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
+        if(await this.storage.hasKey("walletconnect")){
+            await this.storage.removeItem("walletconnect");
+        }
     }
 
 
@@ -240,6 +243,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     async captureData(): Promise<void> {
         let query = await this.getConfigurationData();
+
+        if(await this.storage.hasKey("walletconnect")){
+            await this.storage.removeItem("walletconnect");
+        }
 
 
         if (query[AllowedQueryParams.ProjectId] !== undefined) {
