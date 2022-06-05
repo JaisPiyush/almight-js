@@ -6,7 +6,9 @@ export interface NetworkData {
     chainId: number
 }
 
-export interface ISession { }
+export interface ISession { 
+    chainId: number
+}
 
 export interface BrowserSessionStruct extends ISession { path: string, network?: NetworkData, chainId: number };
 

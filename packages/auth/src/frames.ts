@@ -1,5 +1,5 @@
 import { Class, isWebPlatform } from "@almight-sdk/utils";
-import { BaseChainAdapter, BaseProviderChannel, ConnectorType, WalletConnectChannel } from "@almight-sdk/connector";
+import { BaseChainAdapter, BaseConnector, BaseProviderChannel, ConnectorType, WalletConnectChannel } from "@almight-sdk/connector";
 import { AuthenticationApp } from "./auth";
 import { Web3AuthenticationDelegate } from "./delegate";
 import { AuthenticationAppIsNotDefinedProperly } from "./exceptions";
@@ -80,6 +80,10 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
     deeplinkAdapter?: BaseChainAdapter;
 
     modal: WebConnectorModal = new WebConnectorModal();
+
+    override async close(): Promise<void> {
+        
+    }
 
     override bindListener(): void {
         
@@ -178,55 +182,17 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     }
 
-    override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
-            
+    override async handleSuccessResponse(data: RespondMessageData): Promise<void> {     
         if(data.access === undefined) return;
             await this.app.storeJWTToken(data.access);
             const userData = await this.app.getUserData(data.access);
             await this.app.saveUserData(userData);
             data.user = userData;
+            await this.app.setupConnector();
             super.handleSuccessResponse(data);
-        
                
     }
 
 
 }
 
-
-// export class WebWindowAuthenticationFrame extends AuthenticationFrame {
-//     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.Web;
-//     frame: Window;
-//     override bindListener(): void {
-//         globalThis.addEventListener("message", (event) => {
-//             if (event.data.channel === "almight_communication_channel") {
-//                 this.captureResponse(event.data)
-//             }
-//         })
-//     }
-
-//     override async initAuth(data: Record<string, string>): Promise<void> {
-//         super.initAuth(data)
-//         const url = this.generateFrameUri(data);
-//         const features = "width=800, height=800"
-//         this.frame = globalThis.open(url, "Authentication Frame", features)
-//         this.bindListener();
-//     }
-
-//     override async close(): Promise<void> {
-//         if (!this.frame.closed) this.frame.close();
-//     }
-
-//     override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
-//         if(data.access === undefined) return;
-//         await this.app.storeJWTToken(data.access);
-//         const userData = await this.app.getUserData(data.access);
-//         await this.app.saveUserData(userData);
-//         data.user = userData;
-//         super.handleSuccessResponse(data);
-
-       
-//     }
-
-
-// }

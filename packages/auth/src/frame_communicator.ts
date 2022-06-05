@@ -35,6 +35,10 @@ export class BaseOriginFrameCommunicator implements IOriginFrameCommunicator {
 export class Web3NativeOriginFrameCommunicator extends BaseOriginFrameCommunicator {
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
 
+    override async close(): Promise<void> {
+        
+    }
+
     onResponseCallback: (data: Record<string, string>) => void;
 
     override async respond(data: Record<string, string>): Promise<void> {

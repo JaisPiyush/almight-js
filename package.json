@@ -32,7 +32,9 @@
     "test:e2e": "npm run build && lerna run e2e --scope=e2e",
     "start:e2e": "npm run build && npm run dev --prefix packages/e2e",
     "tsc": "tsc",
-    "test:karma": "karma start --single-run --browser ChromeHeadless karma.conf.js"
+    "test:karma": "karma start --single-run --browser ChromeHeadless karma.conf.js",
+    "start:test-dapp": "lerna run tsc && lerna run start --scope=test-dapp",
+    "bootstrap": "lerna run bootstrap"
   },
   "dependencies": {
     "js-sha3": "^0.8.0"

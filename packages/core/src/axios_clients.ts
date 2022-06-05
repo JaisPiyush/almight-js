@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000"
+const BASE_URL = "https://almight-backend.herokuapp.com"
 
 export const projectAxiosInstance = axios.create({
     baseURL: BASE_URL,

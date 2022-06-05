@@ -435,7 +435,6 @@ export class WalletConnectChannel extends BaseProviderChannel {
     override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
         
         await super.connect(options, obj)
-
        if(this.isSessionConnected()){
            await this.checkConnection(obj);
        }

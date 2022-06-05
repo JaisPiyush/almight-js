@@ -1,4 +1,4 @@
-import { BaseConnector, IDENTITY_PROVIDERS, ISession } from "@almight-sdk/connector";
+import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
 import { BaseStorageInterface, Class, Providers } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
@@ -93,10 +93,6 @@ export class AuthenticationApp implements IAuthenticationApp {
 
     async storeJWTToken(token: string): Promise<void> {
         await this.convertTokenToCookie(token)
-        // TODO: will remove storage of token on web after working of cookie stick
-        // Cookie at the time of development isn't working because of google's policy
-        // Google's policy of not allowing cookies to stick when nay port is included in url
-        await this.storage.setItem("auth_token", token)
         this.token = token;
         //TODO: Need cover aspects of react native
     }
@@ -183,6 +179,28 @@ export class AuthenticationApp implements IAuthenticationApp {
         connector_type: string
     }): Promise<void> {
         await this.storage.setItem(this.currentSessionName, data);
+    }
+
+
+
+
+    async setupConnector(): Promise<void>{
+        const currentSession = await this.getCurrentSession();
+        const idp: IdentityProvider = IDENTITY_PROVIDERS[currentSession.provider]
+        const adapterClass = idp.getAdapterClass() as Class<BaseChainAdapter>;
+        for(const channelClass of idp.getChannels()){
+            if((channelClass as any).connectorType === currentSession.connector_type){
+                const channel = new channelClass(currentSession.session);
+                const adapter = new adapterClass({
+                    channel: channel
+                });
+                adapter.accounts = [currentSession.uid]
+                adapter.chainId = (currentSession.session as any).chainId
+                this.connector = new BaseConnector({adapter: adapter});
+                await this.connector.adapter.connect();
+                return;
+            }
+        }
     }
 
 

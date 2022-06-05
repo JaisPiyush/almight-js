@@ -83,13 +83,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     async clean(): Promise<void> {
         if (await this.storage.isConnected()) {
-            if (await this.storage.isConnected()) {
-                for (const query in Object.values(AllowedQueryParams)) {
-                    await this.storage.removeItem(query)
-                }
+            for (const query in Object.values(AllowedQueryParams)) {
+                await this.storage.removeItem(query);
             }
         }
-
     }
 
     async close(): Promise<void> {
@@ -97,7 +94,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
-        if(await this.storage.hasKey("walletconnect")){
+        if (await this.storage.hasKey("walletconnect")) {
             await this.storage.removeItem("walletconnect");
         }
     }
@@ -124,7 +121,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
             switch (key) {
                 case AllowedQueryParams.Provider:
-                    if(this.identityResolver === undefined){
+                    if (this.identityResolver === undefined) {
                         this.identityResolver = (this.constructor as any).identityResolverMap[value];
                     }
 
@@ -244,10 +241,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     async captureData(): Promise<void> {
         let query = await this.getConfigurationData();
 
-        if(await this.storage.hasKey("walletconnect")){
+        if (await this.storage.hasKey("walletconnect")) {
             await this.storage.removeItem("walletconnect");
         }
-
 
         if (query[AllowedQueryParams.ProjectId] !== undefined) {
             // Verify the project through the project id
@@ -297,14 +293,14 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
 
-export class Web3AuthenticationDelegate extends AuthenticationDelegate { 
+export class Web3AuthenticationDelegate extends AuthenticationDelegate {
 
 
     override async getConfigurationData(): Promise<Record<string, string>> {
         const data = {};
-        for(const query of Object.values(AllowedQueryParams)){
+        for (const query of Object.values(AllowedQueryParams)) {
             const _value = await this.storage.getItem<string>(query)
-            if(_value !== null && _value !== undefined) {
+            if (_value !== null && _value !== undefined) {
                 data[query] = _value
             }
         }

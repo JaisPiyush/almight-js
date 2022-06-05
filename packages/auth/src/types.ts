@@ -89,11 +89,10 @@ export interface ServerSentIdentityProvider {
     user: string;
     web_version: number,
     provider: string,
-    meta_data: {
-        sessions: {
-            [ConnectorType.BrowserExtension]?: BrowserSessionStruct[],
-            [ConnectorType.WalletConnector]?: WalletConnectSessionStruct[]
-        }
+    meta_data: Record<string, string>,
+    sessions: {
+        [ConnectorType.BrowserExtension]?: BrowserSessionStruct[],
+        [ConnectorType.WalletConnector]?: WalletConnectSessionStruct[]
     }
 }
 export interface User<S = ISession> {

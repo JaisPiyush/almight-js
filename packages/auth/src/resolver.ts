@@ -1,7 +1,7 @@
-import { Address, ConnectorType, IdentityProvider, IDENTITY_PROVIDERS } from "@almight-sdk/connector";
+import { Address, BrowserSessionStruct, ConnectorType, IdentityProvider, IDENTITY_PROVIDERS, WalletConnectSessionStruct } from "@almight-sdk/connector";
 import { Providers, WebLocalStorage } from "@almight-sdk/utils";
 import { AuthenticationDelegate } from "./delegate";
-import { AllowedQueryParams, IdentityResolverInterface, UserRegistrationArgument, Web3UserRegistrationArgument } from "./types";
+import { AllowedQueryParams, CurrentSessionStruct, IdentityResolverInterface, UserRegistrationArgument, Web3UserRegistrationArgument } from "./types";
 
 
 export class IdentityResolver implements IdentityResolverInterface {
@@ -124,10 +124,7 @@ export class Web3IdentityResolver extends IdentityResolver {
                 options.chainId = options.data.chainId ?? options.chainId;
             }
             options[this.serverRequestTickKey] = false //Guard method against race condition
-            const data = {
-                "data": options
-
-            }
+            const data = options;
 
             if (options.accounts !== undefined) {
                 data[AllowedQueryParams.Address] = options.accounts[0];
@@ -140,9 +137,6 @@ export class Web3IdentityResolver extends IdentityResolver {
             }
             if (options.data.error_code !== undefined) {
                 data[AllowedQueryParams.ErrorCode] = options.data.error_code
-            }
-            if (options.session !== undefined) {
-                data["session"] = options.session;
             }
             this.delegate.setStates(data).then(() => {
                 this.authenticateAndRespond().then(() => { });
@@ -170,35 +164,41 @@ export class Web3IdentityResolver extends IdentityResolver {
         const chainId = await this.getItemFromStorage<string>(AllowedQueryParams.ChainId);
         const error = await this.getItemFromStorage<string>(AllowedQueryParams.Error);
         const errorCode = await this.getItemFromStorage<string>(AllowedQueryParams.ErrorCode)
+        const session  = await this.getItemFromStorage<WalletConnectSessionStruct | BrowserSessionStruct>("session")
+        const connectorType = await this.getItemFromStorage<ConnectorType>(AllowedQueryParams.ConnectorType);
+        const provider = await this.getItemFromStorage<string>(AllowedQueryParams.Provider);
 
-        if (account !== null && chainId !== null) {
+        if (account !== null && chainId !== null && session !== null) {
             try {
                 const res = await this.delegate.handleUserRegistration();
-                console.log(res);
+                // TODO: Exempting from updating details
+                // const res = await this.delegate.handleUserRegistration();
+                await this.delegate.close()
                 await this.delegate.respondFrame.respondSuccess({
-                    "access": res.access,
-                    "refresh": res.refresh
+                    refresh: res.refresh,
+                    access: res.access
                 });
             } catch (e) {
+                await this.delegate.close()
                 await this.delegate.respondFrame.respondFailure({
                     [AllowedQueryParams.Error]: (e as Error).message,
                     [AllowedQueryParams.ErrorCode]: "10000"
                 });
             }
-
-
         } else if (error !== undefined) {
+            await this.delegate.close()
             await this.delegate.respondFrame.respondFailure({
                 error: error,
                 errorCode: errorCode !== null? errorCode: "10000"
             });
         } else {
+            await this.delegate.close()
             await this.delegate.respondFrame.respondFailure({
                 error: "Authentication Failed due to unknown reason",
                 errorCode: errorCode !== null? errorCode: "10000"
             });
          }
-        await this.delegate.close()
+        
     }
 
 
