@@ -457,8 +457,12 @@ export class WalletConnectChannel extends BaseProviderChannel {
         const method = this.getBehaviourMethod("channelOnConnect", obj);
         if (options !== undefined && (options.payload !== undefined)) {
             const { payload } = options;
-            const { accounts } = payload.params[0];
-            this._params = payload.params;
+            if(payload.params !== undefined && payload.params.length > 0){
+                this._params = payload.params[0];
+            }else{
+                this._params = payload[0];
+            }
+            const { accounts } = this._params;
             this._accounts = accounts;
             this._session = this._provider.session;
             const chainId = this._provider.chainId;

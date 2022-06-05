@@ -1,4 +1,4 @@
-import { BaseStorageInterface } from "utils/lib";
+import { BaseStorageInterface, isWebPlatform } from "utils/lib";
 import { projectAxiosInstance } from "./axios_clients";
 import { InvalidAPIKey } from "./excpetions";
 import { IAlmightClient } from "./types";
@@ -17,7 +17,7 @@ export class AlmightClient implements IAlmightClient {
     constructor(options: AlmightClientConstructorOptions){
         this.apiKey = options.apiKey;
         this.storage = options.storage;
-        this.storage.connect().then()
+        this.storage.connect().then();
     }
     async isAPIKeyValid(): Promise<boolean> {
         const res = await projectAxiosInstance.post<{is_valid: boolean}>("/project/verify/api_key",{

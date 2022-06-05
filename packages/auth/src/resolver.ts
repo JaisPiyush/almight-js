@@ -165,14 +165,12 @@ export class Web3IdentityResolver extends IdentityResolver {
         const error = await this.getItemFromStorage<string>(AllowedQueryParams.Error);
         const errorCode = await this.getItemFromStorage<string>(AllowedQueryParams.ErrorCode)
         const session  = await this.getItemFromStorage<WalletConnectSessionStruct | BrowserSessionStruct>("session")
-        const connectorType = await this.getItemFromStorage<ConnectorType>(AllowedQueryParams.ConnectorType);
-        const provider = await this.getItemFromStorage<string>(AllowedQueryParams.Provider);
+        // const connectorType = await this.getItemFromStorage<ConnectorType>(AllowedQueryParams.ConnectorType);
+        // const provider = await this.getItemFromStorage<string>(AllowedQueryParams.Provider);
 
         if (account !== null && chainId !== null && session !== null) {
             try {
                 const res = await this.delegate.handleUserRegistration();
-                // TODO: Exempting from updating details
-                // const res = await this.delegate.handleUserRegistration();
                 await this.delegate.close()
                 await this.delegate.respondFrame.respondSuccess({
                     refresh: res.refresh,

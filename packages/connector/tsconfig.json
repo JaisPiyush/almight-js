@@ -4,5 +4,5 @@
     "compilerOptions": {
         "outDir": "./lib"
     },
-    "include": ["./src", "../utils/src/constants.ts"]
+    "include": ["./src"]
 }

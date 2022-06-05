@@ -20,7 +20,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     frame?: IAuthenticationFrame;
     storage: BaseStorageInterface;
     connector?: BaseConnector;
-    sessions: ISession = [];
+    sessions: ISession[] = [];
     baseAuthenticationURL: string = "http://localhost:3000"
     token?: string;
 
@@ -64,6 +64,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     }
 
 
+
     async getToken(token?: string): Promise<string> {
         if (token !== undefined && token !== null) return token;
         if (this.token !== undefined && this.token !== null) return this.token;
@@ -72,12 +73,20 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
     async isAuthenticated(): Promise<boolean> {
-        //TODO: Need to implemen
-        const header = this.getAuthenticationHeaders();
-        if (header[this.AUTH_HEADER_KEY] === undefined) return false;
-        const token = await this.getToken();
-        if (token === null) return false
-        return await this.verifyToken(token)
+
+        try {
+            const user = await this.getUserData();
+            if(user.user !== undefined && user.user.user_id !== undefined){
+                await this.saveUserData(user);
+                await this.setupConnector();
+                return true
+            }
+
+        }catch(e){
+            
+        }
+        return false;
+
 
     }
 
@@ -172,12 +181,7 @@ export class AuthenticationApp implements IAuthenticationApp {
      * 
      * @param data 
      */
-    async setCurrentSession(data: {
-        uid: string,
-        provider: string,
-        session: ISession,
-        connector_type: string
-    }): Promise<void> {
+    async setCurrentSession<S=ISession>(data: CurrentSessionStruct<S>): Promise<void> {
         await this.storage.setItem(this.currentSessionName, data);
     }
 

@@ -19,8 +19,7 @@
             "@lamight-sdk/auth/*": ["auth/src/*"],
             "@lamight-sdk/platform-node/*": ["paltform-node/src/*"],
             "@almight-sdk/connector/*": ["connector/src/*"],
-            "@almight-sdk/utils/*": ["utils/src/*"],
-            "@almight-sdk/web-components": ["web-components/dist/module.js"],
+            "@almight-sdk/utils/*": ["utils/src/*"]
         },
         "skipLibCheck": true
     },

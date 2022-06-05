@@ -122,6 +122,9 @@ export interface IAuthenticationApp {
     core: IAlmightClient
     frame?: IAuthenticationFrame;
     baseAuthenticationURL: string;
+
+
+
     onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string>;

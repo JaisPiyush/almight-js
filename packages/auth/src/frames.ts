@@ -49,6 +49,10 @@ export class AuthenticationFrame implements IAuthenticationFrame {
     async handleSuccessResponse(data: RespondMessageData): Promise<void> {
         delete data.messageType;
         delete data.respondType;
+        if(data.refresh !== undefined){
+            delete data.refresh;
+            delete data.access;
+        }
         this.app.onSuccessCallback(data);
     }
 

@@ -48,7 +48,6 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
-        // [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
 
     connector?: BaseConnector;
@@ -83,7 +82,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     async clean(): Promise<void> {
         if (await this.storage.isConnected()) {
-            for (const query in Object.values(AllowedQueryParams)) {
+            for (const query of Object.values(AllowedQueryParams)) {
                 await this.storage.removeItem(query);
             }
         }
@@ -91,12 +90,13 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     async close(): Promise<void> {
         await this.clean();
-        if (this.respondFrame !== undefined) {
-            await this.respondFrame.close()
-        }
         if (await this.storage.hasKey("walletconnect")) {
             await this.storage.removeItem("walletconnect");
         }
+        if (this.respondFrame !== undefined) {
+            await this.respondFrame.close()
+        }
+        
     }
 
 
