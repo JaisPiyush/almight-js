@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument } from "@almight-sdk/auth"
 import WalletModal from './components/WalletsModal';
-import almight from "./almight"
+import almight from './almight';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from './store';
 import { globalActions } from './store/globalSlice';
