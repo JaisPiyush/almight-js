@@ -1,9 +1,16 @@
+import WalletConnect from "@walletconnect/client";
+import { Class } from "@almight-sdk/utils";
+
 export interface NetworkData {
-    name: string,
+    name?: string,
     chainId: number
 }
 
-export type BrowserSessionStruct = {path: string, network?: NetworkData};
+export interface ISession { 
+    chainId: number
+}
+
+export interface BrowserSessionStruct extends ISession { path: string, network?: NetworkData, chainId: number };
 
 interface WalletConnectMetaInterface {
     description: string
@@ -12,7 +19,7 @@ interface WalletConnectMetaInterface {
     name: string
     ssl?: boolean
 }
-export interface WalletConnectSessionStruct {
+export interface WalletConnectSessionStruct extends ISession {
     connected: boolean,
     accounts: Array<string>
     chainId: number
@@ -33,22 +40,33 @@ export interface WalletConnectSessionStruct {
  * based on the providers
  */
 export interface ProviderSessionStruct {
-    browser: Array<BrowserSessionStruct>;
-    walletconnect: Array<WalletConnectSessionStruct>
+    [ConnectorType.BrowserExtension]: Array<BrowserSessionStruct>;
+    [ConnectorType.WalletConnector]: Array<WalletConnectSessionStruct>
 }
 
 
+export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
+
 export interface ProviderChannelInterface {
+
+
+    connectorType: ConnectorType;
+    requestTimeout: number;
+
+    getCompleteSessionForStorage(): ISession;
+
+    setProvider(provider: ExternalProvider): void;
     init(session?: IProviderSessionData): void;
-    checkSession(): Promise<[boolean, any | null]>;
-    connect(options?: any);
-    checkConnection(): Promise<boolean>;
-    ping(method?: string): Promise<boolean>;
+    checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
+    checkEnvironment(): Promise<boolean>;
+    connect(options?: any, obj?: IProviderAdapter): Promise<void>;
+    checkConnection(obj?: IProviderAdapter): Promise<boolean>;
+    ping(data?: { method?: string, obj?: IProviderAdapter }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
      * Method to subscribe events 
      */
-     on(name: string, callback: SubscriptionCallback): void;
+    on(name: string, callback: SubscriptionCallback): void;
 }
 
 export interface ProviderRequestMethodArguments {
@@ -66,7 +84,7 @@ export type Address = string;
 export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionStruct
 
 
-export enum ConnectorType{
+export enum ConnectorType {
     BrowserExtension = "browser_extension",
     WalletConnector = "walletconnect"
 }
@@ -77,7 +95,7 @@ export interface SubscriptionCallback {
 }
 export interface IBaseProvider {
 
-    
+
 
     /**
      * Check the connection of session is valid and working
@@ -100,6 +118,134 @@ export interface IBaseProvider {
      */
     on(name: string, callback: SubscriptionCallback): void;
 
- 
+
+
+}
+
+
+export interface IProviderAdapter {
+
+    isConnected(): boolean;
+
+    protocol?: IProtocolDefinition;
+
+    bindProtocol(protocol: IProtocolDefinition): void;
+
+    getSession(): ISession;
+
+    channelConnect?: (options?: any) => Promise<void>;
+    channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
+    channelPing? :(options?: any) => Promise<boolean>;
+    channelOnConnect?: (options?: any) => void;
+    on(event: string, callback: SubscriptionCallback): void;
+
+    request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
+
+    checkSession<P>(): Promise<[boolean, P]>;
+    connect(): Promise<void>;
+}
+
+
+export interface IChannelBehaviourPlugin {
+    channelConnect?: <R = any>(options?: R, channel?: ProviderChannelInterface) => Promise<void>;
+    channelCheckSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface) => Promise<[boolean, P]>;
+    channelOnConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
+    channelVerifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
+    bind(channel: ProviderChannelInterface): void;
+
+}
+
+export interface IdentityProviderInterface {
+    identityProviderName: string;
+    webVersion: number;
+
+    allowedConnectorTypes: Array<ConnectorType>;
+
+    // chainId or unique id for web2 providers
+    identifier: string | number;
+
+    // Meta Datas such as icon, name, url , etc
+    metaData: Record<string, any>;
+
+    getAdapterClass(): Class<IProviderAdapter> | null;
+    getChannels(): Class<ProviderChannelInterface>[];
+    getProtocolDefination(): Class<IProtocolDefinition>;
+
+}
+
+
+
+
+
+
+
+export interface IConnectorSessionFilter {
+    chainId?: number;
+    path?: string;
+    clientId?: string;
+    peerId?: string;
+    handshakeId?: number;
+    handshakeTopic?: string;
+}
+
+export interface IConnectorConnectArguments {
+    channel?: Class<ProviderChannelInterface> | ProviderChannelInterface;
+    session?: BrowserSessionStruct | WalletConnectSessionStruct;
+    filters?: IConnectorSessionFilter
+}
+
+
+export interface IConnector {
+
+    findChannels(): Class<ProviderChannelInterface>[];
+    findAdapter(): Class<IProviderAdapter>;
+    connect(args: IConnectorConnectArguments): Promise<void>;
+    getChannels(): Promise<Class<ProviderChannelInterface>[]>;
+    getSessions(): ISession[];
+    validateSessionStructure(session: BrowserSessionStruct | WalletConnectSessionStruct, filters: IConnectorSessionFilter): boolean;
+    validateChannel(channel: Class<ProviderChannelInterface>): Promise<boolean>;
+    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: BrowserSessionStruct | WalletConnectSessionStruct): Promise<boolean>;
+
+
+}
+
+export interface TransactionData {}
+
+
+export interface SignMessageArgument {}
+
+
+export interface TransactionReturnType {}
+export interface SignMessageReturnType {}
+export interface AccountsReturnType {}
+export interface BalanceReturnType {}
+export interface RequestReturnType {}
+
+
+export interface IProtocolDefinition {
+
+    adapter?: IProviderAdapter;
+    chainIds: number[];
+
+    bindAdapter(adapter: IProviderAdapter): void;
+
+    request<T = any>(args: ProviderRequestMethodArguments): Promise<T>;
+
+    sendTransaction(data: TransactionData): Promise<TransactionReturnType>;
+
+    signTransaction(data: TransactionData): Promise<TransactionReturnType>;
+
+    signPersonalMessage(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    sign(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    signTypedData(data: SignMessageArgument): Promise<SignMessageReturnType>;
+
+    getNetworkId(): Promise<RequestReturnType>;
+    getChainId(): Promise<RequestReturnType>;
+    getAccounts(): Promise<AccountsReturnType>;
+    getBalance(): Promise<BalanceReturnType>;
+
+
 
 }

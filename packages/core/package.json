@@ -5,8 +5,8 @@
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
-  "main": "lib/core.js",
-  "typings": "lib/core.d.ts",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "directories": {
     "lib": "lib",
     "test": "__test__"
@@ -20,11 +20,14 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "test": "echo \"Error: run tests from root\" && exit 1"
+    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "dependencies": {
+    "@almight-sdk/utils": "^0.0.0",
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.1"
   }
 }

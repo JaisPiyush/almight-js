@@ -9,6 +9,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
 
     protected storage: NaiveStorage | Record<string, any>;
     readonly type: StorageType;
+    public prefix?: string;
 
     /**
     * @callback onConnectCallback will be called after the connection is established
@@ -17,8 +18,8 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     * @callback beforeDisconnectCallback will be called just before the connection is established
     * @defaultValue empty function
     */
-    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => Promise<void>;
-    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => Promise<void>;
+    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
+    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
 
     /**
      * Set default values for the class properties
@@ -39,6 +40,10 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
                 this.beforeDisconnectCallback = options.beforeDisconnectCallback;
             }
         }
+
+        if(isWebPlatform()){
+            this.connect().then();
+        }
     }
 
     isStorageDefined(): boolean {
@@ -50,7 +55,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     }
 
 
-    connect(): Promise<void> {
+    async connect(): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
@@ -59,7 +64,9 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
             const pingValue = '__test__ping__';
             const pingKey = '__ping__'
             await this.setItem(pingKey, pingValue);
-            return (await this.getItem<string>(pingKey)) === pingValue;
+            const connected = (await this.getItem<string>(pingKey)) === pingValue;
+            await this.removeItem(pingKey);
+            return connected
 
         }
         return false;
@@ -83,11 +90,15 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         return JSON.parse(value) as T;
     }
 
+    getPrefixedName(name: string): string {
+        return this.prefix === undefined ? name: `${this.prefix}__${name}`
+    }
+
     async setItem(key: string, value: any): Promise<void> {
-        this.storage.setItem(key, this.serialize(value));
+        this.storage.setItem(this.getPrefixedName(key), this.serialize(value));
     }
     async getItem<T = any>(key: string): Promise<T | null> {
-        const value = this.storage.getItem(key);
+        const value = this.storage.getItem(this.getPrefixedName(key));
         if (value === null || value === undefined) return null;
         return this.deserialize<T>(value);
     }
@@ -101,7 +112,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         return (await this.getItem<any>(key)) !== null;
     }
     async removeItem(key: string): Promise<void> {
-        this.storage.removeItem(key);
+        this.storage.removeItem(this.getPrefixedName(key));
     }
 
     async clear(): Promise<void> {
@@ -122,9 +133,9 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * 
      * @param name Name of the class instance
      */
-    checkPlatform(name: string = "WebStorage"): void {
-        if (window === undefined || window === null || ! isWebPlatform()) {
-            throw new UnsuitablePlatformException(`${name} only supports web platform`)
+    checkPlatform(): void {
+        if (globalThis === undefined || globalThis === null || ! isWebPlatform()) {
+            throw new UnsuitablePlatformException(`${this.constructor.name} only supports web platform`)
         }
     }
 }
@@ -138,12 +149,12 @@ export class WebLocalStorage extends BaseWebStorage<BaseStorageOptions> {
      * @override
      * 
      * After the verification of platform, which must be web
-     * store window.localStorage instance in @property storage
+     * store globalThis.localStorage instance in @property storage
      * Call onConnectCallback after connection
      */
     async connect(): Promise<void> {
-        this.checkPlatform('WebLocalStorage');
-        this.storage = window.localStorage;
+        this.checkPlatform();
+        this.storage = globalThis.localStorage;
         this.onConnectCallback(this);
     }
 
@@ -159,12 +170,12 @@ export class WebSessionStorage extends BaseWebStorage {
      * @override
      * 
      * After the verification of platform, which must be web
-     * store window.sessionStorage instance in @property storage
+     * store globalThis.sessionStorage instance in @property storage
      * Call onConnectCallback after connection
      */
     async connect(): Promise<void> {
-        this.checkPlatform('WebSessionStorage');
-        this.storage = window.sessionStorage;
+        this.checkPlatform();
+        this.storage = globalThis.sessionStorage;
         this.onConnectCallback(this);
     }
 }
@@ -191,17 +202,17 @@ export class WebWindowStore extends BaseWebStorage {
      * Call onConnectCallback after connection
      */
     async connect(): Promise<void> {
-        this.checkPlatform('WebSessionStorage');
-        if ((window as any)[this.keyName] === undefined) {
-            (window as any)[this.keyName] = {};
+        this.checkPlatform();
+        if ((globalThis as any)[this.keyName] === undefined) {
+            (globalThis as any)[this.keyName] = {};
         }
-        this.storage = (window as any)._webWindowStoreAlmight
+        this.storage = (globalThis as any)._webWindowStoreAlmight
         this.onConnectCallback(this);
     }
 
 
     async isConnected(): Promise<boolean> {
-        return (this.storage !== null && (window as any)[this.keyName] !== undefined);
+        return (this.storage !== null && (globalThis as any)[this.keyName] !== undefined);
     }
 
     serialize(value: any): any {
@@ -215,10 +226,10 @@ export class WebWindowStore extends BaseWebStorage {
     /**
      * @override 
      * 
-     * Remove the keyName property from window
+     * Remove the keyName property from globalThis
      */
     async clear(): Promise<void> {
-        (window as any)[this.keyName] = {};
+        (globalThis as any)[this.keyName] = {};
     }
 
 

@@ -18,7 +18,7 @@
     "url": "git+https://github.com/Byta-Tigris/almight-js.git"
   },
   "scripts": {
-    "test": "echo \"Error: run tests from root\" && exit 1",
+    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register",
     "tsc": "tsc",
     "prod": "tsc --outDir=src"
   },
@@ -26,5 +26,7 @@
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "dependencies": {
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.1"
   }
 }
