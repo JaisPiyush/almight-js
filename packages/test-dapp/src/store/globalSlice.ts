@@ -15,7 +15,7 @@ export interface GlobalState {
 const initialState: GlobalState = {
     showWalletModal: false,
     showLoading: false,
-    showAccountsModal: true
+    showAccountsModal: false
 };
 
 
