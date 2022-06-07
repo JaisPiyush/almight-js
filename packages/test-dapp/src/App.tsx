@@ -1,52 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
-import { AlmightClient } from "@almight-sdk/core"
 import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument } from "@almight-sdk/auth"
-import { WebLocalStorage } from '@almight-sdk/utils';
 import WalletModal from './components/WalletsModal';
+import almight from "./almight"
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from './store';
+import { globalActions } from './store/globalSlice';
 
 
-declare global {
-  interface Window {
-    auth: any
-  }
-}
+
 
 
 
 const App: React.FC<{}> = () => {
 
-  const almight = new AlmightClient({
-    apiKey: (process.env.REACT_APP_ALMIGHT_API_KEY) as string,
-    storage: new WebLocalStorage()
-  });
-
-  const auth = new AuthenticationApp({
-    almightClient: almight,
-    onSuccessCallback: (data: ResponseMessageCallbackArgument): void => {
-      console.log("success", data)
-    },
-    onFailureCallback: (data: ErrorResponseMessageCallbackArgument): void => {
-      console.log("error", data)
-    }
-  });
-
-  window.auth = auth;
-  
+  const dispatch = useDispatch<AppDispatch>();
+  const showWalletModel = useSelector<RootState>((state) => state.global.showWalletModal)
 
 
-
-
-
-
-  const [showModal, setShowModel] = useState<boolean>(true)
-
-
-  const handleClick = () => {
-    setShowModel(true)
-
-
-
+  const handleLoginClick = () => {
+    dispatch(globalActions.setWalletModalView(true));
   }
 
 
@@ -56,11 +29,10 @@ const App: React.FC<{}> = () => {
       <div className='w-full h-full flex flex-col justify-center'>
         <div className='flex flex-row w-full justify-center'>
           {/* <ActionsBox /> */}
-          <button onClick={() => {handleClick()}} className='bg-blue-600 w-auto px-4 py-2 rounded-md shadow-md text-white'>Login</button>
+          <button onClick={() => {handleLoginClick()}} className='bg-blue-600 w-auto px-4 py-2 rounded-md shadow-md text-white'>Login</button>
         </div>
       </div>
-      <WalletModal show={showModal} onClose={() => { setShowModel(false) }} />
-
+      {showWalletModel ? <WalletModal />: <></>}
     </div>
   );
 }
