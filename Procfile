@@ -1,1 +1,1 @@
-web: sh -c 'lerna run serve --scope=test-dapp'
+web: sh -c 'npm run start'
