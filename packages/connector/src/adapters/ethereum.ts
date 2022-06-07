@@ -2,6 +2,7 @@ import { BaseChainAdapter } from "../adapter";
 import { WalletConnectChannel } from "../channel";
 import { BaseProtocolDefination } from "../protocol_definition";
 import { IProviderAdapter, TransactionData, TransactionReturnType, SignMessageArgument, SignMessageReturnType, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType } from "../types";
+import { ethers, BigNumber } from "ethers";
 
 
 export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDefination {
@@ -99,6 +100,7 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
             throw e;
         }
     }
+
     async getChainId(): Promise<number> {
         try{
             const chainId = await this.request<string>({method: "eth_chainId", params:[]});
@@ -114,7 +116,10 @@ export class MetaMaskAdapter extends BaseChainAdapter implements BaseProtocolDef
        });
     }
     async getBalance(): Promise<BalanceReturnType> {
-        throw new Error("Method not implemented.");
+        const hexBalance =  await this.request<string>({method: "eth_getBalance", params:[this.accounts[0], "latest"]})
+        const bNBalance = BigNumber.from(hexBalance);
+        const balance = ethers.utils.formatEther(bNBalance);
+        return parseFloat(balance);
     }
 
 

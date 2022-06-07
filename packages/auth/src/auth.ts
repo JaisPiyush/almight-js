@@ -7,8 +7,8 @@ import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorRes
 export interface AuthenticationAppConstructorOptions {
     almightClient: AlmightClient;
     frame?: AuthenticationFrame;
-    onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
-    onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => void;
+    onSuccessCallback?: (data: ResponseMessageCallbackArgument) => void;
+    onFailureCallback?: (data: ErrorResponseMessageCallbackArgument) => void;
     baseAuthenticaionURL?: string;
 }
 
@@ -32,6 +32,15 @@ export class AuthenticationApp implements IAuthenticationApp {
     onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
     onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => void;
 
+
+    public set onSuccess(fn:(data: ResponseMessageCallbackArgument) => void) {
+        this.onSuccessCallback = fn;
+    }
+
+    public set onFailure(fn: (data: ErrorResponseMessageCallbackArgument) => void){
+        this.onFailureCallback = fn;
+    }
+
     setFrame(frame?: IAuthenticationFrame): void {
         if(frame !== undefined){
             this.frame = frame;
@@ -49,14 +58,16 @@ export class AuthenticationApp implements IAuthenticationApp {
         3: Web3NativeAuthenticationFrame
     }
 
+    deadFunction(data?: any): any {}
+
 
 
     constructor(options: AuthenticationAppConstructorOptions) {
         this.core = options.almightClient;
         this.storage = this.core.storage;
         this.setFrame(options.frame);
-        this.onSuccessCallback = options.onSuccessCallback;
-        this.onFailureCallback = options.onFailureCallback;
+        this.onSuccessCallback = options.onSuccessCallback ?? this.deadFunction;
+        this.onFailureCallback = options.onFailureCallback ?? this.deadFunction;
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
 
         // TODO: need the below line to load token as variable from localstorage [JUST FOR TESTING]

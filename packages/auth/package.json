@@ -30,6 +30,7 @@
     "@almight-sdk/core": "^0.0.0",
     "@almight-sdk/utils": "^0.0.0",
     "axios": "^0.27.2",
+    "bn.js": "^5.2.1",
     "dotenv": "^16.0.1"
   }
 }
