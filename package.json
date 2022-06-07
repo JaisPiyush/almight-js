@@ -29,12 +29,8 @@
   },
   "scripts": {
     "build": "lerna run tsc",
-    "test:e2e": "npm run build && lerna run e2e --scope=e2e",
-    "start:e2e": "npm run build && npm run dev --prefix packages/e2e",
     "tsc": "tsc",
-    "test:karma": "karma start --single-run --browser ChromeHeadless karma.conf.js",
-    "bootstrap": "lerna run bootstrap",
-    "serve:test-dapp": "lerna run serve --scope=test-dapp"
+    "bootstrap": "lerna run bootstrap"
   },
   "dependencies": {
     "js-sha3": "^0.8.0"
