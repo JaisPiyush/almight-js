@@ -6,6 +6,7 @@
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
   "main": "lib/index.js",
+  "private": "false",
   "directories": {
     "lib": "lib",
     "test": "__tests__"
@@ -29,5 +30,5 @@
     "axios": "^0.27.2",
     "dotenv": "^16.0.1"
   },
-  "gitHead": "8b7c11c27c84c3ca0771ab2dc604692f8977f0a3"
+  "gitHead": "a047dd87bee7dbd98d54d9de000a6a6bbb786696"
 }

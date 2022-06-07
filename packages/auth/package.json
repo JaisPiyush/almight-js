@@ -4,6 +4,7 @@
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
+  "private": "false",
   "license": "ISC",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
@@ -33,5 +34,5 @@
     "bn.js": "^5.2.1",
     "dotenv": "^16.0.1"
   },
-  "gitHead": "8b7c11c27c84c3ca0771ab2dc604692f8977f0a3"
+  "gitHead": "a047dd87bee7dbd98d54d9de000a6a6bbb786696"
 }
