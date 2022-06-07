@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store";
 import { globalActions } from "../store/globalSlice";
 import { auth } from "../almight";
-import { ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument } from "@almight-sdk/auth";
+import { ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument, UserData } from "@almight-sdk/auth";
 
 
 interface WalletModalInterface {
@@ -29,11 +29,11 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
 
 
     auth.onSuccess = (data: ResponseMessageCallbackArgument) => {
+        dispatch(globalActions.setUserData(data.user as UserData));
         
     }
 
     auth.onFailure = (data: ErrorResponseMessageCallbackArgument) => {
-        console.log(data);
     }
 
     window.auth = auth;
