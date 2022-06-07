@@ -30,9 +30,10 @@ const Dashboard: React.FC<{}> = () => {
 
 
     function onGetMessageSignClick() {
+        if(message.length === 0) return;
         dispatch(globalActions.setShowLoading(true))
         auth.isAuthenticated().then((isAuthenticated) => {
-            if (!isAuthenticated || auth.connector === undefined || message.length === 0) return;
+            if (!isAuthenticated || auth.connector === undefined) return;
             (auth.connector.adapter as MetaMaskAdapter).signPersonalMessage({ message: message }).then((hash) => {
                 setMessageHash(hash);
                 dispatch(globalActions.setShowLoading(false))

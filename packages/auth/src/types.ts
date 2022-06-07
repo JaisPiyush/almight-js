@@ -82,6 +82,7 @@ export interface IAuthenticationFrame {
     close(): Promise<void>;
     captureResponse(data: RespondMessageData): Promise<void>;
     onResponsCallback(data: RespondMessageData): void;
+
 }
 
 export interface ServerSentIdentityProvider {

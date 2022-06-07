@@ -10,6 +10,8 @@ import { WebConnectorModal } from "./components";
 
 export class AuthenticationFrame implements IAuthenticationFrame {
 
+ 
+
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
     app?: AuthenticationApp;
 
@@ -17,6 +19,8 @@ export class AuthenticationFrame implements IAuthenticationFrame {
         data[AllowedQueryParams.RespondStrategy] = this.respondStrategy;
         // data[AllowedQueryParams.TargetOrigin] = globalThis.location.origin;
     }
+
+  
 
     bindListener(): void {
         throw new Error("Method not implemented.");
@@ -95,6 +99,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     // Element will dispatch 'buttonclick' event on button click
     mountModal(): void {
+
         this.modal.open({
             hasConnectorButton: this.browserAdapter !== undefined,
             hasQRCode: this.walletconnectAdapter !== undefined,

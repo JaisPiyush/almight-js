@@ -33,6 +33,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => void;
 
 
+
     public set onSuccess(fn: (data: ResponseMessageCallbackArgument) => void) {
         this.onSuccessCallback = fn;
     }

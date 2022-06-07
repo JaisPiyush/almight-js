@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
-import { useSelector } from 'react-redux';
-import { RootState } from './store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from './store';
 import Dashboard from './components/Dashboard';
 import WalletModal from './components/WalletsModal';
 import AccountModal from './components/AccountModal';
 import Loading from './components/LoadingModal';
+import { auth } from './almight';
+import { globalActions } from './store/globalSlice';
+import { CurrentSessionStruct } from '@almight-sdk/auth';
 
 
 
@@ -14,9 +17,27 @@ import Loading from './components/LoadingModal';
 
 const App: React.FC<{}> = () => {
 
-
+  const dispatch = useDispatch<AppDispatch>()
+  const currentSession = useSelector<RootState, CurrentSessionStruct | undefined>(state => state.global.currentSession)
   const showWalletModel = useSelector<RootState>((state) => state.global.showWalletModal);
-  const showAccountsModal = useSelector<RootState>((state) => state.global.showAccountsModal)
+  const showAccountsModal = useSelector<RootState>((state) => state.global.showAccountsModal);
+
+
+  useEffect(() => {
+
+    auth.isAuthenticated().then((isAuthenticated) => {
+      if(!isAuthenticated){
+        dispatch(globalActions.setWalletModalView(true));
+      }else if(currentSession === undefined){
+        auth.getUserData().then((userData) => {
+          dispatch(globalActions.setUserData(userData))
+        })
+      }
+    })
+
+  }, [currentSession])
+
+  
 
 
 
