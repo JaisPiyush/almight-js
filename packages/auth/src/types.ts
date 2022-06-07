@@ -135,6 +135,10 @@ export interface IAuthenticationApp {
 
     getCurrentSession<S = ISession>(): Promise<CurrentSessionStruct<S>>;
     setCurrentSession<S=ISession>(data: CurrentSessionStruct<S>): Promise<void>;
+
+    getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): {icon: string, name: string} | undefined;
+    getCurrentSessionStructsFromIdp(idp: ServerSentIdentityProvider): CurrentSessionStruct[];
+    getAccountIdpsAsCurrentSessionStructs(): Promise<CurrentSessionStruct[]>;
    
     saveUserData(userData: UserData): Promise<void>;
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
