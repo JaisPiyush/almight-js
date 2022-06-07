@@ -30,8 +30,8 @@
   "scripts": {
     "build": "lerna run tsc",
     "tsc": "tsc",
-    "bootstrap": "lerna run bootstrap",
-    "start": "lerna run serve --scope=test-dapp"
+    "bootstrap": "lerna bootstrap --include-dependencies",
+    "start": "npm run bootstrap && lerna run serve --scope=test-dapp"
   },
   "dependencies": {
     "js-sha3": "^0.8.0"

@@ -1,9 +1,13 @@
 {
   "name": "@almight-sdk/auth",
   "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
+  "private": false,
   "license": "ISC",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",

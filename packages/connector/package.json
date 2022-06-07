@@ -1,10 +1,14 @@
 {
   "name": "@almight-sdk/connector",
   "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
+  "private": false,
   "main": "lib/index.js",
   "directories": {
     "lib": "lib",
