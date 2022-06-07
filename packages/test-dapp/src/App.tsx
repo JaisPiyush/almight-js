@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
-import { AuthenticationApp, ErrorResponseMessageCallbackArgument, ResponseMessageCallbackArgument } from "@almight-sdk/auth"
-import WalletModal from './components/WalletsModal';
-import almight from './almight';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from './store';
+import Dashboard from './components/Dashboard';
+import WalletModal from './components/WalletsModal';
+import AccountModal from './components/AccountModal';
+import Loading from './components/LoadingModal';
+import { auth } from './almight';
 import { globalActions } from './store/globalSlice';
+import { CurrentSessionStruct } from '@almight-sdk/auth';
 
 
 
@@ -14,26 +17,41 @@ import { globalActions } from './store/globalSlice';
 
 const App: React.FC<{}> = () => {
 
-  const dispatch = useDispatch<AppDispatch>();
-  const showWalletModel = useSelector<RootState>((state) => state.global.showWalletModal)
+  const dispatch = useDispatch<AppDispatch>()
+  const currentSession = useSelector<RootState, CurrentSessionStruct | undefined>(state => state.global.currentSession)
+  const showWalletModel = useSelector<RootState>((state) => state.global.showWalletModal);
+  const showAccountsModal = useSelector<RootState>((state) => state.global.showAccountsModal);
 
 
-  const handleLoginClick = () => {
-    dispatch(globalActions.setWalletModalView(true));
-  }
+  useEffect(() => {
+
+    auth.isAuthenticated().then((isAuthenticated) => {
+      if(!isAuthenticated){
+        dispatch(globalActions.setWalletModalView(true));
+      }else if(currentSession === undefined){
+        auth.getUserData().then((userData) => {
+          dispatch(globalActions.setUserData(userData))
+        })
+      }
+    })
+
+  }, [currentSession])
+
+  
+
 
 
 
   return (
-    <div className="App w-screen h-screen">
+    <div className="App w-screen h-screen overflow-hidden">
       <div className='w-full h-full flex flex-col justify-center'>
-        <div className='flex flex-row w-full justify-center'>
-          {/* <ActionsBox /> */}
-          <button onClick={() => {handleLoginClick()}} className='bg-blue-600 w-auto px-4 py-2 rounded-md shadow-md text-white'>Login</button>
-        </div>
+        <Dashboard />
       </div>
       {showWalletModel ? <WalletModal />: <></>}
+      {showAccountsModal? <AccountModal />: <></>}
+      <Loading />
     </div>
+  
   );
 }
 

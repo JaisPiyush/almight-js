@@ -24,3 +24,7 @@ code {
 .font-koulen {
   font-family: 'Koulen', cursive;
 }
+
+p{
+  cursor: pointer;
+}

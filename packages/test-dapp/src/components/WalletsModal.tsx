@@ -39,8 +39,12 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
     window.auth = auth;
 
     function onWalletClick(provider: string): void {
-        
-        auth.startAuthentication(provider as any).then();
+        dispatch(globalActions.setShowLoading(true));
+        dispatch(globalActions.setWalletModalView(false));
+        auth.startAuthentication(provider as any).then(() => {
+            dispatch(globalActions.setShowLoading(false));
+            
+        });
     }
 
     const avatars = []
@@ -59,9 +63,8 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
     }
 
     function onCloseClick(){
-        console.log("being clicked");
-        
         dispatch(globalActions.setWalletModalView(false))
+        
     }
 
     return (

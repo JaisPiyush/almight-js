@@ -90,15 +90,15 @@ export class WebConnectorModal implements IConnectorModal {
             document.dispatchEvent(event);
         }`)
 
-        const mountQRCodeFunction = document.createTextNode(`function mountQRCode(){
-            console.log("runned", QRCode)
-            const canvas = document.getElementById("almight__qrcode")
-            new QRCode(canvas, "${data.uri}");
-            // QRCode.toCanvas(canvas, , function () {})
-            canvas.setAttribute("style", "width:90%;")
-        }
-        mountQRCode();
-        `)
+        // const mountQRCodeFunction = document.createTextNode(`function mountQRCode(){
+        //     console.log("runned", QRCode)
+        //     const canvas = document.getElementById("almight__qrcode")
+        //     new QRCode(canvas, "${data.uri}");
+        //     // QRCode.toCanvas(canvas, , function () {})
+        //     canvas.setAttribute("style", "width:90%;")
+        // }
+        // mountQRCode();
+        // `)
 
         jsfunctions.appendChild(handleCloseClickFunction)
         jsfunctions.appendChild(handleConnectClickFunction)
@@ -108,11 +108,11 @@ export class WebConnectorModal implements IConnectorModal {
         }
     }
 
-
     open(data: ConnectorModalData): void {
         const div = document.createElement('div')
         div.setAttribute("id", this.id);
         div.innerHTML = this.html(data);
+
         document.body.appendChild(div);
         this.el = div;
         this.onConnectClick = data.onConnectClick;
@@ -133,7 +133,7 @@ export class WebConnectorModal implements IConnectorModal {
 
 
     close(el?: HTMLElement): void {
-        if (this.el !== undefined) {
+        if (this.el !== undefined && document.querySelectorAll(`#${this.id}`) !== null) {
             document.removeEventListener("almight-modal-connect-click", this.onConnectClick, true)
             document.body.removeChild(this.el);
         }
