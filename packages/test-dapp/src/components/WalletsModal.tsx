@@ -58,9 +58,7 @@ const WalletModal: React.FC<WalletModalInterface> = (props: WalletModalInterface
 
     }
 
-    function onCloseClick(){
-        console.log("being clicked");
-        
+    function onCloseClick(){  
         dispatch(globalActions.setWalletModalView(false))
     }
 
