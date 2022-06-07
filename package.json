@@ -30,7 +30,7 @@
   "scripts": {
     "build": "lerna run tsc",
     "tsc": "tsc",
-    "bootstrap": "lerna run bootstrap",
+    "bootstrap": "lerna run bootstrap --include-dependencies",
     "start": "lerna run serve --scope=test-dapp"
   },
   "dependencies": {
