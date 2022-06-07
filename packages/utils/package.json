@@ -1,6 +1,6 @@
 {
   "name": "@almight-sdk/utils",
-  "version": "0.0.0",
+  "version": "0.0.1-alpha.90+c245cac",
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
@@ -28,5 +28,6 @@
   "dependencies": {
     "axios": "^0.27.2",
     "dotenv": "^16.0.1"
-  }
+  },
+  "gitHead": "c245cac782edfc68d016c45af5442d1986d86c3d"
 }
