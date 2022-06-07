@@ -1,6 +1,6 @@
 {
   "name": "@almight-sdk/connector",
-  "version": "0.0.1-alpha.90+c245cac",
+  "version": "0.0.1-alpha.91+8b7c11c",
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
@@ -25,7 +25,7 @@
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "dependencies": {
-    "@almight-sdk/utils": "^0.0.1-alpha.90+c245cac",
+    "@almight-sdk/utils": "^0.0.1-alpha.91+8b7c11c",
     "@walletconnect/client": "^1.7.7",
     "@walletconnect/utils": "^1.7.8",
     "axios": "^0.27.2",
@@ -38,5 +38,5 @@
   "devDependencies": {
     "@babel/preset-env": "^7.17.10"
   },
-  "gitHead": "c245cac782edfc68d016c45af5442d1986d86c3d"
+  "gitHead": "8b7c11c27c84c3ca0771ab2dc604692f8977f0a3"
 }
