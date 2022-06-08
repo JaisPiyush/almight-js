@@ -4,7 +4,7 @@ import { InvalidAPIKey } from "./excpetions";
 import { IAlmightClient } from "./types";
 
 export interface AlmightClientConstructorOptions {
-    apiKey?: string;
+    apiKey: string;
     storage: BaseStorageInterface;
 }
 export class AlmightClient implements IAlmightClient {
@@ -20,9 +20,7 @@ export class AlmightClient implements IAlmightClient {
         this.storage.connect().then();
     }
 
-    setAPIKey(apiKey: string): void {
-        this.apiKey = apiKey;
-    }
+
     async isAPIKeyValid(): Promise<boolean> {
         const res = await projectAxiosInstance.post<{is_valid: boolean}>("/project/verify/api_key",{
             "api_key": this.apiKey
