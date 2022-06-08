@@ -24,11 +24,10 @@ const App: React.FC<{}> = () => {
 
 
   useEffect(() => {
-
     auth.isAuthenticated().then((isAuthenticated) => {
-      if(!isAuthenticated){
+      if (!isAuthenticated) {
         dispatch(globalActions.setWalletModalView(true));
-      }else if(currentSession === undefined){
+      } else if (currentSession === undefined) {
         auth.getUserData().then((userData) => {
           dispatch(globalActions.setUserData(userData))
         })
@@ -37,7 +36,7 @@ const App: React.FC<{}> = () => {
 
   }, [currentSession])
 
-  
+
 
 
 
@@ -47,11 +46,11 @@ const App: React.FC<{}> = () => {
       <div className='w-full h-full flex flex-col justify-center'>
         <Dashboard />
       </div>
-      {showWalletModel ? <WalletModal />: <></>}
-      {showAccountsModal? <AccountModal />: <></>}
+      {showWalletModel ? <WalletModal /> : <></>}
+      {showAccountsModal ? <AccountModal /> : <></>}
       <Loading />
     </div>
-  
+
   );
 }
 
