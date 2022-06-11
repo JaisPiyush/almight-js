@@ -15,7 +15,18 @@ import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types"
  * Channels holds information regarding session and connection and request method allows to 
  * request task and operations
  * 
+ * 
+ * Channel Lifecycle
+ * 
+ * checkSession(): Check session is valid and connectable
+ * mount(): When channel is ready to be connected and is mounted in the process flow
+ * onMount(): Hook that is executed just after mounting
+ * connect(): Create connection with the provider
+ * checkConnection(): Determinse channel is connected or not
+ * onConnect(): Fire when connection event finished, includes error & result
+ * 
  */
+
 export class BaseProviderChannel implements ProviderChannelInterface {
 
 
@@ -66,6 +77,20 @@ export class BaseProviderChannel implements ProviderChannelInterface {
             this._behaviourPlugin = plugin;
         }
     }
+
+    async defaultMount(obj?: IProviderAdapter): Promise<void>{
+        throw new Error("Method not implemented")
+    }
+
+    async mount(obj?: IProviderAdapter): Promise<void> {
+        const method = this.getBehaviourMethod("channelMount", obj)
+        if(method !== undefined) {
+            await method()
+            return;
+        }
+        await this.defaultMount(obj);
+    }
+    
     getCompleteSessionForStorage(): ISession {
         throw new Error("Method not implemented.");
     }
@@ -140,6 +165,9 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * When overriding the default implementation, proper care of connection procedure must 
      * be taken care when connecting with or without session
      * 
+     * IF any adapter is trying to override the connect method using `channelConnect`, 
+     * then they'll need to call @method checkConnection and @callback onConnect
+     * 
      * @param options 
      * @param obj 
      * @returns 
@@ -150,7 +178,6 @@ export class BaseProviderChannel implements ProviderChannelInterface {
             return await method(options, this);
         }
         await this.defaultConnect(options, obj);
-        // this.onConnect(options, obj);
     }
 
     /**
@@ -204,7 +231,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * @param exception 
      */
     verifyPingException(exception: Error): boolean {
-        throw new Error("Method not implemented.");
+        return true;
     }
 
     async _timeBoundRequest<T>(data: ProviderRequestMethodArguments, timeout: number): Promise<T> {
@@ -232,6 +259,11 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     onConnect(options: any, obj?: IProviderAdapter): void {
         const method = this.getBehaviourMethod("channelOnConnect", obj);
         if (method !== undefined) return method(options, this)
+    }
+
+    onMount(options?: any, obj?: IProviderAdapter): void {
+        const method = this.getBehaviourMethod("channelOnMount", obj);
+        if (method !== undefined) return method(options);
     }
 
 }
@@ -275,6 +307,8 @@ export class BrowserProviderChannel extends BaseProviderChannel {
         return (await this.provider.request({ method: data.method, params: data.params })) as T
     }
 
+
+
     override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
         if (this.session !== undefined) {
             BrowserProviderChannel.validateSession(this.session)
@@ -297,6 +331,15 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
+
+    override async defaultMount(obj?: IProviderAdapter): Promise<void> {
+        const [isSessionValid, _provider] = await this.checkSession(obj);
+        this._provider = _provider;
+        this._isConnected = false;
+        this.onMount({isSeessionValid: isSessionValid, provider: _provider});
+    }
+
+
     override async checkConnection(obj): Promise<boolean> {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
@@ -311,11 +354,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
             this._provider = provider;
             return;
         }
-        const [isSessionValid, _provider] = await this.checkSession(obj);
-        if (isSessionValid && _provider !== undefined) {
-            this._provider = _provider;
-        }
-        return;
+        /** Need to call get Accounts */
     }
 
 }

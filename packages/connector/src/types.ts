@@ -47,6 +47,10 @@ export interface ProviderSessionStruct {
 
 export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
 
+
+
+
+
 export interface ProviderChannelInterface {
 
 
@@ -60,6 +64,8 @@ export interface ProviderChannelInterface {
     checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
     checkEnvironment(): Promise<boolean>;
     connect(options?: any, obj?: IProviderAdapter): Promise<void>;
+    mount(obj?: IProviderAdapter): Promise<void>;
+    onMount(options?: any, obj?: IProviderAdapter): void;
     checkConnection(obj?: IProviderAdapter): Promise<boolean>;
     ping(data?: { method?: string, obj?: IProviderAdapter }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
@@ -137,6 +143,8 @@ export interface IProviderAdapter {
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
     channelPing? :(options?: any) => Promise<boolean>;
     channelOnConnect?: (options?: any) => void;
+    channelMount?: (options?: any) => Promise<void>;
+    channelOnMount?: (options?: any) => void;
     on(event: string, callback: SubscriptionCallback): void;
 
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
