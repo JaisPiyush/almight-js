@@ -4,6 +4,7 @@ import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError,
 import {
     Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter,
     IProviderSessionData, ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
+    SessioUpdateArguments,
     SubscriptionCallback, WalletConnectSessionStruct
 } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
@@ -66,6 +67,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
             this._behaviourPlugin = plugin;
         }
     }
+
 
     getCompleteSessionForStorage(): ISession {
         throw new Error("Method not implemented.");
@@ -235,6 +237,19 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         if (method !== undefined) return method(options, this)
     }
 
+    onSessionUpdate(options?: SessioUpdateArguments): void {
+        
+    }
+
+    bindSessionListener(obj?: IProviderAdapter): void {
+        const method = this.getBehaviourMethod("channelbindSessionListener", obj);
+        if (method !== undefined) return method();
+        this.defaultbindSessionListener();
+    }
+    defaultbindSessionListener(): void {
+        
+    }
+
 }
 
 
@@ -252,7 +267,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     public getCompleteSessionForStorage(): BrowserSessionStruct {
-        return {path: this.providerPath, chainId: 0}
+        return { path: this.providerPath, chainId: 0 }
     }
 
     public get provider(): BasicExternalProvider { return this._provider }
@@ -290,7 +305,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     override async connect(options?: BasicExternalProvider, obj?: IProviderAdapter): Promise<void> {
         await super.connect(options, obj)
         await this.checkConnection(obj);
-        
+
     }
 
     override verifyPingException(exception: Error): boolean {
@@ -298,11 +313,28 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
+    defaultbindSessionListener(): void {
+        if (this.provider === undefined) return;
+        this.on("accountsChanged", (accounts: any) => {
+            this.onSessionUpdate({
+                accounts: accounts as Address[]
+            });
+        })
+        this.on("chainChanged", (chainId) => {
+            this.onSessionUpdate({ chainId })
+        })
+    }
+
+
     override async checkConnection(obj): Promise<boolean> {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        const result =  await super.checkConnection(obj);
+        const result = await super.checkConnection(obj);
+        if(result){
+            this.bindSessionListener(obj)
+        }
+        
         this.onConnect({}, obj);
         return result
     }
@@ -383,8 +415,8 @@ export class WalletConnectChannel extends BaseProviderChannel {
         options.bridge = options.bridge || this.bridge;
         options.session = options.session || this.session;
         options.clientMeta = options.clientMeta || this.clientMeta as any;
-        const wallet =  new WalletConnect(options, pushOpts);
-        
+        const wallet = new WalletConnect(options, pushOpts);
+
         return wallet
     }
 
@@ -403,14 +435,14 @@ export class WalletConnectChannel extends BaseProviderChannel {
                 })
             } else {
                 // Empty WalletConnect Instance
-                this._provider = this.walletconnect(options?? {}, pushOpts);
-                if(this.provider.key.length  === 0){
+                this._provider = this.walletconnect(options ?? {}, pushOpts);
+                if (this.provider.key.length === 0) {
                     await this.provider.createSession();
                 }
                 this._provider.on("connect", (error, payload) => {
                     if (error) throw error
                     this.onConnect({ error, payload }, obj)
-                    
+
                 });
             }
 
@@ -434,11 +466,11 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
     override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
-        
+
         await super.connect(options, obj)
-       if(this.isSessionConnected()){
-           await this.checkConnection(obj);
-       }
+        if (this.isSessionConnected()) {
+            await this.checkConnection(obj);
+        }
     }
 
     /**
@@ -453,28 +485,44 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return this.provider.uri;
     }
 
+
+    defaultbindSessionListener(): void {
+        this.on("session_update", (error: Error, payload: any) => {
+            if(error) throw error;
+            if (payload.params !== undefined && payload.params.length > 0) {
+                this._params = payload.params[0];
+            } else {
+                this._params = payload[0];
+            }
+            const { accounts, chainId } = this._params;
+            this._session = this._provider.session;
+            this.onSessionUpdate({accounts, chainId});
+        })
+    }
+
     onConnect(options: { error?: Error, payload?: any }, obj?: IProviderAdapter) {
-        
+
         const method = this.getBehaviourMethod("channelOnConnect", obj);
         if (options !== undefined && (options.payload !== undefined)) {
             const { payload } = options;
-            if(payload.params !== undefined && payload.params.length > 0){
+            if (payload.params !== undefined && payload.params.length > 0) {
                 this._params = payload.params[0];
-            }else{
+            } else {
                 this._params = payload[0];
             }
             const { accounts } = this._params;
             this._accounts = accounts;
             this._session = this._provider.session;
             const chainId = this._provider.chainId;
-            
-            if (method !== undefined){
+            this.bindSessionListener(obj);
+
+            if (method !== undefined) {
                 method({
                     accounts: accounts,
                     chainId: chainId
                 });
             }
-        }else{
+        } else {
             method(options);
         }
     }

@@ -45,6 +45,7 @@ export class BaseChainAdapter implements IProviderAdapter {
 
     public channelConnect?: (options?: any) => Promise<void>;
     public channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
+    public channelbindSessionListener?: () => void;
 
     public channelOnConnect?: (options?: any) => void;
 
@@ -52,6 +53,11 @@ export class BaseChainAdapter implements IProviderAdapter {
 
 
     public onConnectCallback?: (options?: any) => void;
+
+    public getProvider<T = any>(): T {
+        if(this.channel === undefined || this.channel.provider === undefined) throw new Error("No connection exists");
+        return this.channel.provider as T;
+    }
 
 
     public get channel(): BaseProviderChannel { return this._channel }
@@ -105,7 +111,7 @@ export class BaseChainAdapter implements IProviderAdapter {
     
     bindProtocol(protocol: IProtocolDefinition): void {
         this.protocol = protocol;
-        this.protocol.bindAdapter(this);
+        // this.protocol.bindAdapter(this);
     }
 
     async checkSession<P>(): Promise<[boolean, P]> {
