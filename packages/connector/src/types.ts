@@ -1,5 +1,5 @@
 import WalletConnect from "@walletconnect/client";
-import { Class } from "@almight-sdk/utils";
+import { Class, Providers } from "@almight-sdk/utils";
 
 export interface NetworkData {
     name?: string,
@@ -149,7 +149,7 @@ export interface IdentityProviderInterface {
     allowedConnectorTypes: Array<ConnectorType>;
 
     // chainId or unique id for web2 providers
-    identifier: string | number;
+    identifier: string | number | Providers;
 
     // Meta Datas such as icon, name, url , etc
     metaData: Record<string, any>;
