@@ -3,6 +3,7 @@ import { WalletConnectChannel } from "../channel";
 import { IProviderAdapter, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType, ProviderRequestMethodArguments, AccountsReturnType, RequestReturnType, IProtocolDefinition } from "../types";
 import { ethers, BigNumber } from "ethers";
 import { ChannelIsNotDefined } from "../exceptions";
+import { Providers } from "utils/lib";
 
 
 
@@ -133,6 +134,11 @@ export class MetaMaskAdapter extends EthereumAdapter {
     chainIds: number[];
 
 
+    verifyBrowserSession(provider: any): boolean {
+        return (provider as any).isMetaMask === true;
+    }
+
+
 
     public bindChannelDelegations(): void {
         super.bindChannelDelegations();
@@ -149,9 +155,14 @@ export class MetaMaskAdapter extends EthereumAdapter {
             self.checkConnection();
         }
         this.channelCheckSession = async <P = any, S = any>(session: S, channel?: ProviderChannelInterface): Promise<[boolean, P]> => {
-            let [isSessionValid, _provider] = await self.channel.defaultCheckSession();
-            if (self.channel.connectorType === ConnectorType.BrowserExtension) {
-                if (isSessionValid && _provider !== undefined && (_provider as any).isMetaMask) {
+            let [isSessionValid, _provider] = await self.channel.defaultCheckSession(self);
+            if (self.channel.connectorType === ConnectorType.BrowserExtension && isSessionValid && _provider !== undefined) {
+                if((_provider as any).provider !== undefined && (_provider as any).providers.length > 1){
+                    for(const provider of (_provider as any).providers){
+                        if(this.verifyBrowserSession(provider)) return provider;
+                    }
+                }
+                else if (this.verifyBrowserSession(_provider)) {
                     return [true, _provider];
                 }
                 return [false, undefined]
@@ -166,20 +177,20 @@ export class MetaMaskAdapter extends EthereumAdapter {
 
 export class KardiaChainAdapter extends MetaMaskAdapter {
 
-    public static providerPath = "kardiachain";
+    public static providerPath = Providers.KardiaChain;
 
-    bindChannelDelegations(): void {
-        super.bindChannelDelegations();
-        let self = this;
-        this.channelCheckSession = async <P = any, S = any>(session: S, channel?: ProviderChannelInterface): Promise<[boolean, P]> => {
-            let [isSessionValid, _provider] = await self.channel.defaultCheckSession();
-            if (isSessionValid && _provider !== undefined && (_provider as any).isMetaMask === true && (_provider as any).isKaiWallet === true) {
-                return [true, _provider];
-            }
-            return [false, undefined]
-        }
-
+    override verifyBrowserSession(provider: any): boolean {
+        return (provider as any).isKaiWallet === true
     }
 
+}
+
+
+
+export class CoinbaseWalletAdapter extends MetaMaskAdapter {
+
+    override verifyBrowserSession(provider: any): boolean {
+        return (provider as any).isCoinbaseWallet === true;
+    }
 
 }
