@@ -22,7 +22,7 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
 
     checkProvider(): boolean {
         if (this.channel === undefined || this.channel.provider === undefined) throw new ChannelIsNotDefined(this.channel.constructor.name);
-        if (this.provider !== undefined) throw new Error("Provider is not connected");
+        if (this.provider === undefined) throw new Error("Provider is not connected");
         return true;
     }
 

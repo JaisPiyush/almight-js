@@ -88,9 +88,23 @@ export class BaseChainAdapter implements IProviderAdapter {
                 });
             }
         }
+
+        this.channelPing = async (options?: any): Promise<boolean> => {
+            const accounts = await self.getAccounts();
+            self.accounts = accounts;
+            const chainId = await self.getChainId();
+            self.chainId = chainId;
+            return true;
+        }
     }
 
+    async getAccounts(): Promise<Address[]> {
+        throw new Error("Method not implemented")
+    }
 
+    async getChainId(): Promise<number> {
+        throw new Error("Method not implemented")
+    }
 
     constructor(options: IChainAdapterOptions) {
         this.channel = options.channel;

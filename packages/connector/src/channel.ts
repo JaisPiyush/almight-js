@@ -238,7 +238,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
     onSessionUpdate(options?: SessioUpdateArguments): void {
-        
+
     }
 
     bindSessionListener(obj?: IProviderAdapter): void {
@@ -247,7 +247,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         this.defaultbindSessionListener();
     }
     defaultbindSessionListener(): void {
-        
+
     }
 
 }
@@ -331,10 +331,10 @@ export class BrowserProviderChannel extends BaseProviderChannel {
             throw new IncompatiblePlatform()
         }
         const result = await super.checkConnection(obj);
-        if(result){
+        if (result) {
             this.bindSessionListener(obj)
         }
-        
+
         this.onConnect({}, obj);
         return result
     }
@@ -420,19 +420,29 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return wallet
     }
 
+
+    checkConnectionAndCallOnConnect(obj: IProviderAdapter, params: {error?: Error, payload?: any}): void {
+        if (params.error) throw params.error
+        this.checkConnection(obj).then((value) => {
+            if (!value) return;
+            this.onConnect(params , obj);
+        });
+
+    }
+
     override async defaultConnect(args: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } | WalletConnect = {}, obj?: IProviderAdapter): Promise<void> {
 
         if (args instanceof WalletConnect) {
             this._provider = args;
-            this.onConnect({ payload: { params: [this._provider.session] } }, obj);
+            this._isConnected = args.connected;
+            this._session = args.session;
+            this.checkConnectionAndCallOnConnect(obj, { payload: { params: [this._provider.session] } });
         } else {
             const { options, pushOpts } = args;
             const [isSessionValid, provider] = await this.checkSession(obj);
             if (isSessionValid && provider !== undefined) {
                 this._provider = provider;
-                this.checkConnection(obj).then((value) => {
-                    this.onConnect({ payload: [provider.session] }, obj);
-                })
+                this.checkConnectionAndCallOnConnect(obj, { payload: [provider.session] });
             } else {
                 // Empty WalletConnect Instance
                 this._provider = this.walletconnect(options ?? {}, pushOpts);
@@ -440,16 +450,11 @@ export class WalletConnectChannel extends BaseProviderChannel {
                     await this.provider.createSession();
                 }
                 this._provider.on("connect", (error, payload) => {
-                    if (error) throw error
-                    this.onConnect({ error, payload }, obj)
-
+                    this.checkConnectionAndCallOnConnect(obj, {error, payload})
                 });
             }
 
         }
-
-
-
 
     }
 
@@ -465,7 +470,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return this._provider !== undefined && this.provider.session !== undefined && this.provider.key.length > 0 && this.provider.connected;
     }
 
-    override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions }, obj?: IProviderAdapter): Promise<void> {
+    override async connect(options?: { options?: IWalletConnectOptions, pushOpts?: IPushServerOptions } | WalletConnect, obj?: IProviderAdapter): Promise<void> {
 
         await super.connect(options, obj)
         if (this.isSessionConnected()) {
@@ -488,7 +493,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     defaultbindSessionListener(): void {
         this.on("session_update", (error: Error, payload: any) => {
-            if(error) throw error;
+            if (error) throw error;
             if (payload.params !== undefined && payload.params.length > 0) {
                 this._params = payload.params[0];
             } else {
@@ -496,7 +501,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
             }
             const { accounts, chainId } = this._params;
             this._session = this._provider.session;
-            this.onSessionUpdate({accounts, chainId});
+            this.onSessionUpdate({ accounts, chainId });
         })
     }
 
