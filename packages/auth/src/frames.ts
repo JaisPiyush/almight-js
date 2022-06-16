@@ -26,7 +26,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
     }
 
 
-    getConfigForProvider(provider: Providers, connectorType: ConnectorType): Record<string, any> | undefined{
+    getConfigForProvider(provider: Providers | string , connectorType: ConnectorType): Record<string, any> | undefined{
         if(this.configs === undefined || this.configs[provider] === undefined) return;
         return this.configs[provider][connectorType];
     }
@@ -110,7 +110,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     getConfigsForConnectorType(connectorType: ConnectorType): Record<string, any> | undefined {
         if(this.delegate === undefined) return;
-        return this.getConfigForProvider(this.delegate.identityResolver.provider.identifier, connectorType);
+        return this.getConfigForProvider(this.delegate.identityResolver.provider.identifier as string, connectorType);
     }
 
     // Element will dispatch 'buttonclick' event on button click
