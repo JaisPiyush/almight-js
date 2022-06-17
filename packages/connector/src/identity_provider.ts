@@ -64,12 +64,28 @@ function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterCla
 }
 
 
+export class CentralizedChainAdapter extends BaseChainAdapter{}
+
+
+function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
+    return new IdentityProvider({
+        name: META_DATA_SET[provider].name,
+        allowedConnectorTypes: [],
+        webVersion: WebVersion.Centralized,
+        identifier: META_DATA_SET[provider].identifier,
+        metaData: META_DATA_SET[provider],
+        adapterClass: CentralizedChainAdapter,
+        channels: []
+    })
+}
+
+
 
 const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
     [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {adapterClass: MetaMaskAdapter}),
     [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {adapterClass: KardiaChainAdapter}),
-    [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {adapterClass: CoinbaseWalletAdapter})
-
+    [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {adapterClass: CoinbaseWalletAdapter}),
+    [Providers.Discord]: getConfiguredWeb2IdentityProvider(Providers.Discord),
 }
 
 export {IDENTITY_PROVIDERS}

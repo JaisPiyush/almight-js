@@ -1,6 +1,6 @@
 
 // Inst: Upon adding any new provider one will have to add it in
-// @almight-sdk/utils/contants::META_DATA_SET
+// @almight-sdk/utils/constants::META_DATA_SET
 // @almight-sdk/connector/identity_provider::IDENTITY_PROVIDERS
 // buster/authentication/providers::Provider
 // buster/authentication/proviers::WEB3_PROVIDERS
@@ -52,5 +52,11 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
         name: "Coinbase Wallet",
         url: "https://www.coinbase.com/wallet",
         identifier: Providers.Coinbase
+    },
+    [Providers.Discord]: {
+        name: "Discord",
+        identifier: Providers.Discord,
+        icon:"https://www.svgrepo.com/show/331368/discord-v2.svg",
+        url: "https://discord.com/"
     }
 }
