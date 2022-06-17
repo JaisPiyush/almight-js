@@ -42,7 +42,7 @@ export class IdentityResolver implements IdentityResolverInterface {
         throw new Error("Method not implemented.");
     }
 
-    generateRedirectUrl(data?: Record<string, string>): string {
+    generateRedirectUrl(data?: Record<string, string>): string | Promise<string> {
         throw new Error("Method not implemented.");
     }
 
@@ -50,10 +50,20 @@ export class IdentityResolver implements IdentityResolverInterface {
         throw new Error("Method not implemented")
     }
 
-    async authenticateAndRespond(data: Record<string, string>): Promise<void> {
+    /**
+     * This function will handle user registration on almight server
+     * and then respond back the status
+     * 
+     * @param data 
+     */
+    async authenticateAndRespond(data: any): Promise<void> {
         throw new Error("Method not implemented")
     }
 
+    /** Method is called after authentication is completed
+     * The method will carry the required data to respond back to client
+     * 
+     */
     onAuthenticationRedirect(options?: any): void { }
 
     async getUserRegistrationArguments(): Promise<UserRegistrationArgument> {

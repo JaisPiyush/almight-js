@@ -33,7 +33,7 @@ export class Web3IdentityResolver extends IdentityResolver {
 
 
 
-    override generateRedirectUrl(data?: Record<string, any>, pathname?: string): string {
+    override generateRedirectUrl(data?: Record<string, any>, pathname?: string): string | Promise<string> {
         throw new Error("Method not implemented")
     }
 

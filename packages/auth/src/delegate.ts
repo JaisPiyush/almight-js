@@ -329,15 +329,17 @@ export class Web2AuthenticationDelegate extends AuthenticationDelegate {
         return query;
     }
 
-    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, state: string }> {
-        const res = await authAxiosInstance.get<{ url: string, state: string }>(`/provider/url/${provider}`, {
+    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, verifiers: Record<string, string> }> {
+        const res = await authAxiosInstance.get<{ url: string, verifiers: Record<string, string> }>(`/provider/url/${provider}`, {
             headers: this.getTokenHeaders({ projectIdentifier: projectIdentifier })
         });
         return res.data;
 
     }
 
+
+
     override redirectTo(uri: string): void {
-        globalThis.location.replace(uri)
+        globalThis.location.replace(uri);
     }
 }

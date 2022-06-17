@@ -16,7 +16,8 @@ export enum AllowedQueryParams {
     Address = "public_key",
     Provider = "provider",
     State = "state",
-    Challenge = "challenge",
+    Verifiers = "verifiers",
+    Challenge = "code_challenge",
     Error = "error",
     ErrorCode = "error_code",
     ConnectorType = "connector_type",
@@ -175,7 +176,7 @@ export interface IdentityResolverInterface {
     getStates(data?: Record<string, string>): Record<string, string>;
     // initAuth(): Promise<void>;
     captureUri(data: Record<string, string>): Promise<void>;
-    generateRedirectUrl(data?: Record<string, string>): string;
+    generateRedirectUrl(data?: Record<string, string>): string | Promise<string>;
     onAuthenticationRedirect(options?: any): void;
     authenticateAndRespond(data: Record<string, string>): Promise<void>;
     getUserRegistrationArguments(): Promise<UserRegistrationArgument>;
@@ -183,7 +184,6 @@ export interface IdentityResolverInterface {
 }
 
 export interface UserRegistrationArgument{
-    
     provider: string;
 }
 export interface Web3UserRegistrationArgument extends UserRegistrationArgument {
