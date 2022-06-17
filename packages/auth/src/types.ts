@@ -62,16 +62,22 @@ export interface ResponseMessageCallbackArgument {
     refresh?: string;
     [AllowedQueryParams.Error]?: string;
     [AllowedQueryParams.ErrorCode]?: string;
-    user?: UserData
+    user?: UserData;
+    [AllowedQueryParams.Code]?: string;
+    [AllowedQueryParams.Challenge]?: string
 }
 
 
-export type ErrorResponseMessageCallbackArgument = Required<Omit<ResponseMessageCallbackArgument, "access" | "refresh" | "user">>
-
+export type ErrorResponseMessageCallbackArgument = Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>
 export interface RespondMessageData extends ResponseMessageCallbackArgument {
     respondType?: RespondType,
     messageType: RespondMessageType
 }
+
+
+
+
+
 
 
 
@@ -149,6 +155,7 @@ export interface IAuthenticationApp {
     getAccountIdpsAsCurrentSessionStructs(): Promise<CurrentSessionStruct[]>;
    
     saveUserData(userData: UserData): Promise<void>;
+    fetchAndStoreUserData(token:string): Promise<UserData>
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
 
     isAuthenticated(): Promise<boolean>;

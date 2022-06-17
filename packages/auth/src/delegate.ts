@@ -2,7 +2,7 @@ import { BaseConnector } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
 import { BaseStorageInterface, Providers, WebLocalStorage } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
-import { BaseOriginFrameCommunicator } from "./frame_communicator";
+import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
 import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
 import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, UserRegistrationArgument, UserRegistrationResult } from "./types";
 
@@ -149,6 +149,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
                     }
 
                     break;
+                case AllowedQueryParams.TargetOrigin:
+                        if(this.respondFrame !== undefined && this.respondFrame instanceof WebOriginCommunicator){
+                            this.respondFrame.targetOrigin = value;
+                        }
+                        break;
                 default:
                     this.storage.setItem(key, value);
                     break;

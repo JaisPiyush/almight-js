@@ -1,8 +1,8 @@
 import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider, ConnectorType } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
-import { AuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
-import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration } from "./types";
+import { BaseStorageInterface, Class, isWebPlatform, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
+import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
+import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User } from "./types";
 
 
 
@@ -56,11 +56,10 @@ export class AuthenticationApp implements IAuthenticationApp {
 
     getFrame(provider: string): IAuthenticationFrame {
         const idp = IDENTITY_PROVIDERS[provider];
-        return new this.webVersionFrameMap[idp.webVersion](this.configs);
-    }
-
-    webVersionFrameMap: Record<number, Class<IAuthenticationFrame>> = {
-        [WebVersion.Decentralized]: Web3NativeAuthenticationFrame
+        if(idp.webVersion === WebVersion.Decentralized) return new Web3NativeAuthenticationFrame(this.configs);
+        if(isWebPlatform()){
+            return new Web2NativePopupAuthenticationFrame(this.configs);
+        }
     }
 
     deadFunction(data?: any): any { }
@@ -176,6 +175,15 @@ export class AuthenticationApp implements IAuthenticationApp {
         });
         return res.data.data
     }
+
+    async fetchAndStoreUserData(token:string): Promise<UserData>{
+        await this.storeJWTToken(token);
+        const userData = await this.getUserData(token);
+        await this.saveUserData(userData);
+        return userData;
+    }
+
+
 
 
     async startAuthentication(provider: Providers): Promise<void> {

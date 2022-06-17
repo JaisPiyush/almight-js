@@ -4,6 +4,7 @@ export class BaseOriginFrameCommunicator implements IOriginFrameCommunicator {
 
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
 
+    public targetOrigin: string = "*"
     
     async close(): Promise<void> {
         throw new Error("Method not implemented.");
@@ -56,5 +57,25 @@ export class Web3NativeOriginFrameCommunicator extends BaseOriginFrameCommunicat
     }
 }
 
+
+export class WebOriginCommunicator extends BaseOriginFrameCommunicator {
+    
+    respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.Web;
+
+
+
+   override async respond(data: Record<string, string>): Promise<void> {
+       if(globalThis.parent  === undefined) throw new Error("Frame parent is not defined, type of origin is not suitable");
+       data["channel"] = "almight_communication_channel";
+       return globalThis.opener.postMessage(this.formatResponse(data), this.targetOrigin as WindowPostMessageOptions);
+   }
+
+   override async close(): Promise<void> {
+       await globalThis.close()
+   }
+
+
+
+}
 
 
