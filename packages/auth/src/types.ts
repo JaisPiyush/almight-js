@@ -173,7 +173,7 @@ export interface IdentityResolverInterface {
     delegate?: IAuthenticationDelegate;
     isWebVersion(version: number): boolean;
     getStates(data?: Record<string, string>): Record<string, string>;
-    initAuth(): Promise<void>;
+    // initAuth(): Promise<void>;
     captureUri(data: Record<string, string>): Promise<void>;
     generateRedirectUrl(data?: Record<string, string>): string;
     onAuthenticationRedirect(options?: any): void;

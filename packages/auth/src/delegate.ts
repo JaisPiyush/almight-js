@@ -96,16 +96,16 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
-        
+
     }
 
 
-    public getTokenHeaders(tokens: {projectIdentifier?: string, userIdentifier?: string}):Record<string, string> {
+    public getTokenHeaders(tokens: { projectIdentifier?: string, userIdentifier?: string }): Record<string, string> {
         const headers = {};
-        if(tokens.projectIdentifier !== undefined){
+        if (tokens.projectIdentifier !== undefined) {
             headers["X-PROJECT-IDENT"] = tokens.projectIdentifier
         }
-        if(tokens.userIdentifier !== undefined){
+        if (tokens.userIdentifier !== undefined) {
             headers["X-USER-IDENT"] = tokens.userIdentifier
         }
         return headers
@@ -313,11 +313,31 @@ export class Web3AuthenticationDelegate extends AuthenticationDelegate {
 
 export class Web2AuthenticationDelegate extends AuthenticationDelegate {
 
-    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{url: string, state: string}> {
-        const res = await authAxiosInstance.get<{url: string, state: string}>(`/provider/url/${provider}`, {
-            headers: this.getTokenHeaders({projectIdentifier: projectIdentifier})
+    /**
+     * URL location https://example.com/page?q1=v1&q2=v2
+     * q1,q2 are query params and the function is responsible to return them as
+     * {q1: v1, q2: v2}
+     * 
+     * @returns Record of query params
+     */
+    override async getConfigurationData(): Promise<Record<string, string>> {
+        const params = new URLSearchParams(globalThis.location.search);
+        let query: Record<string, string> = {}
+        for (const [param, value] of params) {
+            query[param] = decodeURIComponent(value)
+        }
+        return query;
+    }
+
+    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, state: string }> {
+        const res = await authAxiosInstance.get<{ url: string, state: string }>(`/provider/url/${provider}`, {
+            headers: this.getTokenHeaders({ projectIdentifier: projectIdentifier })
         });
         return res.data;
 
+    }
+
+    override redirectTo(uri: string): void {
+        globalThis.location.replace(uri)
     }
 }

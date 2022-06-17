@@ -26,12 +26,15 @@ export class IdentityResolver implements IdentityResolverInterface {
         throw new Error("Method not implemented.");
     }
 
-    async initAuth(): Promise<void> {
-        throw new Error("Method not implemented.");
-    }
+    // async initAuth(): Promise<void> {
+    //     throw new Error("Method not implemented.");
+    // }
 
     /**
-     * This function will verify all required 
+     * This function will verify all required parameters and call
+     * authentication functions accordingly
+     * 
+     * In case of native web3 authentication this will store webVersion of the data
      * 
      * @param data 
      */

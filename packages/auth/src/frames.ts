@@ -195,7 +195,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
         await this.delegate.clean();
         
-        await this.delegate.setStates(data)
+        await this.delegate.setStates(data);
 
         await this.delegate.captureData()
 

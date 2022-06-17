@@ -17,17 +17,17 @@ export class Web3IdentityResolver extends IdentityResolver {
      * Redirect to connector page with the required query params
      * 
      */
-    override async initAuth(): Promise<void> {
-        const providedParams = [AllowedQueryParams.Provider, AllowedQueryParams.ProjectId, AllowedQueryParams.UserIdentifier, AllowedQueryParams.RespondStrategy];
-        const data: Record<string, string> = {};
-        for (const paramName of providedParams) {
-            if (await this.delegate.storage.hasKey(paramName)) {
-                data[paramName] = await this.delegate.getState<string>(paramName);
-            }
-        }
-        await this.delegate.freeze();
-        // TODO: Init Authe implementation for different platform
-    }
+    // override async initAuth(): Promise<void> {
+    //     // const providedParams = [AllowedQueryParams.Provider, AllowedQueryParams.ProjectId, AllowedQueryParams.UserIdentifier, AllowedQueryParams.RespondStrategy];
+    //     // const data: Record<string, string> = {};
+    //     // for (const paramName of providedParams) {
+    //     //     if (await this.delegate.storage.hasKey(paramName)) {
+    //     //         data[paramName] = await this.delegate.getState<string>(paramName);
+    //     //     }
+    //     // }
+    //     await this.delegate.freeze();
+    //     // TODO: Init Auth implementation for different platform
+    // }
 
 
 
