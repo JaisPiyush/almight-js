@@ -8,7 +8,14 @@
 export enum Providers {
     MetaMask = "metamask",
     KardiaChain = "kardiachain",
-    Coinbase = "coinbase"
+    Coinbase = "coinbase",
+    Discord = "discord"
+}
+
+
+export enum WebVersion {
+    Centralized = 2,
+    Decentralized = 3
 }
 
 export interface IMetaDataSet {

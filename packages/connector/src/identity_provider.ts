@@ -1,4 +1,4 @@
-import { Class, META_DATA_SET, Providers } from "@almight-sdk/utils";
+import { Class, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
 import { CoinbaseWalletAdapter, KardiaChainAdapter } from "./adapters";
 import { MetaMaskAdapter } from "./adapters";
@@ -55,7 +55,7 @@ function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterCla
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
         allowedConnectorTypes: data.allowedConnectorTypes,
-        webVersion:3,
+        webVersion:WebVersion.Decentralized,
         identifier: data.identifier ?? provider,
         metaData: META_DATA_SET[provider],
         adapterClass: data.adapterClass,

@@ -1,3 +1,5 @@
+import {configEnv} from "@almight-sdk/utils"
+configEnv();
 
 export * from "./auth"
 export * from "./frames"

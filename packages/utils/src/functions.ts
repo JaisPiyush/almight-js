@@ -1,4 +1,6 @@
 import { AsyncCallTimeOut } from "./exceptions";
+import {findUpSync} from "find-up"
+import * as dotenv from "dotenv"
 
 
 
@@ -33,5 +35,14 @@ export async function asyncCallWithTimeBound(asyncPromise: Promise<any>, timeout
 
 }
 
+
+export function findEnv(): string {
+    return findUpSync(process.env.ENV_FILE || '.env')
+}
+
+export function configEnv(): void {
+    const path = findEnv();
+    dotenv.config({path: path})
+}
 
 

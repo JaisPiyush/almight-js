@@ -1,6 +1,15 @@
 import axios from "axios";
 
-const BASE_URL = "https://almight-backend.herokuapp.com"
+
+function getBaseUrl(): string {
+    if (process.env["NODE_ENV"] !== undefined &&
+        process.env["NODE_ENV"] === "dev" && process.env["BACKEND_BASE_URL"] !== undefined) {
+        return process.env["BACKEND_BASE_URL"];
+    }
+    return "https://almight-backend.herokuapp.com"
+}
+
+const BASE_URL = getBaseUrl();
 
 export const projectAxiosInstance = axios.create({
     baseURL: BASE_URL,

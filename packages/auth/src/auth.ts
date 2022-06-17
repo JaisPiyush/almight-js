@@ -1,6 +1,6 @@
 import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider, ConnectorType } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, META_DATA_SET, Providers } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
 import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration } from "./types";
 
@@ -60,7 +60,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     }
 
     webVersionFrameMap: Record<number, Class<IAuthenticationFrame>> = {
-        3: Web3NativeAuthenticationFrame
+        [WebVersion.Decentralized]: Web3NativeAuthenticationFrame
     }
 
     deadFunction(data?: any): any { }
