@@ -1,12 +1,9 @@
-import { IdentityProvider } from "@almight-sdk/connector";
+import { ConnectorType, IdentityProvider } from "@almight-sdk/connector";
+import { Providers } from "@almight-sdk/utils";
 import {  Web2AuthenticationDelegate } from "../delegate";
-import { AllowedQueryParams, UserRegistrationArgument } from "../types";
+import { AllowedQueryParams, ErrorResponseMessageCallbackArgument, SuccessResponseMessageCallbackArgument, UserRegistrationArgument, Web2UserRegistrationArgument } from "../types";
 import { IdentityResolver } from "./resolver";
 
-export interface Web2UserRegistrationArgument extends UserRegistrationArgument {
-    [AllowedQueryParams.Code]: string;
-    [AllowedQueryParams.Challenge]?: string;
-}
 
 
 export type onWeb2AuthenticationSuccessData = Omit<Web2UserRegistrationArgument, AllowedQueryParams.Provider>;
@@ -67,7 +64,7 @@ export class Web2IdentityResolver extends IdentityResolver {
 
         try {
             if (data[AllowedQueryParams.Code] !== undefined || data[AllowedQueryParams.Error] !== undefined) {
-                await this.authenticateAndRespond(data as onWeb2AuthenticationData);
+                await this.authenticateAndRespond((data as unknown) as onWeb2AuthenticationData);
 
             } else {
                 if(! await this.delegate.storage.hasKey(AllowedQueryParams.ProjectId)) throw new Error("Project not found")
@@ -85,10 +82,15 @@ export class Web2IdentityResolver extends IdentityResolver {
     }
 
     override async getUserRegistrationArguments(): Promise<Web2UserRegistrationArgument> {
+        const provider = await this.delegate.storage.getItem<Providers>(AllowedQueryParams.Provider)
         const data: Web2UserRegistrationArgument = {
             [AllowedQueryParams.Code]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Code),
-            [AllowedQueryParams.Provider]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Provider),
-            [AllowedQueryParams.Challenge]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Challenge)
+            [AllowedQueryParams.Provider]: provider,
+            [AllowedQueryParams.Challenge]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Challenge),
+            sessions: {
+                [ConnectorType.OAuth]: {"provider": provider}
+            } 
+
         }
         return data;
     }
@@ -96,12 +98,12 @@ export class Web2IdentityResolver extends IdentityResolver {
 
     override async authenticateAndRespond(data:onWeb2AuthenticationData): Promise<void> {
         if(data[AllowedQueryParams.Error] !== undefined) {
-            await this.delegate.respondFrame.respondFailure(data as Record<string, string>);
+            await this.delegate.respondFrame.respondFailure((data as onWeb2AuthenticationFailureData) as ErrorResponseMessageCallbackArgument);
             return;
         }
-        if(data[AllowedQueryParams.Code] !== undefined && await this.verifySuccessParametes(data as Record<string, string>)){
+        if(data[AllowedQueryParams.Code] !== undefined && await this.verifySuccessParametes((data as unknown) as Record<string, string>)){
             const userData = await this.getUserRegistrationArguments();
-            await this.delegate.respondFrame.respondSuccess((userData as unknown) as Record<string, string>)
+            await this.delegate.respondFrame.respondSuccess(userData as SuccessResponseMessageCallbackArgument);
         }
         await this.delegate.respondFrame.respondFailure({
             [AllowedQueryParams.Error]: "Authenticity of credentials failed",

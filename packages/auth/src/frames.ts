@@ -189,7 +189,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         this.delegate = new Web3AuthenticationDelegate({
             storage: this.app.storage,
             respondFrame: new Web3NativeOriginFrameCommunicator({
-                onResponse: (data: Record<string, string>) => {
+                onResponse: (data: RespondMessageData) => {
                     this.captureResponse((data as unknown) as RespondMessageData);
                 }
             })

@@ -70,7 +70,7 @@ export class CentralizedChainAdapter extends BaseChainAdapter{}
 function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
-        allowedConnectorTypes: [],
+        allowedConnectorTypes: [ConnectorType.OAuth],
         webVersion: WebVersion.Centralized,
         identifier: META_DATA_SET[provider].identifier,
         metaData: META_DATA_SET[provider],

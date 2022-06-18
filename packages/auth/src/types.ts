@@ -64,11 +64,15 @@ export interface ResponseMessageCallbackArgument {
     [AllowedQueryParams.ErrorCode]?: string;
     user?: UserData;
     [AllowedQueryParams.Code]?: string;
-    [AllowedQueryParams.Challenge]?: string
+    [AllowedQueryParams.Challenge]?: string;
+    sessions?: Partial<Record<ConnectorType, SendableSession>>
 }
 
 
 export type ErrorResponseMessageCallbackArgument = Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>
+
+export type SuccessResponseMessageCallbackArgument = Omit<ResponseMessageCallbackArgument, AllowedQueryParams.Error| AllowedQueryParams.ErrorCode>
+
 export interface RespondMessageData extends ResponseMessageCallbackArgument {
     respondType?: RespondType,
     messageType: RespondMessageType
@@ -99,10 +103,7 @@ export interface ServerSentIdentityProvider {
     web_version: number,
     provider: string,
     meta_data: Record<string, string>,
-    sessions: {
-        [ConnectorType.BrowserExtension]?: BrowserSessionStruct[],
-        [ConnectorType.WalletConnector]?: WalletConnectSessionStruct[]
-    }
+    sessions: Record<ConnectorType, SendableSession[]>
 }
 export interface User<S = ISession> {
 
@@ -190,22 +191,23 @@ export interface IdentityResolverInterface {
     getItemFromStorage<T=any>(key: string): Promise<T | null>;
 }
 
+
+export type SendableSession = ISession | {[AllowedQueryParams.Provider]: Providers}
 export interface UserRegistrationArgument{
-    provider: string;
+    [AllowedQueryParams.Provider]: string;
+    sessions: Partial<Record<ConnectorType, SendableSession>>;
 }
 export interface Web3UserRegistrationArgument extends UserRegistrationArgument {
-    public_key: string;
+    [AllowedQueryParams.Address]: string;
     singature?: string;
     message_sign_required: boolean;
-    sessions: {
-        [ConnectorType.BrowserExtension]?: BrowserSessionStruct,
-        [ConnectorType.WalletConnector]?: WalletConnectSessionStruct
-    }
 }
 
 export interface Web2UserRegistrationArgument extends UserRegistrationArgument {
+    [AllowedQueryParams.Code]: string;
+    [AllowedQueryParams.Challenge]?: string;
+    [AllowedQueryParams.State]?: string
 
-    code: string;
 }
 
 

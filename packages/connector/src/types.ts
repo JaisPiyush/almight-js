@@ -97,7 +97,8 @@ export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionSt
 
 export enum ConnectorType {
     BrowserExtension = "browser_extension",
-    WalletConnector = "walletconnect"
+    WalletConnector = "walletconnect",
+    OAuth = "oauth"
 }
 
 export interface SubscriptionCallback {
