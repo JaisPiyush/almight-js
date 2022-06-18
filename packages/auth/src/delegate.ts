@@ -1,6 +1,6 @@
 import { BaseConnector } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Providers, WebLocalStorage } from "@almight-sdk/utils";
+import { BaseStorageInterface, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
 import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
 import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
@@ -150,10 +150,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
                     break;
                 case AllowedQueryParams.TargetOrigin:
-                        if(this.respondFrame !== undefined && this.respondFrame instanceof WebOriginCommunicator){
-                            this.respondFrame.targetOrigin = value;
-                        }
-                        break;
+                    if (this.respondFrame !== undefined && this.respondFrame instanceof WebOriginCommunicator) {
+                        this.respondFrame.targetOrigin = value;
+                    }
+                    break;
                 default:
                     this.storage.setItem(key, value);
                     break;
@@ -335,6 +335,16 @@ export class Web2AuthenticationDelegate extends AuthenticationDelegate {
     }
 
     async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, verifiers: Record<string, string> }> {
+
+        const idr = IDENTITY_RESOLVERS[provider];
+        if (idr.provider.webVersion !== WebVersion.Centralized) {
+            throw new Error(`Provider ${idr.provider.identityProviderName} not supported for current authentication strategy`)
+        }
+
+        if (projectIdentifier.length === 0) throw new Error("Invalid project identifier provided");
+
+
+
         const res = await authAxiosInstance.get<{ url: string, verifiers: Record<string, string> }>(`/provider/url/${provider}`, {
             headers: this.getTokenHeaders({ projectIdentifier: projectIdentifier })
         });

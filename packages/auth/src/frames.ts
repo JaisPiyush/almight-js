@@ -253,10 +253,7 @@ export class Web2NativePopupAuthenticationFrame extends Web2ExternalAuthenticati
 
     override bindListener(): void {
         globalThis.addEventListener("message", (event) => {
-            console.log(event.data, event.origin);
-
             if (event.origin === window.location.origin && event.data.channel === "almight_communication_channel") {
-                console.log(event.data);
                 this.onResponsCallback(event.data);
             }
         })
