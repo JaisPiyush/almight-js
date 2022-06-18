@@ -1,9 +1,9 @@
 import { BaseChainAdapter } from "../adapter";
 import { WalletConnectChannel } from "../channel";
-import { IProviderAdapter, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType, ProviderRequestMethodArguments, AccountsReturnType, RequestReturnType, IProtocolDefinition } from "../types";
+import { IProviderAdapter, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType, IProtocolDefinition } from "../types";
 import { ethers, BigNumber } from "ethers";
 import { ChannelIsNotDefined } from "../exceptions";
-import { Providers } from "utils/lib";
+import { Providers } from "@almight-sdk/utils";
 
 
 

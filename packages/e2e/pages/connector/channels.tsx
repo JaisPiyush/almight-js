@@ -33,9 +33,9 @@ const Channels: React.FC = () => {
 
         expect(await channel.checkEnvironment()).to.true;
         console.log("Testing connect");
-        await channel.connect();
+        await channel.connect((window as any).ethereum.providers[2]);
         expect(channel.provider).not.to.undefined;
-        expect(channel.provider).to.be.equal((window as any)[path]);
+        expect(channel.provider).to.be.equal((window as any).ethereum.providers[2]);
         expect(channel.isConnected).to.be.true;
 
         console.log("Finished testing BrowserProviderChannel for metamask ");

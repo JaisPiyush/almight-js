@@ -1,5 +1,5 @@
 import {expect, assert} from "chai";
-import  {IdentityProvider, EthereumChainAdapter, BrowserProviderChannel} from "../src";
+import  {IdentityProvider, EthereumAdapter, BrowserProviderChannel} from "../src";
 
 
 describe('Testing IdentityProvider class', () => {
@@ -11,7 +11,7 @@ describe('Testing IdentityProvider class', () => {
             name: "TestIdentityProvider",
             identifier: "test-identity-provider",
             webVersion: 3.0,
-            adapterClass: EthereumChainAdapter,
+            adapterClass: EthereumAdapter,
             channels: [BrowserProviderChannel]
         });
 
@@ -19,6 +19,6 @@ describe('Testing IdentityProvider class', () => {
         expect(idp.identityProviderName).to.eq("TestIdentityProvider");
         expect(idp.getChannels().length).to.equal(1);
         expect(idp.getChannels()).to.includes(BrowserProviderChannel)
-        expect(idp.getAdapterClass()).to.eq(EthereumChainAdapter)
+        expect(idp.getAdapterClass()).to.eq(EthereumAdapter)
     })
 });

@@ -26,5 +26,8 @@
     "build": "lerna run tsc",
     "tsc": "tsc",
     "bootstrap": "lerna bootstrap --include-dependencies"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1"
   }
 }

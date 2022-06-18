@@ -1,6 +1,6 @@
 import { expect, assert} from "chai"
-import { EthereumChainAdapter } from "../src/adapter";
-import { BrowserProviderChannel, WalletConnectChannel, IdentityProvider, BaseConnector, BaseProvider, ConnectorType } from "../src";
+import { EthereumAdapter } from "../src";
+import { BrowserProviderChannel, WalletConnectChannel, IdentityProvider, BaseConnector, ConnectorType } from "../src";
 
 
 let chainName = () => {
@@ -31,20 +31,20 @@ describe('Unit-testing Connector Class', () => {
         name: "Metamask",
         webVersion: 3.0,
         identifier: "meta-mask",
-        adapterClass: EthereumChainAdapter,
+        adapterClass: EthereumAdapter,
         channels: [BrowserProviderChannel, AnotherBroweserChannel, WalletConnectChannel]
     });
 
 
     Object.defineProperty(globalThis, "document", {value: {}, writable: true})
-    Object.defineProperty(globalThis, EthereumChainAdapter.providerPath, {value: chainName(), writable: true})
+    Object.defineProperty(globalThis, EthereumAdapter.providerPath, {value: chainName(), writable: true})
   
 
 
     it("Testing class property access", () => {
-        expect((EthereumChainAdapter as any).isAdapterClass).to.be.true;
-        expect(EthereumChainAdapter.providerPath).to.eq("ethereum");
-        expect(globalThis[EthereumChainAdapter.providerPath]).not.to.be.undefined;
+        expect((EthereumAdapter as any).isAdapterClass).to.be.true;
+        expect(EthereumAdapter.providerPath).to.eq("ethereum");
+        expect(globalThis[EthereumAdapter.providerPath]).not.to.be.undefined;
     });
     
     it("Testing constructor with Idp", async() => {
@@ -68,7 +68,7 @@ describe('Unit-testing Connector Class', () => {
     });
 
     it("Testing constructor only by providing adapter and connecting by providing channel as argument", async () => {
-        const connector2 = new BaseConnector({adapter: EthereumChainAdapter});
+        const connector2 = new BaseConnector({adapter: EthereumAdapter});
 
         expect(connector2.adapter).to.be.undefined;
         expect((await connector2.getChannels()).length).to.equal(0);
@@ -79,7 +79,7 @@ describe('Unit-testing Connector Class', () => {
     });
 
     it("Testing constructor only by providing adapter and channel along with onConnect", async() => {
-        const connector2 = new BaseConnector({adapter: EthereumChainAdapter, onConnect: (options) => {
+        const connector2 = new BaseConnector({adapter: EthereumAdapter, onConnect: (options) => {
             expect(options).not.to.be.undefined;
         }});
 
@@ -96,7 +96,7 @@ describe('Unit-testing Connector Class', () => {
 describe("Testing connector with walletchannel connector", () => {
 
     it("Testing with providing adapter and channel", async() => {
-        const connector = new BaseConnector({adapter: EthereumChainAdapter});
+        const connector = new BaseConnector({adapter: EthereumAdapter});
         await connector.connect({channel: WalletConnectChannel});
         expect(connector.adapter).not.to.undefined;
         expect(connector.adapter.channel).not.to.be.undefined;

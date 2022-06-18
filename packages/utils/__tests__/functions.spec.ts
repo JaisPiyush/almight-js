@@ -1,5 +1,6 @@
-import { configEnv, findEnv, isWebPlatform } from "../src"
+import {  isWebPlatform } from "../src"
 import { expect } from "chai"
+import {findEnv, configEnv} from "../src/utility"
 
 
 describe("Testing isWebPlatform function", () => {

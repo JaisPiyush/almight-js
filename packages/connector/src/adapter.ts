@@ -159,11 +159,6 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 }
 
-export class EthereumChainAdapter extends BaseChainAdapter {
-
-    public static providerPath = "ethereum";
-
-}
 
 
 

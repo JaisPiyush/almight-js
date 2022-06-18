@@ -309,7 +309,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
     override verifyPingException(exception: Error): boolean { 
-        return exception.message.includes(`The method "ping" does not exist`);
+        return exception.message.includes(`The method "ping" does not exist`) || exception.message.includes("Invalid JSON-RPC error");
     }
 
 
