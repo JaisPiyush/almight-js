@@ -245,7 +245,7 @@ export class AuthenticationApp implements IAuthenticationApp {
                     uid: idp.uid,
                     provider: idp.provider,
                     connector_type: connectorType as ConnectorType,
-                    session: session
+                    session: session as ISession
 
                 };
                 cSessions.push(cSess);

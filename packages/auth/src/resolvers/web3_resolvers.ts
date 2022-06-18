@@ -13,21 +13,7 @@ export class Web3IdentityResolver extends IdentityResolver {
         this.provider = provider;
     }
 
-    /**
-     * Redirect to connector page with the required query params
-     * 
-     */
-    // override async initAuth(): Promise<void> {
-    //     // const providedParams = [AllowedQueryParams.Provider, AllowedQueryParams.ProjectId, AllowedQueryParams.UserIdentifier, AllowedQueryParams.RespondStrategy];
-    //     // const data: Record<string, string> = {};
-    //     // for (const paramName of providedParams) {
-    //     //     if (await this.delegate.storage.hasKey(paramName)) {
-    //     //         data[paramName] = await this.delegate.getState<string>(paramName);
-    //     //     }
-    //     // }
-    //     await this.delegate.freeze();
-    //     // TODO: Init Auth implementation for different platform
-    // }
+
 
 
 
@@ -120,14 +106,14 @@ export class Web3IdentityResolver extends IdentityResolver {
         } else if (error !== undefined) {
             await this.delegate.close()
             await this.delegate.respondFrame.respondFailure({
-                error: error,
-                errorCode: errorCode !== null? errorCode: "10000"
+                [AllowedQueryParams.Error]: error,
+                [AllowedQueryParams.ErrorCode]: errorCode !== null? errorCode: "10000"
             });
         } else {
             await this.delegate.close()
             await this.delegate.respondFrame.respondFailure({
-                error: "Authentication Failed due to unknown reason",
-                errorCode: errorCode !== null? errorCode: "10000"
+                [AllowedQueryParams.Error]: "Authentication Failed due to unknown reason",
+                [AllowedQueryParams.ErrorCode]: errorCode !== null? errorCode: "10000"
             });
          }
         
