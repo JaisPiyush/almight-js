@@ -17,13 +17,13 @@ describe("AuthenticationDelegate", () => {
         almightClient = new AlmightClient({
             storage: new WebLocalStorage(),
             apiKey: process.env["ALMIGHT_API_KEY"] as string
-        })
+        });
     });
 
     it("getOAuthUrl", async () => {
         expect(process.env["ALMIGHT_API_KEY"]).not.to.be.undefined;
-        expect(process.env["NODE_ENV"]).to.equal("dev")
-    })
+        expect(process.env["NODE_ENV"]).to.equal("dev");
+    });
 
 
 
