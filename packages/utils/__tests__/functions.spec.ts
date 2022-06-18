@@ -1,6 +1,5 @@
-import { isWebPlatform} from "../src"
-import {expect} from "chai"
-
+import {  isWebPlatform } from "../src"
+import { expect } from "chai"
 
 
 describe("Testing isWebPlatform function", () => {
@@ -10,11 +9,13 @@ describe("Testing isWebPlatform function", () => {
     });
 
     it("Expecting to pass", () => {
-        Object.defineProperty(globalThis, "document", {value: {}})
+        Object.defineProperty(globalThis, "document", { value: {} })
         // console.log(globalThis.document)
         expect(globalThis.document).not.to.undefined;
         expect(isWebPlatform()).to.be.true;
-    });   
+    });
+
+
 
 });
 

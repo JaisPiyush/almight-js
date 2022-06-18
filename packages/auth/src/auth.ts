@@ -1,8 +1,10 @@
 import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider, ConnectorType } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, META_DATA_SET, Providers } from "@almight-sdk/utils";
-import { AuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
-import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct } from "./types";
+import { BaseStorageInterface, Class, isWebPlatform, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
+import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
+import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User } from "./types";
+
+
 
 export interface AuthenticationAppConstructorOptions {
     almightClient: AlmightClient;
@@ -10,6 +12,7 @@ export interface AuthenticationAppConstructorOptions {
     onSuccessCallback?: (data: ResponseMessageCallbackArgument) => void;
     onFailureCallback?: (data: ErrorResponseMessageCallbackArgument) => void;
     baseAuthenticaionURL?: string;
+    configs?: ProviderConfiguration;
 }
 
 export class AuthenticationApp implements IAuthenticationApp {
@@ -23,6 +26,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     sessions: ISession[] = [];
     baseAuthenticationURL: string = "http://localhost:3000"
     token?: string;
+    readonly configs?: ProviderConfiguration;
 
     readonly userKeyName = "almight_user";
     readonly userIdpsName = "almight_user_idps";
@@ -52,11 +56,10 @@ export class AuthenticationApp implements IAuthenticationApp {
 
     getFrame(provider: string): IAuthenticationFrame {
         const idp = IDENTITY_PROVIDERS[provider];
-        return new this.webVersionFrameMap[idp.webVersion]();
-    }
-
-    webVersionFrameMap: Record<number, Class<IAuthenticationFrame>> = {
-        3: Web3NativeAuthenticationFrame
+        if(idp.webVersion === WebVersion.Decentralized) return new Web3NativeAuthenticationFrame(this.configs);
+        if(isWebPlatform()){
+            return new Web2NativePopupAuthenticationFrame(this.configs);
+        }
     }
 
     deadFunction(data?: any): any { }
@@ -70,6 +73,7 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.onSuccessCallback = options.onSuccessCallback ?? this.deadFunction;
         this.onFailureCallback = options.onFailureCallback ?? this.deadFunction;
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
+        this.configs = options.configs;
 
         // TODO: need the below line to load token as variable from localstorage [JUST FOR TESTING]
         this.storage.getItem<string>("auth_token").then((token) => { this.token = token })
@@ -172,6 +176,15 @@ export class AuthenticationApp implements IAuthenticationApp {
         return res.data.data
     }
 
+    async fetchAndStoreUserData(token:string): Promise<UserData>{
+        await this.storeJWTToken(token);
+        const userData = await this.getUserData(token);
+        await this.saveUserData(userData);
+        return userData;
+    }
+
+
+
 
     async startAuthentication(provider: Providers): Promise<void> {
         this.setFrame(this.getFrame(provider));
@@ -232,7 +245,7 @@ export class AuthenticationApp implements IAuthenticationApp {
                     uid: idp.uid,
                     provider: idp.provider,
                     connector_type: connectorType as ConnectorType,
-                    session: session
+                    session: session as ISession
 
                 };
                 cSessions.push(cSess);

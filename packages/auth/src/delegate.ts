@@ -1,8 +1,8 @@
 import { BaseConnector } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, WebLocalStorage } from "@almight-sdk/utils";
+import { BaseStorageInterface, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
-import { BaseOriginFrameCommunicator } from "./frame_communicator";
+import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
 import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
 import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, UserRegistrationArgument, UserRegistrationResult } from "./types";
 
@@ -96,7 +96,20 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
-        
+
+    }
+
+
+    public getTokenHeaders(tokens: { projectIdentifier?: string, userIdentifier?: string }): Record<string, string> {
+        const headers = {};
+        if (tokens.projectIdentifier !== undefined) {
+            headers["X-PROJECT-IDENT"] = tokens.projectIdentifier
+        }
+        if (tokens.userIdentifier !== undefined) {
+            headers["X-USER-IDENT"] = tokens.userIdentifier
+        }
+        return headers
+
     }
 
 
@@ -136,6 +149,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
                     }
 
                     break;
+                case AllowedQueryParams.TargetOrigin:
+                    if (this.respondFrame !== undefined && this.respondFrame instanceof WebOriginCommunicator) {
+                        this.respondFrame.targetOrigin = value;
+                    }
+                    break;
                 default:
                     this.storage.setItem(key, value);
                     break;
@@ -152,12 +170,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
     async registerUser<T = UserRegistrationArgument>(data: T, tokens: { project_identifier: string, token?: string }): Promise<UserRegistrationResult> {
-        const headers: Record<string, string> = {
-            "X-PROJECT-IDENT": tokens.project_identifier
-        }
-        if (tokens.token !== undefined) {
-            headers["X-USER-IDENT"] = tokens.token
-        }
+        const headers: Record<string, string> = this.getTokenHeaders({
+            projectIdentifier: tokens.project_identifier,
+            userIdentifier: tokens.token
+        })
         const res = await authAxiosInstance.post<UserRegistrationResult>("/token", data, { headers: headers });
         return res.data;
     }
@@ -220,21 +236,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
     /**
-     * URL location https://example.com/page?q1=v1&q2=v2
-     * q1,q2 are query params and the function is responsible to return them as
-     * {q1: v1, q2: v2}
-     * 
-     * @returns Record of query params
+     * Get configuration data from query param or stored data
      */
     async getConfigurationData(): Promise<Record<string, string>> {
 
         throw new Error("Method not implemneted")
-        // const params = new URLSearchParams(globalThis.location.search);
-        // let query: Record<string, string> = {}
-        // for (const [param, value] of params) {
-        //     query[param] = decodeURIComponent(value)
-        // }
-        // return query;
     }
 
 
@@ -305,5 +311,50 @@ export class Web3AuthenticationDelegate extends AuthenticationDelegate {
             }
         }
         return data
+    }
+}
+
+
+
+export class Web2AuthenticationDelegate extends AuthenticationDelegate {
+
+    /**
+     * URL location https://example.com/page?q1=v1&q2=v2
+     * q1,q2 are query params and the function is responsible to return them as
+     * {q1: v1, q2: v2}
+     * 
+     * @returns Record of query params
+     */
+    override async getConfigurationData(): Promise<Record<string, string>> {
+        const params = new URLSearchParams(globalThis.location.search);
+        let query: Record<string, string> = {}
+        for (const [param, value] of params) {
+            query[param] = decodeURIComponent(value)
+        }
+        return query;
+    }
+
+    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, verifiers: Record<string, string> }> {
+
+        const idr = IDENTITY_RESOLVERS[provider];
+        if (idr.provider.webVersion !== WebVersion.Centralized) {
+            throw new Error(`Provider ${idr.provider.identityProviderName} not supported for current authentication strategy`)
+        }
+
+        if (projectIdentifier.length === 0) throw new Error("Invalid project identifier provided");
+
+
+
+        const res = await authAxiosInstance.get<{ url: string, verifiers: Record<string, string> }>(`/provider/url/${provider}`, {
+            headers: this.getTokenHeaders({ projectIdentifier: projectIdentifier })
+        });
+        return res.data;
+
+    }
+
+
+
+    override redirectTo(uri: string): void {
+        globalThis.location.replace(uri);
     }
 }

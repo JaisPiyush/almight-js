@@ -25,3 +25,9 @@ export class StorageIsNotConnected extends Error {
     }
 }
 
+export class AuthenticationFailed extends Error {
+    constructor(msg: string = "Authentication failed") {
+        super(msg)
+    }
+}
+
