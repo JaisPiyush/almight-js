@@ -100,8 +100,7 @@ export class Web2IdentityResolver extends IdentityResolver {
 
 
     override async authenticateAndRespond(data:onWeb2AuthenticationData): Promise<void> {
-        console.log(data);
-        
+
         if(data[AllowedQueryParams.Error] !== undefined) {
             await this.delegate.respondFailure((data as onWeb2AuthenticationFailureData) as ErrorResponseMessageCallbackArgument);
             return;
