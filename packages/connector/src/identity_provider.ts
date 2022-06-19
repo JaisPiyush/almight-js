@@ -81,11 +81,18 @@ function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvide
 
 
 
+const IGNORED_PROVIDER = ["walletconnect"]
+
 const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
     [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {adapterClass: MetaMaskAdapter}),
     [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {adapterClass: KardiaChainAdapter}),
     [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {adapterClass: CoinbaseWalletAdapter}),
-    [Providers.Discord]: getConfiguredWeb2IdentityProvider(Providers.Discord),
+}
+
+for(const [provider, metaData] of Object.entries(META_DATA_SET)){
+    if(metaData.webVersion === WebVersion.Centralized){
+        IDENTITY_PROVIDERS[provider] = getConfiguredWeb2IdentityProvider(provider as Providers);
+    }
 }
 
 export {IDENTITY_PROVIDERS}
