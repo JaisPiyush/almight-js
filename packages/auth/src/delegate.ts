@@ -47,7 +47,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     readonly responseQueryParams: string[] = [];
 
     public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
+    
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
+        [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
 
     connector?: BaseConnector;
