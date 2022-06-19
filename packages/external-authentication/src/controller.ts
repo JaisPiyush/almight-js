@@ -37,7 +37,7 @@ export class Controller {
     async initControll(): Promise<void>{
         const delegateClass = this.getCurrentAuthenticationDelegateClass();
         if(this.isCurrentPage(PageRoute.InitPage)){
-            const delegate = new delegateClass();
+            const delegate = new delegateClass({});
             window.delegate = delegate;
         }
 

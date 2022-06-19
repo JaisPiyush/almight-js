@@ -3,7 +3,7 @@ import axios from "axios";
 
 function getBaseUrl(): string {
     if (process.env["NODE_ENV"] !== undefined &&
-        process.env["NODE_ENV"] === "dev" && process.env["BACKEND_BASE_URL"] !== undefined) {
+        process.env["NODE_ENV"] === "development" && process.env["BACKEND_BASE_URL"] !== undefined) {
         return process.env["BACKEND_BASE_URL"];
     }
     return "https://almight-backend.herokuapp.com"

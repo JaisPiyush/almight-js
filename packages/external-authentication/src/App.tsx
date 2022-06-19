@@ -1,10 +1,9 @@
 import { AuthenticationDelegate } from '@almight-sdk/auth';
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
+import ReactLoading from 'react-loading';
+import { Controller } from './controller';
 
-enum PageRoute {
-  InitPage = "/auth/v1/init"
-}
 
 
 declare global {
@@ -15,15 +14,18 @@ declare global {
 
 function App() {
 
-  function isCurrentPage(route: PageRoute): boolean {
-    return window.location.pathname.includes(route);
-  }
+  const controller = new Controller();
 
-  
+  useEffect(() => {
+    console.log(process.env)
+    controller.initControll().then()
+  }, [])
 
   return (
     <div className="App">
-      
+      <div className='w-screen h-screen flex flex-col justify-center items-center'>
+        <ReactLoading type="spin" color="black" />
+      </div>
     </div>
   );
 }
