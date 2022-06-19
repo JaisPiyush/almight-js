@@ -47,7 +47,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     // Respose urls are final stage urls from which results will be deduced
     // And then responded back to the origin
     // readonly responseQueryParams: string[] = [];
-    readonly nonStorableQueryParams = [AllowedQueryParams.Code, AllowedQueryParams.Challenge]
+    readonly nonStorableQueryParams = []
 
     public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
 
@@ -90,7 +90,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
-    async
+
 
     async respondFailure(data: Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>): Promise<void> {
         if (this.respondFrame !== undefined) {
@@ -188,6 +188,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
     }
 
+    setIdentityResolver(idr: IdentityResolver): void {
+        this.identityResolver = idr;
+        this.identityResolver.delegate = this;
+    }
+
 
 
     async registerUser<T = UserRegistrationArgument>(data: T, tokens: { project_identifier: string, token?: string }): Promise<UserRegistrationResult> {
@@ -202,6 +207,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
     async handleUserRegistration(): Promise<UserRegistrationResult> {
+
         if (!(await this.storage.hasKey(AllowedQueryParams.ProjectId))) throw new Error("Project Identifier is not provided");
         const data = await this.identityResolver?.getUserRegistrationArguments();
         const tokens: { project_identifier: string, token?: string } = {
@@ -211,6 +217,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (userIdentifier !== null) {
             tokens[AllowedQueryParams.UserIdentifier] = userIdentifier;
         }
+        // this.clean();
         return await this.registerUser<typeof data>(data, tokens);
 
     }

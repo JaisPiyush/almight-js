@@ -30,7 +30,8 @@ export enum AllowedQueryParams {
     TargetOrigin = "target_origin",
     Code = "code",
     CauseEvent = "cause_event",
-    MessageSignRequired = "message_sign_required"
+    MessageSignRequired = "message_sign_required",
+    Sessions = "sessions"
 }
 
 
@@ -65,7 +66,8 @@ export interface ResponseMessageCallbackArgument {
     user?: UserData;
     [AllowedQueryParams.Code]?: string;
     [AllowedQueryParams.Challenge]?: string;
-    sessions?: Partial<Record<ConnectorType, SendableSession>>
+    sessions?: Partial<Record<ConnectorType, SendableSession>>;
+    provider?: Providers
 }
 
 
@@ -140,7 +142,7 @@ export interface IAuthenticationApp {
 
 
 
-    onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
+    onSuccessCallback: (data: UserData) => void;
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string>;
     getUserIdentifier(): Promise<string>;

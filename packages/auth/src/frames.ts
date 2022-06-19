@@ -1,11 +1,12 @@
 import { Class, isWebPlatform, Providers } from "@almight-sdk/utils";
-import { BaseChainAdapter, BaseConnector, BaseProviderChannel, ConnectorType, WalletConnectChannel } from "@almight-sdk/connector";
+import { BaseChainAdapter, BaseConnector, BaseProviderChannel, ConnectorType, IDENTITY_PROVIDERS, WalletConnectChannel } from "@almight-sdk/connector";
 import { AuthenticationApp } from "./auth";
 import { Web3AuthenticationDelegate } from "./delegate";
 import { AuthenticationAppIsNotDefinedProperly, AuthenticationFailed } from "./exceptions";
 import { Web3NativeOriginFrameCommunicator } from "./frame_communicator";
 import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationFrame, ProviderConfiguration, RespondMessageData, RespondType } from "./types";
 import { WebConnectorModal } from "./components";
+import { Web2IdentityResolver } from "./resolvers";
 
 
 export class AuthenticationFrame implements IAuthenticationFrame {
@@ -58,7 +59,14 @@ export class AuthenticationFrame implements IAuthenticationFrame {
             return;
         }
         // Implement Success
-        this.handleSuccessResponse(data);
+        try {
+            this.handleSuccessResponse(data);
+        }catch(e){
+            this.app.onFailureCallback({
+                [AllowedQueryParams.Error]: (e as Error).message,
+                [AllowedQueryParams.ErrorCode]: data[AllowedQueryParams.ErrorCode]
+            });
+        }
     }
 
     async handleSuccessResponse(data: RespondMessageData): Promise<void> {
@@ -68,7 +76,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
             delete data.refresh;
             delete data.access;
         }
-        this.app.onSuccessCallback(data);
+        this.app.onSuccessCallback(data.user);
     }
 
     generateFrameUri(data: Record<string, string>): string {
@@ -224,19 +232,26 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
 export class Web2ExternalAuthenticationFrame extends AuthenticationFrame {
 
+    callCount: number = 0
 
     override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
+        // Duplicate call guard
+        if (this.callCount !== 0) return;
+        this.callCount += 1;
+
         delete data.messageType;
         delete data.respondType;
         if (data.code !== undefined) {
             const delegate = new Web3AuthenticationDelegate({
-                storage: this.app.storage
+                storage: this.app.storage,
             });
+            delegate.setIdentityResolver(new Web2IdentityResolver(IDENTITY_PROVIDERS[data.provider]));
             await delegate.setStates(data);
             const res = await delegate.handleUserRegistration();
             for (const key of Object.keys(data)) {
                 await delegate.storage.removeItem(key);
             }
+            await delegate.storage.removeItem(AllowedQueryParams.ProjectId);
             if (res.access === undefined) return;
             data.user = await this.app.fetchAndStoreUserData(res.access);
             super.handleSuccessResponse(data);
@@ -248,12 +263,11 @@ export class Web2ExternalAuthenticationFrame extends AuthenticationFrame {
 
 export class Web2NativePopupAuthenticationFrame extends Web2ExternalAuthenticationFrame {
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.Web;
-
     frame?: Window;
 
     override bindListener(): void {
         globalThis.addEventListener("message", (event) => {
-            if (event.origin === window.location.origin && event.data.channel === "almight_communication_channel") {
+            if (event.origin === this.app.baseAuthenticationURL && event.data.channel === "almight_communication_channel") {
                 this.onResponsCallback(event.data);
             }
         })
@@ -261,7 +275,8 @@ export class Web2NativePopupAuthenticationFrame extends Web2ExternalAuthenticati
 
     override async initAuth(data: Record<string, string>): Promise<void> {
         super.initAuth(data);
-        data[AllowedQueryParams.TargetOrigin] = globalThis.location.href;
+        await this.app.storage.setItem(AllowedQueryParams.ProjectId, data[AllowedQueryParams.ProjectId]);
+        data[AllowedQueryParams.TargetOrigin] = globalThis.location.origin;
         const url = this.generateFrameUri(data);
         const features = "width=800, height=800"
         this.frame = globalThis.open(url, "Authentication Frame", features)

@@ -86,17 +86,22 @@ export class Web2IdentityResolver extends IdentityResolver {
         const data: Web2UserRegistrationArgument = {
             [AllowedQueryParams.Code]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Code),
             [AllowedQueryParams.Provider]: provider,
-            [AllowedQueryParams.Challenge]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Challenge),
             sessions: {
                 [ConnectorType.OAuth]: {"provider": provider}
             } 
 
+        }
+        const challenge =  await this.delegate.storage.getItem<string>(AllowedQueryParams.Challenge);
+        if(challenge !== null){
+            data[AllowedQueryParams.Challenge] = challenge
         }
         return data;
     }
 
 
     override async authenticateAndRespond(data:onWeb2AuthenticationData): Promise<void> {
+        console.log(data);
+        
         if(data[AllowedQueryParams.Error] !== undefined) {
             await this.delegate.respondFailure((data as onWeb2AuthenticationFailureData) as ErrorResponseMessageCallbackArgument);
             return;
@@ -104,6 +109,7 @@ export class Web2IdentityResolver extends IdentityResolver {
         if(data[AllowedQueryParams.Code] !== undefined && await this.verifySuccessParametes((data as unknown) as Record<string, string>)){
             const userData = await this.getUserRegistrationArguments();
             await this.delegate.respondSuccess(userData as SuccessResponseMessageCallbackArgument);
+            return;
         }
         await this.delegate.respondFailure({
             [AllowedQueryParams.Error]: "Authenticity of credentials failed",

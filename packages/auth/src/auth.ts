@@ -2,14 +2,14 @@ import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, Identity
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
 import { BaseStorageInterface, Class, isWebPlatform, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
-import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User } from "./types";
+import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User, SuccessResponseMessageCallbackArgument } from "./types";
 
 
 
 export interface AuthenticationAppConstructorOptions {
     almightClient: AlmightClient;
     frame?: AuthenticationFrame;
-    onSuccessCallback?: (data: ResponseMessageCallbackArgument) => void;
+    onSuccessCallback?: (data: UserData) => void;
     onFailureCallback?: (data: ErrorResponseMessageCallbackArgument) => void;
     baseAuthenticaionURL?: string;
     configs?: ProviderConfiguration;
@@ -33,12 +33,12 @@ export class AuthenticationApp implements IAuthenticationApp {
     readonly currentSessionName = "almight_connector_current_session"
     readonly AUTH_HEADER_KEY = "AUTHORIZATION"
 
-    onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
+    onSuccessCallback: (data: UserData) => void;
     onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => void;
 
 
 
-    public set onSuccess(fn: (data: ResponseMessageCallbackArgument) => void) {
+    public set onSuccess(fn: (data: UserData) => void) {
         this.onSuccessCallback = fn;
     }
 
