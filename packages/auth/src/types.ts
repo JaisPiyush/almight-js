@@ -222,6 +222,10 @@ export interface IAuthenticationDelegate {
     identityResolver?: IdentityResolverInterface;
     verificationExcludedStates: string[];
     respondFrame: IOriginFrameCommunicator;
+
+
+    respondFailure(data: ErrorResponseMessageCallbackArgument): Promise<void>;
+    respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void>;
     
     handleUserRegistration<T = UserRegistrationArgument>(data: T, isWeb3: boolean, connectorType?: ConnectorType): Promise<UserRegistrationResult>;
     verifyProject(projectId: string): Promise<boolean>;
@@ -238,8 +242,8 @@ export interface IAuthenticationDelegate {
 export interface IOriginFrameCommunicator {
 
     respondStrategy: AuthenticationRespondStrategy;
-    respondSuccess(data: Record<string, string>): Promise<void>;
-    respondFailure(data: Record<string, string>): Promise<void>;
+    respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void>;
+    respondFailure(data: ErrorResponseMessageCallbackArgument): Promise<void>;
     close(): Promise<void>;
 }
 

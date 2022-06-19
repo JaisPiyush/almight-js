@@ -4,7 +4,7 @@ import { BaseStorageInterface, Providers, WebLocalStorage, WebVersion } from "@a
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
 import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
 import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
-import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, UserRegistrationArgument, UserRegistrationResult } from "./types";
+import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, ResponseMessageCallbackArgument, SuccessResponseMessageCallbackArgument, UserRegistrationArgument, UserRegistrationResult } from "./types";
 
 
 export interface AuthenticationDelegateInitArgs {
@@ -22,6 +22,8 @@ export interface AuthenticationDelegateInitArgs {
 
 
 export class AuthenticationDelegate implements IAuthenticationDelegate {
+
+
 
     respondStrategy: AuthenticationRespondStrategy;
     identityResolver?: IdentityResolver;
@@ -44,10 +46,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     // Query Parameters of url that can appear in a response url types
     // Respose urls are final stage urls from which results will be deduced
     // And then responded back to the origin
-    readonly responseQueryParams: string[] = [];
+    // readonly responseQueryParams: string[] = [];
+    readonly nonStorableQueryParams = [AllowedQueryParams.Code, AllowedQueryParams.Challenge]
 
     public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
-    
+
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
         [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
@@ -62,9 +65,6 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         respondStrategy?: AuthenticationRespondStrategy,
 
     }) {
-        // if (!isWebPlatform()) {
-        //     throw new IncompatiblePlatformForAuthenticationDelegate();
-        // }
         if (options !== undefined) {
             this.storage = options.storage ?? new WebLocalStorage();
             this.respondFrame = options.respondFrame;
@@ -79,6 +79,24 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             // await this.captureUriData();
         }
         call();
+    }
+
+
+    async respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void> {
+        if (this.respondFrame !== undefined) {
+            await this.respondFrame.respondSuccess(data);
+        }
+        await this.close();
+    }
+
+
+    async
+
+    async respondFailure(data: Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>): Promise<void> {
+        if (this.respondFrame !== undefined) {
+            await this.respondFrame.respondFailure(data);
+        }
+        await this.close();
     }
 
 
@@ -165,6 +183,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             }
             this._state[key] = value;
             this.setStates(this._state);
+            this.freeze();
         }
 
     }
@@ -210,7 +229,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     async setStates(data: Record<string, any>): Promise<void> {
         if (await this.storage.isConnected()) {
             for (const [key, value] of Object.entries(data)) {
-                await this.storage.setItem(key, value);
+                if(!this.nonStorableQueryParams.includes(key as AllowedQueryParams)){
+                    await this.storage.setItem(key, value);
+                }
             }
         }
     }
@@ -288,12 +309,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
-    public static async fromFrozenState(): Promise<AuthenticationDelegate> {
-        const delegate = new AuthenticationDelegate();
-        const states = await delegate.getState<AuthenticationDelegateInitArgs>(delegate.frozenStateKey);
-        delegate.init(states);
-        return delegate;
-
+    public async fromFrozenState(): Promise<AuthenticationDelegate> {
+        const states = await this.getState<AuthenticationDelegateInitArgs>(this.frozenStateKey);
+        this.init(states);
+        return this;
     }
 
 

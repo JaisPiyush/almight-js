@@ -98,14 +98,14 @@ export class Web2IdentityResolver extends IdentityResolver {
 
     override async authenticateAndRespond(data:onWeb2AuthenticationData): Promise<void> {
         if(data[AllowedQueryParams.Error] !== undefined) {
-            await this.delegate.respondFrame.respondFailure((data as onWeb2AuthenticationFailureData) as ErrorResponseMessageCallbackArgument);
+            await this.delegate.respondFailure((data as onWeb2AuthenticationFailureData) as ErrorResponseMessageCallbackArgument);
             return;
         }
         if(data[AllowedQueryParams.Code] !== undefined && await this.verifySuccessParametes((data as unknown) as Record<string, string>)){
             const userData = await this.getUserRegistrationArguments();
-            await this.delegate.respondFrame.respondSuccess(userData as SuccessResponseMessageCallbackArgument);
+            await this.delegate.respondSuccess(userData as SuccessResponseMessageCallbackArgument);
         }
-        await this.delegate.respondFrame.respondFailure({
+        await this.delegate.respondFailure({
             [AllowedQueryParams.Error]: "Authenticity of credentials failed",
             [AllowedQueryParams.ErrorCode]: "9999"
         });

@@ -6,7 +6,7 @@ function getBaseUrl(): string {
         process.env["NODE_ENV"] === "development" && process.env["BACKEND_BASE_URL"] !== undefined) {
         return process.env["BACKEND_BASE_URL"];
     }
-    return "https://almight-backend.herokuapp.com"
+    return "http://localhost:8000"
 }
 
 const BASE_URL = getBaseUrl();

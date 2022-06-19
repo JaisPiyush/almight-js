@@ -17,7 +17,7 @@ function App() {
   const controller = new Controller();
 
   useEffect(() => {
-    console.log(process.env)
+    // console.log(process.env)
     controller.initControll().then()
   }, [])
 

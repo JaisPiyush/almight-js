@@ -24,7 +24,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     storage: BaseStorageInterface;
     connector?: BaseConnector;
     sessions: ISession[] = [];
-    baseAuthenticationURL: string = "http://localhost:3000"
+    baseAuthenticationURL: string = "http://localhost:3080"
     token?: string;
     readonly configs?: ProviderConfiguration;
 

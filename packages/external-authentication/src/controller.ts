@@ -1,5 +1,5 @@
 import { AllowedQueryParams, AuthenticationDelegate, Web2AuthenticationDelegate } from "@almight-sdk/auth"
-import { Class, WebVersion } from "@almight-sdk/utils"
+import { Class, WebLocalStorage, WebVersion } from "@almight-sdk/utils"
 import { IDENTITY_PROVIDERS } from "@almight-sdk/connector"
 
 export enum PageRoute {
@@ -16,6 +16,12 @@ export class Controller {
         return window.location.pathname.includes(route);
     }
 
+    async getProviderFromWebLocalStorage(): Promise<string> {
+        const storage = new WebLocalStorage();
+        await storage.connect();
+        return (await storage.getItem<string>(AllowedQueryParams.Provider)) as string;
+    }
+
     getQueryParams(): Record<string, string> {
         const params = new URLSearchParams(globalThis.location.search);
         let query: Record<string, string> = {}
@@ -25,20 +31,22 @@ export class Controller {
         return query;
     }
 
-    getCurrentAuthenticationDelegateClass(): Class<AuthenticationDelegate> {
+    async getCurrentAuthenticationDelegateClass(): Promise<Class<AuthenticationDelegate>> {
         const params = this.getQueryParams();
-        if (params[AllowedQueryParams.Provider] === undefined) throw new Error("Provider is not defined");
-        const provider = params[AllowedQueryParams.Provider];
+        const provider = (params[AllowedQueryParams.Provider] !== undefined) ? params[AllowedQueryParams.Provider]: await this.getProviderFromWebLocalStorage()
+
         if (DELEGATE_MAP[provider] !== undefined) return DELEGATE_MAP[provider];
         const idp = IDENTITY_PROVIDERS[provider];
         return DELEGATE_MAP[idp.webVersion];
     }
 
     async initControll(): Promise<void>{
-        const delegateClass = this.getCurrentAuthenticationDelegateClass();
-        if(this.isCurrentPage(PageRoute.InitPage)){
-            const delegate = new delegateClass({});
+        const delegateClass = await this.getCurrentAuthenticationDelegateClass();
+        const delegate = new delegateClass({});
+        if(this.isCurrentPage(PageRoute.InitPage)){   
             window.delegate = delegate;
+        }else{
+            window.delegate = await delegate.fromFrozenState()
         }
 
         await window.delegate.captureData();

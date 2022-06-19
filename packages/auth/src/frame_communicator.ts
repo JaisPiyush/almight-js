@@ -1,4 +1,4 @@
-import { AuthenticationRespondStrategy, ErrorResponseMessageCallbackArgument, IAuthenticationDelegate, IOriginFrameCommunicator, RespondMessageData, RespondMessageType, RespondType, ResponseMessageCallbackArgument, SuccessResponseMessageCallbackArgument } from "./types";
+import { AuthenticationRespondStrategy, ErrorResponseMessageCallbackArgument, IOriginFrameCommunicator, RespondMessageData, RespondMessageType, RespondType, ResponseMessageCallbackArgument, SuccessResponseMessageCallbackArgument } from "./types";
 
 export class BaseOriginFrameCommunicator implements IOriginFrameCommunicator {
 
