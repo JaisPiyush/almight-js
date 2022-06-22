@@ -231,7 +231,7 @@ export class BaseConnector implements IConnector {
      * @param filters - Filter to validate session data
      * @returns boolean indicating validity of session data
      */
-    validateSessionStructure(session: BrowserSessionStruct | WalletConnectSessionStruct, filters: IConnectorSessionFilter = {}): boolean {
+    validateSessionStructure(session: ISession, filters: IConnectorSessionFilter = {}): boolean {
         let filterTruthy: boolean[] = []
         for (const [prop, value] of Object.entries(filters)) {
             // Session must contain the named prop or else it will directly be invalidated

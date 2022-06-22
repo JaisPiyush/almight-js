@@ -33,6 +33,11 @@ export interface WalletConnectSessionStruct extends ISession {
     handshakeTopic: string
 }
 
+
+export interface HTTPSessionStruct extends ISession {
+    endpoint: string;
+}
+
 /**
  * Session structure formats used to save and load sessions
  * SDK is based on injection based browser provider and walletconnect provider
@@ -92,7 +97,7 @@ export type BasicExternalProvider = {
 
 export type Address = string;
 
-export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionStruct
+export type IProviderSessionData = ISession;
 
 
 export enum ConnectorType {
@@ -128,7 +133,7 @@ export interface IProviderAdapter {
     on(event: string, callback: SubscriptionCallback): void;
 
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
-
+    getCompleteSessionForStorage(): Promise<ISession>;
     checkSession<P>(): Promise<[boolean, P]>;
     connect(): Promise<void>;
 }
@@ -178,7 +183,7 @@ export interface IConnectorSessionFilter {
 
 export interface IConnectorConnectArguments {
     channel?: Class<ProviderChannelInterface> | ProviderChannelInterface;
-    session?: BrowserSessionStruct | WalletConnectSessionStruct;
+    session?: ISession;
     filters?: IConnectorSessionFilter
 }
 
@@ -190,9 +195,9 @@ export interface IConnector {
     connect(args: IConnectorConnectArguments): Promise<void>;
     getChannels(): Promise<Class<ProviderChannelInterface>[]>;
     getSessions(): ISession[];
-    validateSessionStructure(session: BrowserSessionStruct | WalletConnectSessionStruct, filters: IConnectorSessionFilter): boolean;
+    validateSessionStructure(session: ISession, filters: IConnectorSessionFilter): boolean;
     validateChannel(channel: Class<ProviderChannelInterface>): Promise<boolean>;
-    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: BrowserSessionStruct | WalletConnectSessionStruct): Promise<boolean>;
+    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: ISession): Promise<boolean>;
 
 
 }

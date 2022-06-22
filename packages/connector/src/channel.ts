@@ -1,13 +1,14 @@
 import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
-import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout, SessionIsNotDefined } from "./exceptions";
+import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
 import {
-    Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, IChannelBehaviourPlugin, IProviderAdapter,
-    IProviderSessionData, ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
+    Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IChannelBehaviourPlugin, IProviderAdapter,
+     ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
     SessioUpdateArguments,
     SubscriptionCallback, WalletConnectSessionStruct
 } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
+import axios, { Axios } from "axios";
 
 /**
  * Channels are adapter for communication with wallets
@@ -26,7 +27,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public static isChannelClass = true;
 
     public get connectorType(): ConnectorType { return (this.constructor as any).connectorType }
-    protected _session?: IProviderSessionData;
+    protected _session?: ISession;
     protected _provider?: any;
 
     protected clientMeta?: Record<string, any> = {};
@@ -58,10 +59,10 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public requestTimeout = 300000;
 
     public get isConnected(): boolean { return this._isConnected }
-    public get session(): IProviderSessionData | undefined { return this._session }
+    public get session(): ISession | undefined { return this._session }
 
 
-    constructor(session?: IProviderSessionData, plugin?: IChannelBehaviourPlugin) {
+    constructor(session?: ISession, plugin?: IChannelBehaviourPlugin) {
         this.init(session)
         if (plugin !== undefined) {
             this._behaviourPlugin = plugin;
@@ -99,7 +100,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         if (this.provider === undefined) throw new ProviderConnectionError();
         return await this._timeBoundRequest<T>(data, timeout || this.requestTimeout);
     }
-    init(session?: IProviderSessionData): void {
+    init(session?: ISession): void {
         this._session = session;
     }
 
@@ -266,6 +267,11 @@ export class BrowserProviderChannel extends BaseProviderChannel {
         return this._session
     }
 
+
+    constructor(session?: BrowserSessionStruct, plugin?: IChannelBehaviourPlugin) {
+        super(session, plugin)
+    }
+
     public getCompleteSessionForStorage(): BrowserSessionStruct {
         return { path: this.providerPath, chainId: 0 }
     }
@@ -371,6 +377,10 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     public getCompleteSessionForStorage(): WalletConnectSessionStruct {
         return this._provider.session;
+    }
+
+    constructor(session?: WalletConnectSessionStruct, plugin?: IChannelBehaviourPlugin) {
+        super(session, plugin)
     }
 
 
@@ -540,6 +550,92 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return [false, undefined];
 
 
+    }
+
+}
+
+
+
+export class HTTPProviderChannel extends BaseProviderChannel {
+
+    protected _provider?: Axios;
+    protected _session?: HTTPSessionStruct;
+
+    public get session(): HTTPSessionStruct {
+        return this._session
+    }
+
+
+
+    public get provider(): Axios { return this._provider }
+
+    constructor(session?: HTTPSessionStruct, plugin?: IChannelBehaviourPlugin) {
+        super(session, plugin)
+    }
+
+
+    getConfiguredCommunicator(url: string): Axios {
+        return axios.create({
+            baseURL: url,
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+    }
+
+
+    public getCompleteSessionForStorage(): HTTPSessionStruct {
+        if(this._provider === undefined) throw new Error("No connection established to produce session");
+        return { endpoint: this._provider.defaults.baseURL, chainId: 0 }
+    }
+
+
+    override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
+        return (await this.provider.post("", data))
+    }
+
+
+
+    public override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
+        if(this.session !== undefined && (this.constructor as any).validateSession(this.session)){
+            return [true, this.getConfiguredCommunicator(this.session.endpoint)]
+        }
+        return [false, undefined];
+    }
+
+    public static validateSession(session: HTTPSessionStruct): boolean {
+        return (session.endpoint !== undefined)
+    }
+
+    override async checkEnvironment(): Promise<boolean> {
+        return true;
+    }
+
+    override async connect(url?: string, obj?: IProviderAdapter): Promise<void> {
+        await super.connect(url, obj)
+        await this.checkConnection(obj);
+    }
+
+    override async checkConnection(obj?: IProviderAdapter): Promise<boolean> {
+        const result = await super.checkConnection(obj);
+        if(result){
+            this.bindSessionListener();
+        }
+        this.onConnect({}, obj);
+        return result;
+    }
+
+
+
+    override async defaultConnect(options?: string, obj?: IProviderAdapter): Promise<void> {
+        if(options !== undefined){
+            this._provider = this.getConfiguredCommunicator(options);
+        }
+        const [isSessionValid, _provider] = await this.checkSession(obj);
+        if(isSessionValid && _provider !== undefined){
+            this._provider = this.provider;
+        } 
+        return;
     }
 
 }

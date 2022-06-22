@@ -70,6 +70,15 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 
 
+    async getCompleteSessionForStorage(): Promise<ISession> {
+        if(this._channel !== undefined){
+            const sesion = this._channel.getCompleteSessionForStorage();
+            sesion.chainId = await this.getChainId();
+            return sesion;
+        }
+    }
+
+
   
 
 

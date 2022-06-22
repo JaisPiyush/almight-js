@@ -1,4 +1,4 @@
-import { Address, BrowserSessionStruct, ConnectorType, IdentityProvider, WalletConnectSessionStruct } from "@almight-sdk/connector";
+import { Address, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct } from "@almight-sdk/connector";
 import { AllowedQueryParams, Web3UserRegistrationArgument } from "../types";
 import { IdentityResolver } from "./resolver";
 import { WebLocalStorage, WebVersion } from "@almight-sdk/utils";
@@ -84,7 +84,7 @@ export class Web3IdentityResolver extends IdentityResolver {
         const chainId = await this.getItemFromStorage<string>(AllowedQueryParams.ChainId);
         const error = await this.getItemFromStorage<string>(AllowedQueryParams.Error);
         const errorCode = await this.getItemFromStorage<string>(AllowedQueryParams.ErrorCode)
-        const session  = await this.getItemFromStorage<WalletConnectSessionStruct | BrowserSessionStruct>("session")
+        const session  = await this.getItemFromStorage<ISession>("session")
         // const connectorType = await this.getItemFromStorage<ConnectorType>(AllowedQueryParams.ConnectorType);
         // const provider = await this.getItemFromStorage<string>(AllowedQueryParams.Provider);
 
