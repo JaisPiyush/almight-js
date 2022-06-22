@@ -34,3 +34,28 @@ export async function asyncCallWithTimeBound(asyncPromise: Promise<any>, timeout
     });
 
 }
+
+export function isMobileWebPlatform(): boolean {
+    const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+    ];
+    
+    return toMatch.some((toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+    });
+}
+
+
+export function isIOSMobileBrowserPlatform(): boolean {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+export function isAndroidMobileBrowserPlatform(): boolean {
+    return /Android/i.test(navigator.userAgent);
+}

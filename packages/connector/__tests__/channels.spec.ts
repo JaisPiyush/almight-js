@@ -107,7 +107,7 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
         expect(_res).to.eq(expected)
 
         expect(await channel.request(data)).to.eq(expected)
-    })
+    });
 
 });
 

@@ -1,5 +1,5 @@
 import WalletConnect from "@walletconnect/client";
-import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
+import { AsyncCallTimeOut, asyncCallWithTimeBound, isMobileWebPlatform, isWebPlatform, META_DATA_SET, Providers } from "@almight-sdk/utils";
 import { ChannelConnectionEstablishmentFailed, ConnectionEstablishmentFailed, IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
 import {
     Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IChannelBehaviourPlugin, IProviderAdapter,
@@ -395,6 +395,8 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return true;
     }
 
+    
+
     public static validateSession(session: any, silent: boolean = false): boolean {
         for (const prop of ["chainId", "bridge", "key", "clientId", "peerId", "handshakeId", "handshakeTopic"]) {
             if (session[prop] === undefined) {
@@ -501,6 +503,25 @@ export class WalletConnectChannel extends BaseProviderChannel {
     }
 
 
+
+    public isDeepLinkPlantable(): boolean {
+        return isWebPlatform() && isMobileWebPlatform();
+    }
+
+
+
+    public getDeepLinkUri(provider?: Providers): string {
+        const uri = this.getConnectorUri()
+        if(isWebPlatform() && isMobileWebPlatform() && provider !== undefined){
+            const metaData = META_DATA_SET[provider];
+            if(metaData.supportDeepLink && metaData.deeplinkUri !== undefined){
+                return `${metaData.deeplinkUri}wc?uri=${this.getConnectorUri()}`
+            }
+        }
+        return uri;
+    }
+
+
     defaultbindSessionListener(): void {
         this.on("session_update", (error: Error, payload: any) => {
             if (error) throw error;
@@ -592,6 +613,8 @@ export class HTTPProviderChannel extends BaseProviderChannel {
     }
 
 
+
+
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
         const res = await this.provider.post("", data);
         if(res.data.result !== undefined) return res.data.result;
@@ -647,3 +670,12 @@ export class HTTPProviderChannel extends BaseProviderChannel {
     }
 
 }
+
+
+
+
+
+
+
+
+

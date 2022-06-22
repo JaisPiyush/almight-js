@@ -1,5 +1,5 @@
 import { Class, isWebPlatform, Providers } from "@almight-sdk/utils";
-import { BaseChainAdapter, BaseConnector, BaseProviderChannel, ConnectorType, IDENTITY_PROVIDERS, WalletConnectChannel } from "@almight-sdk/connector";
+import { BaseChainAdapter, BaseConnector, BaseProviderChannel, BrowserProviderChannel, ConnectorType, IDENTITY_PROVIDERS, WalletConnectChannel } from "@almight-sdk/connector";
 import { AuthenticationApp } from "./auth";
 import { Web3AuthenticationDelegate } from "./delegate";
 import { AuthenticationAppIsNotDefinedProperly, AuthenticationFailed } from "./exceptions";
@@ -102,9 +102,9 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     connectionCount: number = 0;
 
-    browserAdapter?: BaseChainAdapter;
-    walletconnectAdapter?: BaseChainAdapter;
-    deeplinkAdapter?: BaseChainAdapter;
+    browserAdapter?: BaseChainAdapter<BrowserProviderChannel>
+    walletconnectAdapter?: BaseChainAdapter<WalletConnectChannel>;
+    deeplinkAdapter?: BaseChainAdapter<WalletConnectChannel>;
 
     modal: WebConnectorModal = new WebConnectorModal();
 
@@ -132,7 +132,9 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
             icon: this.delegate.identityResolver.provider.metaData.icon,
             provider: this.delegate.identityResolver.provider.identityProviderName,
             onConnectClick: () => {
-                if (this.browserAdapter !== undefined && this.browserAdapter.channel.connectorType === ConnectorType.BrowserExtension) {
+                if(this.deeplinkAdapter !== undefined){
+                    window.location.href = this.deeplinkAdapter.channel.getDeepLinkUri(this.delegate.identityResolver.provider.identifier as Providers);
+                }else if (this.browserAdapter !== undefined && this.browserAdapter.channel.connectorType === ConnectorType.BrowserExtension) {
                     this.browserAdapter.connect(this.getConfigsForConnectorType(ConnectorType.BrowserExtension)).catch(err => {
                         if (this.browserAdapter !== undefined && this.browserAdapter.onConnectCallback !== undefined) {
                             this.connectionCount += 1;
@@ -174,17 +176,21 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
             // TODO: Implement method to allow only passing channels for mounting
 
             if (adapter.channel.connectorType === ConnectorType.BrowserExtension) {
-                this.browserAdapter = adapter;
+                this.browserAdapter = adapter as BaseChainAdapter<BrowserProviderChannel>;
                 allAdaptersConnectd.push(true);
                 if (allAdaptersConnectd.length === channelClasses.length) {
                     this.mountModal();
                 }
             } else if (adapter.channel.connectorType === ConnectorType.WalletConnector) {
                 adapter.connect(this.getConfigsForConnectorType(ConnectorType.WalletConnector)).then(() => {
-                    this.walletconnectAdapter = adapter;
+                    this.walletconnectAdapter = adapter as BaseChainAdapter<WalletConnectChannel>;
                     allAdaptersConnectd.push(true);
                     if (allAdaptersConnectd.length === channelClasses.length) {
                         this.mountModal();
+                    }
+                    if(this.walletconnectAdapter.channel.isDeepLinkPlantable()) {
+                        this.browserAdapter = undefined;
+                        this.deeplinkAdapter = this.walletconnectAdapter;
                     }
                 })
             }

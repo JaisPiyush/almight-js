@@ -25,13 +25,13 @@ interface IChainAdapterOptions {
     protocolDefination?: BaseProtocolDefination,
     onConnect?: (options?: any) => void
 }
-export class BaseChainAdapter implements IProviderAdapter {
+export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel> implements IProviderAdapter {
 
     public static providerPath = null;
 
     public get providerPath(): string { return (this.constructor as any).providerPath }
 
-    protected _channel: BaseProviderChannel;
+    protected _channel: C;
     public protocol?: IProtocolDefinition;
 
     // Allow high-order classes to easily differentiate between an instance and class
@@ -60,9 +60,9 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 
 
-    public get channel(): BaseProviderChannel { return this._channel }
+    public get channel(): C { return this._channel }
 
-    public set channel(_channel: BaseProviderChannel) { this._channel = _channel }
+    public set channel(_channel: C) { this._channel = _channel }
 
 
     isConnected(): boolean {
@@ -116,7 +116,7 @@ export class BaseChainAdapter implements IProviderAdapter {
     }
 
     constructor(options: IChainAdapterOptions) {
-        this.channel = options.channel;
+        this.channel = options.channel as C;
         if(options.protocolDefination !== undefined ){
             this.bindProtocol(options.protocolDefination);
         }
