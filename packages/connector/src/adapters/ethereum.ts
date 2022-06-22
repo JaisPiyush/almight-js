@@ -111,18 +111,13 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
             params: []
         });
     }
-    async getBalance(): Promise<BalanceReturnType> {
-        const hexBalance = await this.request<string>({ method: "eth_getBalance", params: [this.accounts[0], "latest"] })
-        const bNBalance = BigNumber.from(hexBalance);
-        const balance = ethers.utils.formatEther(bNBalance);
-        return parseFloat(balance);
+    async getBalance(account?: Address, blockTag: string = "latest"): Promise<ethers.BigNumber> {
+        return (await this.provider.getBalance(account ?? this.accounts[0], blockTag));
     }
-    async getTransactionCount(block: string = "latest"): Promise<number> {
+    async getTransactionCount(account?: Address, block: string = "latest"): Promise<number> {
         this.checkProvider()
-        return await this.provider.getTransactionCount(this.accounts[0], block);
+        return await this.provider.getTransactionCount(account?? this.accounts[0], block);
     }
-
-
 }
 
 

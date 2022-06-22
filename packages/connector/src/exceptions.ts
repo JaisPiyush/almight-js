@@ -57,3 +57,9 @@ export class ConnectionEstablishmentFailed extends Error {
         super(msg)
     }
 }
+
+export class ChannelConnectionEstablishmentFailed extends Error {
+    constructor(msg: string = "Channel failed to establish any connection"){
+        super(msg)
+    }
+}

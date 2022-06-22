@@ -1,6 +1,6 @@
 import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, isWebPlatform } from "@almight-sdk/utils";
-import { IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
+import { ChannelConnectionEstablishmentFailed, ConnectionEstablishmentFailed, IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
 import {
     Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IChannelBehaviourPlugin, IProviderAdapter,
      ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
@@ -8,7 +8,7 @@ import {
     SubscriptionCallback, WalletConnectSessionStruct
 } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
-import axios, { Axios } from "axios";
+import axios, { Axios, AxiosInstance } from "axios";
 
 /**
  * Channels are adapter for communication with wallets
@@ -558,7 +558,9 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
 export class HTTPProviderChannel extends BaseProviderChannel {
 
-    protected _provider?: Axios;
+
+    public static connectorType: ConnectorType = ConnectorType.JsonRpc;
+    protected _provider?: AxiosInstance;
     protected _session?: HTTPSessionStruct;
 
     public get session(): HTTPSessionStruct {
@@ -567,14 +569,14 @@ export class HTTPProviderChannel extends BaseProviderChannel {
 
 
 
-    public get provider(): Axios { return this._provider }
+    public get provider(): AxiosInstance { return this._provider }
 
     constructor(session?: HTTPSessionStruct, plugin?: IChannelBehaviourPlugin) {
-        super(session, plugin)
+        super(session, plugin);
     }
 
 
-    getConfiguredCommunicator(url: string): Axios {
+    getConfiguredCommunicator(url: string): AxiosInstance {
         return axios.create({
             baseURL: url,
             headers: {
@@ -591,13 +593,16 @@ export class HTTPProviderChannel extends BaseProviderChannel {
 
 
     override async _rawRequest<T = any>(data: ProviderRequestMethodArguments): Promise<T> {
-        return (await this.provider.post("", data))
+        const res = await this.provider.post("", data);
+        if(res.data.result !== undefined) return res.data.result;
+        return res.data;
     }
 
 
 
     public override async defaultCheckSession(obj?: IProviderAdapter): Promise<[boolean, any]> {
         if(this.session !== undefined && (this.constructor as any).validateSession(this.session)){
+  
             return [true, this.getConfiguredCommunicator(this.session.endpoint)]
         }
         return [false, undefined];
@@ -627,14 +632,17 @@ export class HTTPProviderChannel extends BaseProviderChannel {
 
 
 
-    override async defaultConnect(options?: string, obj?: IProviderAdapter): Promise<void> {
-        if(options !== undefined){
-            this._provider = this.getConfiguredCommunicator(options);
+    override async defaultConnect(url?: string, obj?: IProviderAdapter): Promise<void> {
+        if(url !== undefined){
+            this._provider = this.getConfiguredCommunicator(url);
+            return;
         }
         const [isSessionValid, _provider] = await this.checkSession(obj);
         if(isSessionValid && _provider !== undefined){
-            this._provider = this.provider;
-        } 
+            this._provider = _provider;
+        }else{
+            throw new ChannelConnectionEstablishmentFailed();
+        }
         return;
     }
 

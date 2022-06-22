@@ -103,7 +103,8 @@ export type IProviderSessionData = ISession;
 export enum ConnectorType {
     BrowserExtension = "browser_extension",
     WalletConnector = "walletconnect",
-    OAuth = "oauth"
+    OAuth = "oauth",
+    JsonRpc = "jsonrpc"
 }
 
 export interface SubscriptionCallback {
@@ -234,7 +235,7 @@ export interface IProtocolDefinition {
     getNetworkId(): Promise<RequestReturnType>;
     getChainId(): Promise<RequestReturnType>;
     getAccounts(): Promise<AccountsReturnType>;
-    getBalance(): Promise<BalanceReturnType>;
+    getBalance(account?: string, blockTag?: string): Promise<BalanceReturnType>;
     getTransactionCount(): Promise<number>;
 
 
