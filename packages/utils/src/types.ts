@@ -98,3 +98,31 @@ export interface BaseStorageInterface {
 
 // Class constructor signature
 export type Class<T> = new (...args: any[]) => T;
+
+
+export interface ChainData {
+    name: string;
+    chainId: number;
+    isTestnet: boolean;
+    currency?: string;
+}
+
+export interface IChainsetData {
+    name: string;
+    identifier: string;
+    chainIds: number[];
+    mainnetId: number;
+    chainNets: ChainData[];
+    mainnet: ChainData;
+    icon: string,
+    currency: string
+}
+
+
+export interface IChainset extends IChainsetData {
+    addChain(chain: ChainData): void;
+    getChainDataFromName(name: string): ChainData | undefined;
+    isChainPartOfChainSet(chainId: number): boolean;
+    getChainDataFromChainId(chainId: number): ChainData | undefined;
+    getChainIds(): number[]
+}
