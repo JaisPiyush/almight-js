@@ -1,5 +1,6 @@
+import { Chains, Chainset, DefaultChainManager, getChainManager } from "@almight-sdk/utils";
 import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
-import { ChannelIsNotDefined } from "./exceptions";
+import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
 import { BaseProtocolDefination } from "./protocol_definition";
 import { Address, IProtocolDefinition, IProviderAdapter, ISession, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 
@@ -40,6 +41,17 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
     public accounts?: Address[];
     public chainId?: number;
     public networkId?: number;
+
+    public chainset?: Chainset;
+    public chains: Chains[] = []
+
+    verifyConnectedChain(chainId: number): void {
+        if(this.chains.length === 0)return;
+        const chainManager = getChainManager();
+        const chainset = chainManager.getChainsetFromChainId(chainId);
+        if(chainset === null) throw new ConnectedChainNotAllowedError(chainId);
+        this.chainset = chainset;
+    }
 
 
 
@@ -102,6 +114,7 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
             const accounts = await self.getAccounts();
             self.accounts = accounts;
             const chainId = await self.getChainId();
+            self.verifyConnectedChain(chainId);
             self.chainId = chainId;
             return true;
         }

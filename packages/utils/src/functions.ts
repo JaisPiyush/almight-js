@@ -1,3 +1,6 @@
+import {  ChainsManager } from "./constants";
+import { Chainset, CHAINSET_RECORD } from "./chains"
+import { DefaultChainManager, IMetaDataSet, META_DATA_SET, Providers } from "./constants";
 import { AsyncCallTimeOut } from "./exceptions";
 
 
@@ -58,4 +61,21 @@ export function isIOSMobileBrowserPlatform(): boolean {
 
 export function isAndroidMobileBrowserPlatform(): boolean {
     return /Android/i.test(navigator.userAgent);
+}
+
+export function getMetaDataSet(): Record<Providers | string, IMetaDataSet> {
+    if(globalThis.META_DATA_SET !== undefined) return globalThis.META_DATA_SET;
+    return META_DATA_SET;
+}
+
+
+export function getChainSetRecord(): Record<string, Chainset> {
+    if(globalThis.CHAINSET_RECORD !== undefined) return globalThis.CHAINSET_RECORD;
+    return CHAINSET_RECORD;
+}
+
+
+export function getChainManager(): ChainsManager {
+    if(globalThis.chainManager !== undefined) return globalThis.chainManager;
+    return DefaultChainManager;
 }

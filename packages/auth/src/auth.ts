@@ -1,8 +1,8 @@
 import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider, ConnectorType } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, isWebPlatform, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, getMetaDataSet, isWebPlatform,  Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
-import { IAuthenticationApp, ResponseMessageCallbackArgument, UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User, SuccessResponseMessageCallbackArgument } from "./types";
+import { IAuthenticationApp,  UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User, SuccessResponseMessageCallbackArgument } from "./types";
 
 
 
@@ -223,6 +223,7 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
     getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): { icon: string, name: string } | undefined {
+        const META_DATA_SET = getMetaDataSet();
         const data = META_DATA_SET[provider];
         if (data === undefined) return undefined;
         let icon = data.icon;

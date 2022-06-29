@@ -1,4 +1,4 @@
-import { Class, META_DATA_SET, Providers, WebVersion } from "@almight-sdk/utils";
+import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
 import { CoinbaseWalletAdapter, KardiaChainAdapter } from "./adapters";
 import { MetaMaskAdapter } from "./adapters";
@@ -52,6 +52,7 @@ export class IdentityProvider implements IdentityProviderInterface {
 
 
 function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>, channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
+    const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
         allowedConnectorTypes: data.allowedConnectorTypes,
@@ -68,6 +69,7 @@ export class CentralizedChainAdapter extends BaseChainAdapter{}
 
 
 function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
+    const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
         allowedConnectorTypes: [ConnectorType.OAuth],
@@ -88,7 +90,7 @@ const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
     [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {adapterClass: KardiaChainAdapter}),
     [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {adapterClass: CoinbaseWalletAdapter}),
 }
-
+const META_DATA_SET = getMetaDataSet()
 for(const [provider, metaData] of Object.entries(META_DATA_SET)){
     if(metaData.webVersion === WebVersion.Centralized){
         IDENTITY_PROVIDERS[provider] = getConfiguredWeb2IdentityProvider(provider as Providers);

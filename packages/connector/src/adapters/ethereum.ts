@@ -1,7 +1,7 @@
 import { BaseChainAdapter } from "../adapter";
 import { WalletConnectChannel } from "../channel";
-import { IProviderAdapter, BalanceReturnType, Address, ProviderChannelInterface, ConnectorType, IProtocolDefinition } from "../types";
-import { ethers, BigNumber } from "ethers";
+import { IProviderAdapter, Address, ProviderChannelInterface, ConnectorType, IProtocolDefinition } from "../types";
+import { ethers } from "ethers";
 import { ChannelIsNotDefined } from "../exceptions";
 import { Providers } from "@almight-sdk/utils";
 
@@ -16,10 +16,6 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
     public static providerPath = "ethereum";
 
     provider: ethers.providers.Web3Provider;
-
-
-    chainIds: number[];
-
 
     checkProvider(): boolean {
         if (this.channel === undefined || this.channel.provider === undefined) throw new ChannelIsNotDefined(this.channel.constructor.name);
@@ -52,19 +48,6 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
                 this.provider = new ethers.providers.Web3Provider(this.channel as ethers.providers.ExternalProvider);
             }
         }
-
-
-
-        this.channelPing = async (options?: any): Promise<boolean> => {
-            const accounts = await self.getAccounts();
-            self.accounts = accounts;
-            const chainId = await self.getChainId();
-            self.chainId = chainId;
-            return true;
-        }
-
-
-
     }
 
 

@@ -1,6 +1,6 @@
 import WalletConnect from "@walletconnect/client";
-import { AsyncCallTimeOut, asyncCallWithTimeBound, isMobileWebPlatform, isWebPlatform, META_DATA_SET, Providers } from "@almight-sdk/utils";
-import { ChannelConnectionEstablishmentFailed, ConnectionEstablishmentFailed, IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
+import { AsyncCallTimeOut, asyncCallWithTimeBound, getMetaDataSet, isMobileWebPlatform, isWebPlatform,  Providers } from "@almight-sdk/utils";
+import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
 import {
     Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IChannelBehaviourPlugin, IProviderAdapter,
      ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
@@ -512,6 +512,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     public getDeepLinkUri(provider?: Providers): string {
         const uri = this.getConnectorUri()
+        const META_DATA_SET = getMetaDataSet()
         if(isWebPlatform() && isMobileWebPlatform() && provider !== undefined){
             const metaData = META_DATA_SET[provider];
             if(metaData.supportDeepLink && metaData.deeplinkUri !== undefined){

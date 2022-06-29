@@ -1,5 +1,14 @@
-import { IMetaDataSet, Providers, WebVersion } from "./constants";
 import { ChainData, IChainset } from "./types";
+
+
+export enum Chains {
+    Ethereum = "ethereum",
+    Binance = "binance",
+    Polygon = "polygon",
+    Fantom = "fantom",
+    Avalanche = "avalanche",
+    Kardiachain = "kardiachain"
+}
 
 interface ChainsetConstructorOptions {
     name: string;
@@ -14,7 +23,7 @@ export class Chainset implements IChainset {
 
     readonly name: string;
     readonly identifier: string;
-    readonly chainIds: number[];
+    public chainIds: number[] = [];
     readonly mainnetId: number;
     chainNets: ChainData[] = [];
     readonly mainnet: ChainData;
@@ -74,83 +83,6 @@ export class Chainset implements IChainset {
 
 
 
-export class ChainsManager {
-    readonly metaData: Record<Providers, IMetaDataSet>;
-
-    constructor(metaData: Record<Providers, IMetaDataSet>) {
-        this.metaData = metaData;
-    }
-
-    getProvidersFromChainId(chainId: number): Providers[] {
-        const providers: Providers[] = [];
-        for (const [provider, data] of Object.entries(this.metaData)) {
-            if (data.webVersion === WebVersion.Centralized || data.chainsets.length === 0) continue;
-            for (const chainsetIdentifier of data.chainsets) {
-                const chainset = CHAINSET_RECORD[chainsetIdentifier]
-                if (chainset.isChainPartOfChainSet(chainId)) {
-                    providers.push(provider as Providers);
-                }
-            }
-        }
-        return providers
-    }
-
-
-    getProvidersFromChainIds(chainIds: number[]): Providers[] {
-        const providers: Providers[] = []
-        for (const chainId of chainIds) {
-            const _provs = this.getProvidersFromChainId(chainId);
-            _provs.forEach((provider) => {
-                if (providers.includes(provider) === false) {
-                    providers.push(provider);
-                }
-            })
-        }
-        return providers;
-
-    }
-
-
-    getProvidersFromIdentifier(identifier: string): Providers[] {
-        const providers: Providers[] = [];
-        for (const [provider, data] of Object.entries(this.metaData)) {
-            if (data.webVersion === WebVersion.Centralized || data.chainsets.length === 0) continue;
-            for (const chainsetIdentifier of data.chainsets) {
-                if (chainsetIdentifier === identifier) {
-                    providers.push(provider as Providers);
-                }
-            }
-        }
-        return providers
-    }
-
-    getProvidersFromidentifiers(identifiers: string[]): Providers[] {
-        const providers: Providers[] = []
-        for (const identifier of identifiers) {
-            const _provs = this.getProvidersFromIdentifier(identifier);
-            _provs.forEach((provider) => {
-                if (providers.includes(provider) === false) {
-                    providers.push(provider);
-                }
-            })
-        }
-        return providers;
-
-    }
-}
-
-
-
-export enum Chains {
-    Ethereum = "ethereum",
-    Binance = "binance",
-    Polygon = "polygon",
-    Fantom = "fantom",
-    Avalanche = "avalanche",
-    Kardiachain = "kardiachain"
-}
-
-
 export const CHAINSET_RECORD: Record<string, Chainset> = {
     [Chains.Ethereum]: new Chainset({
         name: "Ethereum",
@@ -198,6 +130,3 @@ export const CHAINSET_RECORD: Record<string, Chainset> = {
         currency: "KAI"
     })
 }
-
-
-export const EVM_CHAINSETS = [Chains.Ethereum, Chains.Kardiachain, Chains.Binance, Chains.Avalanche, Chains.Fantom, Chains.Polygon];

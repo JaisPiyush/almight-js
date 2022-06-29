@@ -5,9 +5,10 @@
 // buster/authentication/providers::Provider
 // buster/authentication/proviers::WEB3_PROVIDERS
 
-import { Chains, ChainsManager, EVM_CHAINSETS } from "./chains";
 
 // buster/authentication/providers::WEB2_PROVIDERS
+import { Chains, Chainset, CHAINSET_RECORD } from "./chains";
+
 export enum Providers {
     MetaMask = "metamask",
     KardiaChain = "kardiachain",
@@ -26,6 +27,94 @@ export enum WebVersion {
     Centralized = 2,
     Decentralized = 3
 }
+
+
+
+export class ChainsManager {
+    readonly metaData: Record<Providers, IMetaDataSet>;
+    readonly chainsetRecord: Record<string, Chainset>;
+
+    constructor(metaData: Record<Providers, IMetaDataSet>, chainsetRecord: Record<string, Chainset>) {
+        this.metaData = metaData;
+        this.chainsetRecord = chainsetRecord;
+    }
+
+    getProvidersFromChainId(chainId: number): Providers[] {
+
+        const providers: Providers[] = [];
+        for (const [provider, data] of Object.entries(this.metaData)) {
+            if (data.webVersion === WebVersion.Centralized || data.chainsets.length === 0) continue;
+            for (const chainsetIdentifier of data.chainsets) {
+                const chainset = this.chainsetRecord[chainsetIdentifier]
+                if (chainset.isChainPartOfChainSet(chainId)) {
+                    providers.push(provider as Providers);
+                }
+            }
+        }
+        return providers
+    }
+
+
+    getChainsetFromChainId(chainId: number): Chainset | null {
+        for(const chainset of Object.values(this.chainsetRecord)) {
+           if(chainset.isChainPartOfChainSet(chainId)){
+            return chainset
+           }
+        }
+        return null;
+    }
+
+
+    getProvidersFromChainIds(chainIds: number[]): Providers[] {
+        const providers: Providers[] = []
+        for (const chainId of chainIds) {
+            const _provs = this.getProvidersFromChainId(chainId);
+            _provs.forEach((provider) => {
+                if (providers.includes(provider) === false) {
+                    providers.push(provider);
+                }
+            })
+        }
+        return providers;
+
+    }
+
+
+    getProvidersFromIdentifier(identifier: string): Providers[] {
+        const providers: Providers[] = [];
+        for (const [provider, data] of Object.entries(this.metaData)) {
+            if (data.webVersion === WebVersion.Centralized || data.chainsets.length === 0) continue;
+            for (const chainsetIdentifier of data.chainsets) {
+                if (chainsetIdentifier === identifier) {
+                    providers.push(provider as Providers);
+                }
+            }
+        }
+        return providers
+    }
+
+    getProvidersFromidentifiers(identifiers: string[]): Providers[] {
+        const providers: Providers[] = []
+        for (const identifier of identifiers) {
+            const _provs = this.getProvidersFromIdentifier(identifier);
+            _provs.forEach((provider) => {
+                if (providers.includes(provider) === false) {
+                    providers.push(provider);
+                }
+            })
+        }
+        return providers;
+
+    }
+}
+
+
+
+
+
+
+
+export const EVM_CHAINSETS = [Chains.Ethereum, Chains.Kardiachain, Chains.Binance, Chains.Avalanche, Chains.Fantom, Chains.Polygon];
 
 export interface IMetaDataSet {
     name: string;
@@ -129,4 +218,4 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
 
 
 
-export const DefaultChainManager = new ChainsManager(META_DATA_SET);
+export const DefaultChainManager = new ChainsManager(META_DATA_SET, CHAINSET_RECORD);

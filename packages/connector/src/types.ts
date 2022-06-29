@@ -134,6 +134,7 @@ export interface IProviderAdapter {
     on(event: string, callback: SubscriptionCallback): void;
 
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
+    verifyConnectedChain(chainId: number): void;
     getCompleteSessionForStorage(): Promise<ISession>;
     checkSession<P>(): Promise<[boolean, P]>;
     connect(): Promise<void>;
@@ -218,8 +219,6 @@ export interface RequestReturnType {}
 
 export interface IProtocolDefinition {
 
-    // adapter?: IProviderAdapter;
-    chainIds: number[];
 
     // bindAdapter(adapter: IProviderAdapter): void;
 
