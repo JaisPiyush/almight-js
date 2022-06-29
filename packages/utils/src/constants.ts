@@ -58,7 +58,7 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
         url: "http://www.kardiachain.io/",
         webVersion: WebVersion.Decentralized,
         supportDeepLink: false,
-        chainsets: []
+        chainsets: [Chains.Kardiachain]
     },
 
     "walletconnect": {
