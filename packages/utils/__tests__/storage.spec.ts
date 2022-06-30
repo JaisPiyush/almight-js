@@ -27,9 +27,7 @@ const storageMock = (() => {
 });
 
 
-Object.defineProperty(globalThis, 'localStorage', {
-    value: storageMock()
-});
+
 
 
 
@@ -38,6 +36,14 @@ describe("Testing WebLocalStorage class", () => {
 
 
     const storage = new WebLocalStorage()
+
+    before(() => {
+        Object.defineProperty(globalThis, 'localStorage', {
+            value: storageMock(),
+            writable: true,
+            configurable: true
+        });
+    })
 
 
     describe("Testing WebLocalStorage#isType", function () {

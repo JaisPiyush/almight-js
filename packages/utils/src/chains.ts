@@ -88,7 +88,11 @@ export const CHAINSET_RECORD: Record<string, Chainset> = {
         name: "Ethereum",
         identifier: Chains.Ethereum,
         mainnetId: 1,
-        chainNets: [],
+        chainNets: [{
+            name: "ganache",
+            chainId: 1337,
+            isTestnet: true,
+        }],
         icon: "https://app.1inch.io/assets/images/network-logos/ethereum.svg",
         currency: "ETH"
     }),

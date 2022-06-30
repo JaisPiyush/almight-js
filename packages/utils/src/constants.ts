@@ -59,11 +59,24 @@ export class ChainsManager {
     }
 
 
+    getChainIdfromIdentifier(identifier: string, network?: string): number | null {
+        const chainset = this.getChainsetFromIdentifier(identifier);
+        if (chainset === undefined) return null;
+        if (network !== undefined) {
+            for (const chainNet of chainset.chainNets) {
+                if (chainNet.name === network) return chainNet.chainId;
+            }
+        }
+        return chainset.mainnetId
+
+    }
+
+
     getChainsetFromChainId(chainId: number): Chainset | null {
-        for(const chainset of Object.values(this.chainsetRecord)) {
-           if(chainset.isChainPartOfChainSet(chainId)){
-            return chainset
-           }
+        for (const chainset of Object.values(this.chainsetRecord)) {
+            if (chainset.isChainPartOfChainSet(chainId)) {
+                return chainset
+            }
         }
         return null;
     }
@@ -182,7 +195,7 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
         supportDeepLink: false,
         chainsets: []
     },
-    [Providers.Google]:{
+    [Providers.Google]: {
         icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/2048px-Google_%22G%22_Logo.svg.png",
         name: "Google",
         identifier: Providers.Google,
@@ -191,11 +204,11 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
         supportDeepLink: false,
         chainsets: []
     },
-    [Providers.Facebook]:{
+    [Providers.Facebook]: {
         icon: "https://1000logos.net/wp-content/uploads/2021/04/Facebook-logo.png",
         name: "Facebook",
         identifier: Providers.Facebook,
-        url:"https://www.facebook.com/",
+        url: "https://www.facebook.com/",
         webVersion: WebVersion.Centralized,
         supportDeepLink: false,
         chainsets: []
@@ -204,7 +217,7 @@ export const META_DATA_SET: Record<string, IMetaDataSet> = {
         icon: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
         name: "Github",
         identifier: Providers.Github,
-        url:"https://github.com/",
+        url: "https://github.com/",
         webVersion: WebVersion.Centralized,
         supportDeepLink: false,
         chainsets: []
