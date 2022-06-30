@@ -1,9 +1,8 @@
-import { Chains, Chainset, DefaultChainManager, getChainManager } from "@almight-sdk/utils";
-import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
-import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
-import { BaseProtocolDefinition } from "./protocol_definition";
+
+import { BaseProviderChannel } from "./channel";
+
 import { BaseProvider } from "./providers";
-import { Address, BalanceReturnType, IProtocolDefinition, IProvider, IProviderAdapter, ISession, ProviderFilter, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
+import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains

@@ -81,7 +81,7 @@ export class BaseConnector implements IConnector {
 
     protected async _baseConnect(args: IConnectorConnectArguments = {}): Promise<void> {
         if (this._adapter !== undefined) {
-            if (!(this._adapter as BaseChainAdapter).channel.isConnected) {
+            if (!(this._adapter as BaseChainAdapter).provider.isConnected()) {
                 await this._adapter.connect();
             }
             return;

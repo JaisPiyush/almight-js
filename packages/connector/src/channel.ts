@@ -62,7 +62,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 
 
     constructor(session?: ISession) {
-       
+       this.init(session)
     }
 
 

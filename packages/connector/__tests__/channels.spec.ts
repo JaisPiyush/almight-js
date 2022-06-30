@@ -1,9 +1,8 @@
 import { BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
 import { IncompatiblePlatform } from "../src/exceptions";
 import { expect, assert } from "chai"
-import { BasicExternalProvider, IProvider, IProviderAdapter } from "../src/types";
+import { BasicExternalProvider, IProvider } from "../src/types";
 import { EthereumAdapter } from "../src/adapters/ethereum"
-import { AxiosInstance } from "axios";
 import { BaseProvider } from "../src/providers";
 
 let chainName = () => {
@@ -64,8 +63,9 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
     });
 
     it("testing #connect method", async function () {
+        await channel.connect();
         try {
-            await channel.connect(undefined);
+            await channel.connect();
             fail("Must fail becuase of .on listener")
         } catch (e) {
             expect(e).not.to.be.undefined;
