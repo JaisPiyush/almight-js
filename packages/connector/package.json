@@ -43,6 +43,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.17.10",
     "@types/mocha": "^9.1.1",
+    "ganache": "^7.3.2",
     "ts-mocha": "^10.0.0"
   }
 }
