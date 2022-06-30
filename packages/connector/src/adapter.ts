@@ -25,29 +25,32 @@ interface IChainAdapterOptions {
     provider: BaseProvider,
     onConnect?: (options?: any) => void
 }
-export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel, 
-P extends BaseProvider<C> = BaseProvider<C>> 
-implements IProviderAdapter<C> {
+export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
+    P extends BaseProvider<C> = BaseProvider<C>>
+    implements IProviderAdapter<C> {
 
     provider: P;
     bridge: any;
-    onConnectCallback?: (options?: any) => void
+    onConnectCallback?: (options?: any) => void;
 
-    public get accounts(): Address[] {return this.provider.accounts}
-    public get chainId(): number {return this.provider.chainId}
+    public get accounts(): Address[] { return this.provider.accounts }
+    public get chainId(): number { return this.provider.chainId }
 
     constructor(options: IChainAdapterOptions) {
         this.setProvider(options.provider as P)
         this.onConnectCallback = options.onConnect;
         this.provider.onConnectCallback = (options?: any): void => {
+
             this.onConnect(options);
-            this.onConnectCallback(options)
+            if (this.onConnectCallback !== undefined) {
+                this.onConnectCallback(options)
+            }
         }
     }
 
 
     public onConnect(options: any): void {
-        
+
     }
 
     public setProvider(provider: P): void {
@@ -64,7 +67,7 @@ implements IProviderAdapter<C> {
     }
 
     getSession(): ISession {
-       return this.provider.getSession();
+        return this.provider.getSession();
     }
 
 
@@ -80,7 +83,7 @@ implements IProviderAdapter<C> {
         throw new Error("Method not implemented")
     }
 
-    
+
 
     sendTransaction(data: TransactionData): Promise<TransactionReturnType> {
         throw new Error("Method not implemented.");
@@ -100,7 +103,7 @@ implements IProviderAdapter<C> {
     getTransactionCount(): Promise<number> {
         throw new Error("Method not implemented.");
     }
-    
+
 
 
     async checkSession<T>(): Promise<[boolean, T]> {
@@ -113,7 +116,7 @@ implements IProviderAdapter<C> {
     }
 
     async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
-       return await this.provider.request<T>(data, timeout) as T;
+        return await this.provider.request<T>(data, timeout) as T;
     }
 
 

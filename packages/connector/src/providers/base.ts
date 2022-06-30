@@ -68,8 +68,6 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
         this.channelOnConnect = function (options?: any): void {
             if (self.onConnectCallback !== undefined) {
-                console.log(self.onConnectCallback);
-                
                 self.onConnectCallback({
                     data: options,
                     accounts: options.accounts ?? self.accounts,
@@ -134,9 +132,7 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
         const chainManager = getChainManager();
         const chainset = chainManager.getChainsetFromChainId(chainId);
-        if (chainset === null && this.isChainFilterAvailable()) {
-            throw new ConnectedChainNotAllowedError(chainId);
-        } else {
+        if (chainset !== null) {
             this.chainset = chainset;
         }
 

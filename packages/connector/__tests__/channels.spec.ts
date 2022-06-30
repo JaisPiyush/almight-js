@@ -1,5 +1,5 @@
 import { BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
-import { IncompatiblePlatform } from "../src/exceptions";
+import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform } from "../src/exceptions";
 import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
 import { EthereumChainAdapter } from "../src/adapters/ethereum"
@@ -72,8 +72,12 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
             expect(e).not.to.be.undefined;
         }
         expect(channel.provider).not.to.be.undefined;
-        await channel.connect(({ name: "testing", on: (name: string, callback: Function) => { callback() } } as unknown) as BasicExternalProvider);
-        expect(channel.provider).to.have.property("name")
+        
+        try {
+            await channel.connect(({ name: "testing", on: (name: string, callback: Function) => { callback() } } as unknown) as BasicExternalProvider);
+        }catch(e){
+            expect(e).to.be.instanceOf(ChannelConnectionEstablishmentFailed)
+        }
 
     });
 

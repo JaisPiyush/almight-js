@@ -65,7 +65,8 @@ export class ChannelConnectionEstablishmentFailed extends Error {
 }
 
 export class ConnectedChainNotAllowedError extends Error {
-    constructor(id: number) {
-        super(`Chain with chainId ${id} is not allowed to connect with the adapter`)
+    constructor(id: number, msg?: string) {
+        const message = msg ?? `Chain with chainId ${id} is not allowed to connect with the adapter`
+        super(message)
     }
 }

@@ -159,10 +159,11 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * 
      */
     async checkConnection( obj?: IProvider, raiseError: boolean = false): Promise<boolean> {
+        if(this.provider === undefined && raiseError) throw new ChannelConnectionEstablishmentFailed();
         if (this.provider === undefined) return false;
         const pingResult = await this.ping({ obj: obj });
         this._isConnected = this.provider !== undefined && pingResult;
-        if(raiseError && this._isConnected === false) throw new ChannelConnectionEstablishmentFailed();
+        if(raiseError && this.isConnected === false) throw new ChannelConnectionEstablishmentFailed();
         return this.isConnected;
     }
 
@@ -327,7 +328,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
-    override async checkConnection(obj: IProvider,raiseError: boolean = false): Promise<boolean> {
+    override async checkConnection(obj: IProvider, raiseError: boolean = false): Promise<boolean> {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
