@@ -4,6 +4,7 @@ import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
 import { EthereumAdapter } from "../src/adapters/ethereum"
 import { BaseProvider } from "../src/providers";
+import {startGanache, closeGanahceServer} from "@almight-sdk/utils/src/mocks"
 
 let chainName = () => {
     return {
@@ -115,8 +116,20 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
 
 describe("HTTPProviderChannel", () => {
 
+    const PORT = 8545;
+    let server;
+    const url = `http://localhost:${PORT}`
+
+    before(async () => {
+        server = await startGanache({port: PORT});
+    })
+
+    after( async () => {
+        await closeGanahceServer(server);
+    })
+
     it("testing connect", async () => {
-        const url = "http://localhost:7545"
+        
         const provider = new BaseProvider<HTTPProviderChannel, EthereumAdapter>({
             channel: new HTTPProviderChannel({
                 endpoint: url,
