@@ -1,10 +1,6 @@
 import { BaseChainAdapter } from "../adapter";
-import { WalletConnectChannel } from "../channel";
-import { IProviderAdapter, Address, ProviderChannelInterface, ConnectorType, IProtocolDefinition } from "../types";
+import { IProviderAdapter, Address, IProtocolDefinition } from "../types";
 import { ethers } from "ethers";
-import { ChannelIsNotDefined } from "../exceptions";
-import { Providers } from "@almight-sdk/utils";
-
 
 
 
@@ -13,53 +9,21 @@ import { Providers } from "@almight-sdk/utils";
 
 export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefinition {
 
-    public static providerPath = "ethereum";
 
-    provider: ethers.providers.Web3Provider;
+    public bridge: ethers.providers.Web3Provider;
 
-    checkProvider(): boolean {
-        if (this.channel === undefined || this.channel.provider === undefined) throw new ChannelIsNotDefined(this.channel.constructor.name);
-        if (this.provider === undefined) throw new Error("Provider is not connected");
-        return true;
+    
+
+    public onConnect(options: any): void {
+        this.bridge = new ethers.providers.Web3Provider(this.provider.channel as ethers.providers.ExternalProvider);
     }
-
-
-
-    override async checkConnection(): Promise<boolean> {
-        const result = await super.checkConnection();
-
-        if (this.channel.connectorType === ConnectorType.BrowserExtension) {
-            this.channel.onConnect({
-                accounts: this.accounts,
-                chainId: this.chainId
-            }, this)
-        }
-        return result;
-    }
-
-    public bindChannelDelegations(): void {
-        super.bindChannelDelegations();
-        let self = this;
-
-
-        this.channelOnConnect = (optiopns?: any): void => {
-            if (super.channelOnConnect !== undefined) super.channelOnConnect(optiopns);
-            if (this.channel !== undefined) {
-                this.provider = new ethers.providers.Web3Provider(this.channel as ethers.providers.ExternalProvider);
-            }
-        }
-    }
-
-
 
 
     async sendTransaction(data: ethers.providers.TransactionRequest): Promise<ethers.providers.TransactionResponse> {
-        this.checkProvider();
-        return await this.provider.getSigner().sendTransaction(data);
+        return await this.bridge.getSigner().sendTransaction(data);
     }
     async signTransaction(data: ethers.providers.TransactionRequest): Promise<string> {
-        this.checkProvider();
-        return await this.provider.getSigner().signTransaction(data);
+        return await this.bridge.getSigner().signTransaction(data);
     }
 
     async signPersonalMessage(data: { message: string, address?: string }): Promise<string> {
@@ -95,11 +59,10 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
         });
     }
     async getBalance(account?: Address, blockTag: string = "latest"): Promise<ethers.BigNumber> {
-        return (await this.provider.getBalance(account ?? this.accounts[0], blockTag));
+        return (await this.bridge.getBalance(account ?? this.accounts[0], blockTag));
     }
     async getTransactionCount(account?: Address, block: string = "latest"): Promise<number> {
-        this.checkProvider()
-        return await this.provider.getTransactionCount(account?? this.accounts[0], block);
+        return await this.bridge.getTransactionCount(account ?? this.accounts[0], block);
     }
 }
 
@@ -112,63 +75,11 @@ export class MetaMaskAdapter extends EthereumAdapter {
     chainIds: number[];
 
 
-    verifyBrowserSession(provider: any): boolean {
-        return (provider as any).isMetaMask === true;
-    }
-
-
-
-    public bindChannelDelegations(): void {
-        super.bindChannelDelegations();
-        let self = this;
-        this.channelConnect = async (options?: any): Promise<void> => {
-            await self.channel.defaultConnect(options, self)
-            if (self.channel.connectorType === ConnectorType.WalletConnector) {
-                await self.channel.defaultConnect(options, self);
-                if ((self.channel as WalletConnectChannel).isSessionConnected()) await self.checkConnection();
-                return;
-            }
-            await self.channel.defaultConnect(options, self)
-            self.accounts = await self.request<Address[]>({ method: "eth_requestAccounts", params: [] });
-            self.checkConnection();
-        }
-        this.channelCheckSession = async <P = any, S = any>(session: S, channel?: ProviderChannelInterface): Promise<[boolean, P]> => {
-            let [isSessionValid, _provider] = await self.channel.defaultCheckSession(self);
-            if (self.channel.connectorType === ConnectorType.BrowserExtension && isSessionValid && _provider !== undefined) {
-                if((_provider as any).provider !== undefined && (_provider as any).providers.length > 1){
-                    for(const provider of (_provider as any).providers){
-                        if(this.verifyBrowserSession(provider)) return provider;
-                    }
-                }
-                else if (this.verifyBrowserSession(_provider)) {
-                    return [true, _provider];
-                }
-                return [false, undefined]
-            }
-            return [isSessionValid, _provider];
-
-        }
-
-    }
-
-}
-
-export class KardiaChainAdapter extends MetaMaskAdapter {
-
-    public static providerPath = Providers.KardiaChain;
-
-    override verifyBrowserSession(provider: any): boolean {
-        return (provider as any).isKaiWallet === true
-    }
+    
 
 }
 
 
 
-export class CoinbaseWalletAdapter extends MetaMaskAdapter {
 
-    override verifyBrowserSession(provider: any): boolean {
-        return (provider as any).isCoinbaseWallet === true;
-    }
 
-}

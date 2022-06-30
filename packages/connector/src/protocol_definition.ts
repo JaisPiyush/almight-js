@@ -3,10 +3,36 @@ import { AccountsReturnType, BalanceReturnType, IProtocolDefinition, IProviderAd
 
 
 
-export class BaseProtocolDefination implements IProtocolDefinition {
+export class BaseProtocolDefinition<P = any> implements IProtocolDefinition {
 
-    // adapter?: IProviderAdapter;
+    adapter: IProviderAdapter;
     chainIds: number[] = [];
+    provider: P;
+
+
+    setProvider(provider: P): void {
+        this.provider = provider;
+    }
+
+    setAdapter(adapter: IProviderAdapter): void {
+        this.adapter = adapter;
+    }
+
+
+    constructor(adapter: IProviderAdapter){
+        this.setAdapter(adapter);
+    }
+
+
+    checkProvider(): boolean {
+        if (this.provider === undefined) throw new Error("Provider is not connected");
+        return true;
+    }
+
+
+    validateChainId(chainId: number): boolean {
+        return this.chainIds.length === 0 || this.chainIds.includes(chainId)
+    }
 
 
     async getTransactionCount(): Promise<number> {
@@ -44,8 +70,10 @@ export class BaseProtocolDefination implements IProtocolDefinition {
         throw new Error("Method not implemented.");
     }
 
-    async getBalance(): Promise<BalanceReturnType>{
+    async getBalance(options?: any): Promise<BalanceReturnType>{
         throw new Error("Method not implemented.");
     }
 
 }
+
+

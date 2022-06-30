@@ -1,12 +1,12 @@
 import WalletConnect from "@walletconnect/client";
-import { Class, Providers } from "@almight-sdk/utils";
+import { Chains, Class, Providers } from "@almight-sdk/utils";
 
 export interface NetworkData {
     name?: string,
     chainId: number
 }
 
-export interface ISession { 
+export interface ISession {
     chainId: number
 }
 
@@ -70,14 +70,14 @@ export interface ProviderChannelInterface {
 
     setProvider(provider: ExternalProvider): void;
     init(session?: IProviderSessionData): void;
-    checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
+    checkSession(obj?: IProvider): Promise<[boolean, any | null]>;
     checkEnvironment(): Promise<boolean>;
-    connect(options?: any, obj?: IProviderAdapter): Promise<void>;
+    connect(options?: any, obj?: IProvider): Promise<void>;
     onSessionUpdate(options?: SessioUpdateArguments): void;
-    bindSessionListener(obj?: IProviderAdapter): void;
+    bindSessionListener(obj?: IProvider): void;
     defaultbindSessionListener(): void;
-    checkConnection(obj?: IProviderAdapter): Promise<boolean>;
-    ping(data?: { method?: string, obj?: IProviderAdapter }): Promise<boolean>;
+    checkConnection(obj?: IProvider): Promise<boolean>;
+    ping(data?: { method?: string, obj?: IProvider }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
      * Method to subscribe events 
@@ -108,27 +108,45 @@ export enum ConnectorType {
 }
 
 export interface SubscriptionCallback {
-   (...args: any[]): void;
+    (...args: any[]): void;
 }
 
 
 
-export interface IProviderAdapter {
+export interface IProviderAdapter<C extends ProviderChannelInterface = ProviderChannelInterface, P extends IProvider<C> = IProvider<C>> extends IProtocolDefinition {
+
+    provider: P;
+
+    getSession(): ISession;
+    getChannel(): C;
+    isConnected(): boolean;
+    on(event: string, callback: SubscriptionCallback): void;
+    request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
+    checkSession<P>(): Promise<[boolean, P]>;
+    connect(options?: any): Promise<void>;
+    onConnect(options: any): void
+}
 
 
-    getProvider<T = any>(): T;
+
+export interface IProvider<C = ProviderChannelInterface> {
+
+    channel: C;
+    accounts?: Address[];
+    chainId?: number;
+
+    setChannel(channel: C);
+
 
     isConnected(): boolean;
 
-    protocol?: IProtocolDefinition;
-
-    bindProtocol(protocol: IProtocolDefinition): void;
-
     getSession(): ISession;
+    getProvider<T = any>(): T
+    bindChannelDelegations(): void
 
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
-    channelPing? :(options?: any) => Promise<boolean>;
+    channelPing?: (options?: any) => Promise<boolean>;
     channelOnConnect?: (options?: any) => void;
     channelbindSessionListener?: () => void;
     on(event: string, callback: SubscriptionCallback): void;
@@ -150,11 +168,20 @@ export interface IChannelBehaviourPlugin {
 
 }
 
+
+export interface ConnectionFilter {
+    allowedConnectorTypes?: ConnectorType[];
+    allowedChains?: Array<string | number>;
+    restrictedChains?: Array<string | number>;
+}
+
+export type ProviderFilter = Omit<ConnectionFilter, "allowedConnectorTypes">;
+
 export interface IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
 
-    allowedConnectorTypes: Array<ConnectorType>;
+    filter?: ProviderFilter;
 
     // chainId or unique id for web2 providers
     identifier: string | number | Providers;
@@ -162,9 +189,9 @@ export interface IdentityProviderInterface {
     // Meta Datas such as icon, name, url , etc
     metaData: Record<string, any>;
 
+    getProviderClass(): Class<IProvider>;
     getAdapterClass(): Class<IProviderAdapter> | null;
     getChannels(): Class<ProviderChannelInterface>[];
-    getProtocolDefination(): Class<IProtocolDefinition>;
 
 }
 
@@ -204,25 +231,20 @@ export interface IConnector {
 
 }
 
-export interface TransactionData {}
+export interface TransactionData { }
 
 
-export interface SignMessageArgument {}
+export interface SignMessageArgument { }
 
 
-export interface TransactionReturnType {}
-export interface SignMessageReturnType {}
-export interface AccountsReturnType {}
-export interface BalanceReturnType {}
-export interface RequestReturnType {}
+export interface TransactionReturnType { }
+export interface SignMessageReturnType { }
+export interface BalanceReturnType { }
+export interface RequestReturnType { }
 
 
 export interface IProtocolDefinition {
 
-
-    // bindAdapter(adapter: IProviderAdapter): void;
-
-    // request<T = any>(args: ProviderRequestMethodArguments): Promise<T>;
 
     sendTransaction(data: TransactionData): Promise<TransactionReturnType>;
 
@@ -232,8 +254,8 @@ export interface IProtocolDefinition {
 
 
     getNetworkId(): Promise<RequestReturnType>;
-    getChainId(): Promise<RequestReturnType>;
-    getAccounts(): Promise<AccountsReturnType>;
+    getChainId(): Promise<number>;
+    getAccounts(): Promise<Address[]>;
     getBalance(account?: string, blockTag?: string): Promise<BalanceReturnType>;
     getTransactionCount(): Promise<number>;
 

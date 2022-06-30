@@ -39,6 +39,10 @@ export class ChainsManager {
         this.chainsetRecord = chainsetRecord;
     }
 
+    getChainsetFromIdentifier(identifier: string): Chainset {
+        return this.chainsetRecord[identifier]
+    }
+
     getProvidersFromChainId(chainId: number): Providers[] {
 
         const providers: Providers[] = [];

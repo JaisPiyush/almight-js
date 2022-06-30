@@ -3,42 +3,44 @@ import { BaseChainAdapter } from "./adapter";
 import { CoinbaseWalletAdapter, KardiaChainAdapter } from "./adapters";
 import { MetaMaskAdapter } from "./adapters";
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
-import { BaseProtocolDefination } from "./protocol_definition";
-import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProviderAdapter, ProviderChannelInterface } from "./types";
+import { BaseProvider } from "./providers";
+import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
 
 interface IdentityProviderConstructor { 
     name: string, 
     identifier: string
     webVersion: number, 
-    allowedConnectorTypes?: ConnectorType[], 
+    filter?: ProviderFilter
     metaData?: Record<string, any>
     adapterClass: Class<BaseChainAdapter>,
     channels: Class<BaseProviderChannel>[],
-    protocolDefinition?: Class<BaseProtocolDefination>;
+    providerClass?: Class<BaseProvider>
+   
 }
 
 export class IdentityProvider implements IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
-    allowedConnectorTypes: ConnectorType[];
     identifier: string | number;
     metaData: Record<string, any>;
+    filter?: ProviderFilter;
     adapterClass: Class<BaseChainAdapter>;
     channels: Class<BaseProviderChannel>[];
-    protocolDefinition?: Class<BaseProtocolDefination>;
+    providerClass: Class<BaseProvider>;
 
-    constructor({ allowedConnectorTypes = [], ...data }: IdentityProviderConstructor) {
+    constructor(data: IdentityProviderConstructor) {
         this.identityProviderName = data.name;
         this.identifier = data.identifier;
         this.webVersion = data.webVersion;
-        this.allowedConnectorTypes = allowedConnectorTypes;
+        this.filter = data.filter;
         this.metaData = data.metaData;
         this.adapterClass = data.adapterClass;
         this.channels = data.channels;
-        this.protocolDefinition = data.protocolDefinition;
+        this.providerClass = data.providerClass;
     }
-    getProtocolDefination(): Class<IProtocolDefinition> {
-        return this.protocolDefinition;
+    
+    getProviderClass(): Class<IProvider<ProviderChannelInterface>> {
+        return this.providerClass;
     }
 
     getAdapterClass(): Class<IProviderAdapter> {
@@ -51,13 +53,16 @@ export class IdentityProvider implements IdentityProviderInterface {
 }
 
 
-function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>, channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
+function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>,     
+    providerClass: Class<BaseProvider>,filter?: ProviderFilter,
+    channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
     const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
-        allowedConnectorTypes: data.allowedConnectorTypes,
         webVersion:WebVersion.Decentralized,
         identifier: data.identifier ?? provider,
+        filter: data.filter,
+        providerClass: data.providerClass,
         metaData: META_DATA_SET[provider],
         adapterClass: data.adapterClass,
         channels: data.channels ?? [BrowserProviderChannel, WalletConnectChannel]
@@ -72,7 +77,9 @@ function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvide
     const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
-        allowedConnectorTypes: [ConnectorType.OAuth],
+        filter: {
+            allowedConnectorTypes: [ConnectorType.OAuth]
+        },
         webVersion: WebVersion.Centralized,
         identifier: META_DATA_SET[provider].identifier,
         metaData: META_DATA_SET[provider],
