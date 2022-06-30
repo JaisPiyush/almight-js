@@ -1,16 +1,16 @@
 import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
-import { CoinbaseWalletAdapter, KardiaChainAdapter } from "./adapters";
-import { MetaMaskAdapter } from "./adapters";
+
+import { EthereumAdapter, } from "./adapters";
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
-import { BaseProvider } from "./providers";
-import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
+import { BaseProvider, CoinbaseWalletProvider, KardiaChainProvider, MetamaskProvider } from "./providers";
+import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
 
 interface IdentityProviderConstructor { 
     name: string, 
     identifier: string
     webVersion: number, 
-    filter?: ProviderFilter
+    filter?: ConnectionFilter
     metaData?: Record<string, any>
     adapterClass: Class<BaseChainAdapter>,
     channels: Class<BaseProviderChannel>[],
@@ -23,7 +23,7 @@ export class IdentityProvider implements IdentityProviderInterface {
     webVersion: number;
     identifier: string | number;
     metaData: Record<string, any>;
-    filter?: ProviderFilter;
+    filter?: ConnectionFilter;
     adapterClass: Class<BaseChainAdapter>;
     channels: Class<BaseProviderChannel>[];
     providerClass: Class<BaseProvider>;
@@ -54,7 +54,7 @@ export class IdentityProvider implements IdentityProviderInterface {
 
 
 function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>,     
-    providerClass: Class<BaseProvider>,filter?: ProviderFilter,
+    providerClass: Class<BaseProvider>,filter?: ConnectionFilter,
     channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
     const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
@@ -93,9 +93,18 @@ function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvide
 const IGNORED_PROVIDER = ["walletconnect"]
 
 const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
-    [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {adapterClass: MetaMaskAdapter}),
-    [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {adapterClass: KardiaChainAdapter}),
-    [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {adapterClass: CoinbaseWalletAdapter}),
+    [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {
+        adapterClass: EthereumAdapter,
+        providerClass: MetamaskProvider
+    }),
+    [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {
+        adapterClass: EthereumAdapter,
+        providerClass: KardiaChainProvider
+    }),
+    [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {
+        adapterClass:EthereumAdapter,
+        providerClass: CoinbaseWalletProvider
+    }),
 }
 const META_DATA_SET = getMetaDataSet()
 for(const [provider, metaData] of Object.entries(META_DATA_SET)){

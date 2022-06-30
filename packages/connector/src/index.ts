@@ -1,7 +1,6 @@
 export * from "./types"
 export * from "./adapter"
 export * from "./channel"
-export * from "./channel_plugin"
 export * from "./identity_provider"
 export * from "./exceptions"
 export * from "./connector"

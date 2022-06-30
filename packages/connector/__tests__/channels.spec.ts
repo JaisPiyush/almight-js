@@ -1,9 +1,10 @@
 import { BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
 import { IncompatiblePlatform } from "../src/exceptions";
 import { expect, assert } from "chai"
-import { BasicExternalProvider, IProviderAdapter } from "../src/types";
+import { BasicExternalProvider, IProvider, IProviderAdapter } from "../src/types";
 import { EthereumAdapter } from "../src/adapters/ethereum"
 import { AxiosInstance } from "axios";
+import { BaseProvider } from "../src/providers";
 
 let chainName = () => {
     return {
@@ -83,7 +84,7 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
                 assert(options.isServiceProvider())
             }
         }
-        await channel.connect(undefined, obj as IProviderAdapter);
+        await channel.connect(undefined, obj as IProvider);
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
         expect(channel.provider).to.have.property("isServiceProvider");
@@ -116,25 +117,30 @@ describe("HTTPProviderChannel", () => {
 
     it("testing connect", async () => {
         const url = "http://localhost:7545"
-        const adapter = new EthereumAdapter({
+        const provider = new BaseProvider<HTTPProviderChannel, EthereumAdapter>({
             channel: new HTTPProviderChannel({
                 endpoint: url,
                 chainId: 0
             }),
+           
+        });
+
+        const adapter = new EthereumAdapter({
+            provider: provider,
             onConnect: (data): void => {
                 expect(data).to.have.property("accounts");
                 expect(data).to.have.property("chainId");
             }
-        });
+        })
 
-        const [isSessionValid, provider] = await adapter.checkSession();
+        const [isSessionValid, _prov] = await adapter.checkSession();
         expect(isSessionValid).to.be.true;
-        expect(provider).not.to.be.undefined;
+        expect(_prov).not.to.be.undefined;
         await adapter.connect();
         expect(adapter.accounts).not.to.be.undefined;
         expect(adapter.accounts?.length).not.to.equal(0);
-        expect(adapter.provider).not.to.undefined;
-        expect(await adapter.getCompleteSessionForStorage()).to.deep.equal({
+        expect(adapter.bridge).not.to.undefined;
+        expect(await adapter.getSession()).to.deep.equal({
             endpoint: url,
             chainId: await adapter.getChainId()
         });

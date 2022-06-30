@@ -1,4 +1,4 @@
-import { Address, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct } from "@almight-sdk/connector";
+import { Address, ConnectorType, IdentityProvider, ISession } from "@almight-sdk/connector";
 import { AllowedQueryParams, Web3UserRegistrationArgument } from "../types";
 import { IdentityResolver } from "./resolver";
 import { WebLocalStorage, WebVersion } from "@almight-sdk/utils";

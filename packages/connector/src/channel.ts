@@ -2,7 +2,7 @@ import WalletConnect from "@walletconnect/client";
 import { AsyncCallTimeOut, asyncCallWithTimeBound, getMetaDataSet, isMobileWebPlatform, isWebPlatform,  Providers } from "@almight-sdk/utils";
 import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform, IncompatibleSessionData, ProviderConnectionError, ProviderRequestTimeout } from "./exceptions";
 import {
-    Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IChannelBehaviourPlugin, IProvider,
+    Address, BasicExternalProvider, BrowserSessionStruct, ConnectorType, HTTPSessionStruct, IProvider,
      ISession, ProviderChannelInterface, ProviderRequestMethodArguments,
     SessioUpdateArguments,
     SubscriptionCallback, WalletConnectSessionStruct
@@ -46,7 +46,6 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     }
 
     protected _isConnected = false;
-    protected _behaviourPlugin?: IChannelBehaviourPlugin;
 
 
     public static validateSession(session: any): boolean {
@@ -62,11 +61,8 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public get session(): ISession | undefined { return this._session }
 
 
-    constructor(session?: ISession, plugin?: IChannelBehaviourPlugin) {
-        this.init(session)
-        if (plugin !== undefined) {
-            this._behaviourPlugin = plugin;
-        }
+    constructor(session?: ISession) {
+       
     }
 
 
@@ -82,9 +78,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     getBehaviourMethod(name: string, obj?: IProvider): any {
         if (obj !== undefined && (obj as any)[name] !== undefined && typeof (obj as any)[name] === "function") {
             return (obj as any)[name];
-        } else if (this._behaviourPlugin !== undefined && (this._behaviourPlugin as any)[name] !== undefined) {
-            return (this._behaviourPlugin as any)[name];
-        }
+        } 
         return undefined;
     }
 
@@ -268,8 +262,8 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
-    constructor(session?: BrowserSessionStruct, plugin?: IChannelBehaviourPlugin) {
-        super(session, plugin)
+    constructor(session?: BrowserSessionStruct) {
+        super(session)
     }
 
     public getCompleteSessionForStorage(): BrowserSessionStruct {
@@ -379,8 +373,8 @@ export class WalletConnectChannel extends BaseProviderChannel {
         return this._provider.session;
     }
 
-    constructor(session?: WalletConnectSessionStruct, plugin?: IChannelBehaviourPlugin) {
-        super(session, plugin)
+    constructor(session?: WalletConnectSessionStruct) {
+        super(session)
     }
 
 
@@ -593,8 +587,8 @@ export class HTTPProviderChannel extends BaseProviderChannel {
 
     public get provider(): AxiosInstance { return this._provider }
 
-    constructor(session?: HTTPSessionStruct, plugin?: IChannelBehaviourPlugin) {
-        super(session, plugin);
+    constructor(session?: HTTPSessionStruct) {
+        super(session);
     }
 
 

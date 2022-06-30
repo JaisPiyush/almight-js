@@ -2,14 +2,14 @@ import { Class } from "@almight-sdk/utils"
 import { BaseChainAdapter } from "./adapter";
 import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed, NoSuitableAdapterFound } from "./exceptions";
-import { BrowserSessionStruct, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { BrowserSessionStruct, ConnectionFilter, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
 
 export interface IConnectorOptions {
     idp?: IdentityProviderInterface;
     adapter?: Class<IProviderAdapter> | IProviderAdapter;
     channel?: Class<ProviderChannelInterface>;
     sessions?: ProviderSessionStruct;
-    allowedConnectorTypes?: ConnectorType[];
+    filter?: ConnectionFilter;
     metaData?: Record<string, any>;
     onConnect?: (options?: any) => void;
 }
@@ -51,9 +51,9 @@ export class BaseConnector implements IConnector {
         }
         this._channel = args.channel;
         this.sessions = args.sessions;
-        this.allowedConnectorTypes = args.allowedConnectorTypes ?? [];
-        if (this.allowedConnectorTypes.length === 0 && this._idp !== undefined) {
-            this.allowedConnectorTypes = this._idp.allowedConnectorTypes;
+        this.allowedConnectorTypes = args.filter.allowedConnectorTypes ?? [];
+        if (this.allowedConnectorTypes.length === 0 && this._idp !== undefined && this._idp.filter !== undefined) {
+            this.allowedConnectorTypes = this._idp.filter.allowedConnectorTypes;
         }
         this.metaData = args.metaData;
         if (args.onConnect !== undefined) {

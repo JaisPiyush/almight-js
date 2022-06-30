@@ -159,15 +159,6 @@ export interface IProvider<C = ProviderChannelInterface> {
 }
 
 
-export interface IChannelBehaviourPlugin {
-    channelConnect?: <R = any>(options?: R, channel?: ProviderChannelInterface) => Promise<void>;
-    channelCheckSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface) => Promise<[boolean, P]>;
-    channelOnConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
-    channelVerifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
-    bind(channel: ProviderChannelInterface): void;
-
-}
-
 
 export interface ConnectionFilter {
     allowedConnectorTypes?: ConnectorType[];
@@ -181,7 +172,7 @@ export interface IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
 
-    filter?: ProviderFilter;
+    filter?: ConnectionFilter;
 
     // chainId or unique id for web2 providers
     identifier: string | number | Providers;

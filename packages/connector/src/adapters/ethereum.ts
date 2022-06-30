@@ -67,17 +67,6 @@ export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefini
 }
 
 
-export class MetaMaskAdapter extends EthereumAdapter {
-
-    public static providerPath = "ethereum";
-
-    adapter?: IProviderAdapter;
-    chainIds: number[];
-
-
-    
-
-}
 
 
 

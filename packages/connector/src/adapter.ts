@@ -3,7 +3,7 @@ import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
 import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
 import { BaseProtocolDefinition } from "./protocol_definition";
 import { BaseProvider } from "./providers";
-import { Address, BalanceReturnType, IProtocolDefinition, IProvider, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
+import { Address, BalanceReturnType, IProtocolDefinition, IProvider, IProviderAdapter, ISession, ProviderFilter, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -23,7 +23,7 @@ import { Address, BalanceReturnType, IProtocolDefinition, IProvider, IProviderAd
 
 
 interface IChainAdapterOptions {
-    provider: BaseProvider
+    provider: BaseProvider,
     onConnect?: (options?: any) => void
 }
 export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel, 

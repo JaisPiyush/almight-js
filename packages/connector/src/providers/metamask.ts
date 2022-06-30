@@ -68,7 +68,7 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
 }
 
 
-export class KardiaChainAdapter extends MetamaskProvider {
+export class KardiaChainProvider extends MetamaskProvider {
 
     public static providerPath = Providers.KardiaChain;
 
@@ -79,7 +79,7 @@ export class KardiaChainAdapter extends MetamaskProvider {
 }
 
 
-export class CoinbaseWalletAdapter extends MetamaskProvider {
+export class CoinbaseWalletProvider extends MetamaskProvider {
 
     override verifyBrowserSession(provider: any): boolean {
         return (provider as any).isCoinbaseWallet === true;
