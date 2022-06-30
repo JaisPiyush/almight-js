@@ -76,7 +76,7 @@ export interface ProviderChannelInterface {
     onSessionUpdate(options?: SessioUpdateArguments): void;
     bindSessionListener(obj?: IProvider): void;
     defaultbindSessionListener(): void;
-    checkConnection(obj?: IProvider): Promise<boolean>;
+    checkConnection(obj?: IProvider, raiseError?: boolean): Promise<boolean>;
     ping(data?: { method?: string, obj?: IProvider }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
@@ -123,6 +123,7 @@ export interface IProviderAdapter<C extends ProviderChannelInterface = ProviderC
     on(event: string, callback: SubscriptionCallback): void;
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
     checkSession<P>(): Promise<[boolean, P]>;
+    checkConnection(raiseError: boolean): Promise<boolean>
     connect(options?: any): Promise<void>;
     onConnect(options: any): void
 }
@@ -155,6 +156,7 @@ export interface IProvider<C = ProviderChannelInterface> {
     verifyConnectedChain(chainId: number): void;
     getCompleteSessionForStorage(): Promise<ISession>;
     checkSession<P>(): Promise<[boolean, P]>;
+    checkConnection(raiseError: boolean): Promise<boolean>
     connect(): Promise<void>;
 }
 

@@ -158,10 +158,11 @@ export class BaseProviderChannel implements ProviderChannelInterface {
      * the connection will be assumed to be established and session to be healthy
      * 
      */
-    async checkConnection(obj?: IProvider): Promise<boolean> {
+    async checkConnection( obj?: IProvider, raiseError: boolean = false): Promise<boolean> {
         if (this.provider === undefined) return false;
         const pingResult = await this.ping({ obj: obj });
         this._isConnected = this.provider !== undefined && pingResult;
+        if(raiseError && this._isConnected === false) throw new ChannelConnectionEstablishmentFailed();
         return this.isConnected;
     }
 
@@ -304,7 +305,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 
     override async connect(options?: BasicExternalProvider, obj?: IProvider): Promise<void> {
         await super.connect(options, obj)
-        await this.checkConnection(obj);
+        await this.checkConnection(obj, true);
 
     }
 
@@ -326,11 +327,11 @@ export class BrowserProviderChannel extends BaseProviderChannel {
     }
 
 
-    override async checkConnection(obj): Promise<boolean> {
+    override async checkConnection(obj: IProvider,raiseError: boolean = false): Promise<boolean> {
         if (!isWebPlatform()) {
             throw new IncompatiblePlatform()
         }
-        const result = await super.checkConnection(obj);
+        const result = await super.checkConnection(obj, raiseError);
         if (result) {
             this.bindSessionListener(obj)
         }
@@ -429,7 +430,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
     checkConnectionAndCallOnConnect(obj: IProvider, params: {error?: Error, payload?: any}): void {
         if (params.error) throw params.error
-        this.checkConnection(obj).then((value) => {
+        this.checkConnection(obj, true).then((value) => {
             if (!value) return;
             this.onConnect(params , obj);
         });
@@ -480,7 +481,7 @@ export class WalletConnectChannel extends BaseProviderChannel {
 
         await super.connect(options, obj)
         if (this.isSessionConnected()) {
-            await this.checkConnection(obj);
+            await this.checkConnection(obj, true);
         }
     }
 
@@ -636,11 +637,11 @@ export class HTTPProviderChannel extends BaseProviderChannel {
 
     override async connect(url?: string, obj?: IProvider): Promise<void> {
         await super.connect(url, obj)
-        await this.checkConnection(obj);
+        await this.checkConnection(obj, true);
     }
 
-    override async checkConnection(obj?: IProvider): Promise<boolean> {
-        const result = await super.checkConnection(obj);
+    override async checkConnection(obj?: IProvider , raiseError: boolean = false): Promise<boolean> {
+        const result = await super.checkConnection(obj, raiseError);
         if(result){
             this.bindSessionListener();
         }

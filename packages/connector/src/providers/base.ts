@@ -33,7 +33,7 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
     channel: C;
 
-    public onConnectCallback?: (options?: any) => void;
+    public onConnectCallback: (options?: any) => void = (opt?: any): void => {};
 
 
     constructor(options: IProviderOptions) {
@@ -41,7 +41,14 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
         this.onConnectCallback = options.onConnect;
         this.checkChannel()
         this.bindChannelDelegations();
-        this.filter = options.filter;
+        if(options.filter !== undefined){
+            this.setFilter(options.filter);
+        }
+    }
+
+
+    setFilter(filter: ProviderFilter): void {
+        this.filter = filter;
         this.enflateFilter()
     }
 
@@ -61,6 +68,8 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
         this.channelOnConnect = function (options?: any): void {
             if (self.onConnectCallback !== undefined) {
+                console.log(self.onConnectCallback);
+                
                 self.onConnectCallback({
                     data: options,
                     accounts: options.accounts ?? self.accounts,
@@ -97,7 +106,7 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
             if (typeof chain === "string") {
                 const chainset = chainManager.chainsetRecord[chain];
                 if (chainset === undefined) {
-                    throw new Error(`Provider chain ${chain} is not available in chainset record`)
+                    throw new Error(`Provided chain ${chain} is not available in chainset record`)
                 }
                 chainIds = chainIds.concat(chainset.getChainIds());
             } else if (typeof chain === "number") {
@@ -177,8 +186,8 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
         }
     }
 
-    async checkConnection(): Promise<boolean> {
-        return await this.channel.checkConnection(this);
+    async checkConnection(raiseError: boolean = false): Promise<boolean> {
+        return await this.channel.checkConnection(this, raiseError);
     }
     async checkSession<P>(): Promise<[boolean, P]> {
         this.checkChannel()

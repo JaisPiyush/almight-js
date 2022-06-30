@@ -26,8 +26,8 @@ interface IChainAdapterOptions {
     onConnect?: (options?: any) => void
 }
 export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel, 
-P extends BaseProvider<C> = BaseProvider<C>
-> implements IProviderAdapter<C> {
+P extends BaseProvider<C> = BaseProvider<C>> 
+implements IProviderAdapter<C> {
 
     provider: P;
     bridge: any;
@@ -117,8 +117,8 @@ P extends BaseProvider<C> = BaseProvider<C>
     }
 
 
-    async checkConnection(): Promise<boolean> {
-        return await this.provider.checkConnection();
+    async checkConnection(raiseError: boolean = false): Promise<boolean> {
+        return await this.provider.checkConnection(raiseError);
     }
 
     on(event: string, callback: SubscriptionCallback): void {

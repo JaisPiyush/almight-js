@@ -21,7 +21,8 @@
   "scripts": {
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
     "tsc": "tsc",
-    "prod": "tsc --outDir=src"
+    "prod": "tsc --outDir=src",
+    "test:watch": ""
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"

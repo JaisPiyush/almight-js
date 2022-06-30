@@ -1,7 +1,7 @@
 import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
 
-import { EthereumAdapter, } from "./adapters";
+import { EthereumChainAdapter, } from "./adapters";
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { BaseProvider, CoinbaseWalletProvider, KardiaChainProvider, MetamaskProvider } from "./providers";
 import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
@@ -94,15 +94,15 @@ const IGNORED_PROVIDER = ["walletconnect"]
 
 const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
     [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {
-        adapterClass: EthereumAdapter,
+        adapterClass: EthereumChainAdapter,
         providerClass: MetamaskProvider
     }),
     [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {
-        adapterClass: EthereumAdapter,
+        adapterClass: EthereumChainAdapter,
         providerClass: KardiaChainProvider
     }),
     [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {
-        adapterClass:EthereumAdapter,
+        adapterClass:EthereumChainAdapter,
         providerClass: CoinbaseWalletProvider
     }),
 }

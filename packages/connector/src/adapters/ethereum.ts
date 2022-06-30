@@ -1,21 +1,27 @@
 import { BaseChainAdapter } from "../adapter";
-import { IProviderAdapter, Address, IProtocolDefinition } from "../types";
+import { Address, IProtocolDefinition } from "../types";
 import { ethers } from "ethers";
+import { BaseProviderChannel } from "../channel";
+import { BaseProvider } from "../providers/base";
 
 
 
 
 
 
-export class EthereumAdapter extends BaseChainAdapter implements IProtocolDefinition {
+export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
+    P extends BaseProvider<C> = BaseProvider<C>> extends BaseChainAdapter<C, P> implements IProtocolDefinition {
 
 
     public bridge: ethers.providers.Web3Provider;
 
-    
+
 
     public onConnect(options: any): void {
-        this.bridge = new ethers.providers.Web3Provider(this.provider.channel as ethers.providers.ExternalProvider);
+        if (this.provider.isConnected()) {
+            this.bridge = new ethers.providers.Web3Provider(this.provider.channel as ethers.providers.ExternalProvider);
+        }
+
     }
 
 
