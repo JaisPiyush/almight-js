@@ -24,7 +24,8 @@
   },
   "scripts": {
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "test:watch": ""
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight/issues"

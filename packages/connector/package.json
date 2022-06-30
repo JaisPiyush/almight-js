@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register",
+    "test:watch":"env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
     "tsc": "tsc"
   },
   "bugs": {

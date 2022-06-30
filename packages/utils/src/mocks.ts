@@ -26,7 +26,11 @@ export class LocalStorageMock {
 }
 
 export async function startGanache({
-    options = {},
+    options = {
+        logging: {
+            quiet: true
+        }
+    },
     port = 8545
 }: {
     options?: ServerOptions<"ethereum">,
@@ -41,3 +45,5 @@ export async function startGanache({
 export async function closeGanahceServer(server: Server<"ethereum">): Promise<void> {
     await server.close();
 }
+
+export {ServerOptions, Server};
