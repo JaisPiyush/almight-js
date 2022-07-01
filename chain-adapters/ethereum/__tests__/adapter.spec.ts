@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { startGanache, closeGanahceServer, Server } from "@almight-sdk/utils/src/mocks";
-import { BaseProvider, BrowserProviderChannel, BrowserSessionStruct, ChannelConnectionEstablishmentFailed, ConnectedChainNotAllowedError} from "../src"
-import {MockEthereumChainAdapter} from "../src/mocks/adapters";
+import { BaseProvider, BrowserProviderChannel, BrowserSessionStruct, ChannelConnectionEstablishmentFailed, ConnectedChainNotAllowedError} from "@almight-sdk/connector"
+import {EthereumChainAdapter} from "../src/adapter";
 import { Chains } from "@almight-sdk/utils";
 
 
@@ -15,8 +15,7 @@ describe("EthereumChainAdapter", () => {
     });
 
     after(async () => {
-        await closeGanahceServer(server)
-
+        await closeGanahceServer(server);
     });
 
     describe("BrowserProviderChannel", () => {
@@ -27,6 +26,12 @@ describe("EthereumChainAdapter", () => {
                 configurable: true,
                 value: server.provider
             });
+
+            Object.defineProperty(globalThis, "document", {
+                value: {},
+                writable: true,
+                configurable: true
+            })
         });
 
         const channel = new BrowserProviderChannel({ path: path, chainId: 0 });
@@ -34,7 +39,7 @@ describe("EthereumChainAdapter", () => {
             channel: channel
         });
 
-        const adapter = new MockEthereumChainAdapter<BrowserProviderChannel, typeof provider>({
+        const adapter = new EthereumChainAdapter<BrowserProviderChannel, typeof provider>({
             provider: provider,
             onConnect: (options?: any): void => { }
         });
@@ -47,7 +52,7 @@ describe("EthereumChainAdapter", () => {
 
         describe("checkSession", () => {
             it("checkSession must fail", async () => {
-                const adapter = new MockEthereumChainAdapter({
+                const adapter = new EthereumChainAdapter({
                     provider: new BaseProvider({
                         channel: new BrowserProviderChannel({ path: "stocks", chainId: 0 })
                     })
@@ -134,7 +139,7 @@ describe("EthereumChainAdapter", () => {
                 })
 
                 it("fail due to wrong session", async () => {
-                    const _adapter = new MockEthereumChainAdapter({
+                    const _adapter = new EthereumChainAdapter({
                         provider: new BaseProvider<BrowserProviderChannel>({
                             channel: new BrowserProviderChannel({ path: "stocks", chainId: 0 })
                         }),
@@ -199,7 +204,7 @@ describe("EthereumChainAdapter", () => {
                 expect(await adapter.checkConnection()).to.be.true;
             });
             it("failure", async () => {
-                const adapter = new MockEthereumChainAdapter({
+                const adapter = new EthereumChainAdapter({
                     provider: new BaseProvider({
                         channel: new BrowserProviderChannel({ path: path, chainId: 0 })
                     })
@@ -231,7 +236,7 @@ describe("EthereumChainAdapter", () => {
         describe("onConnect", () => {
 
             it("onConnect test", async () => {
-                const adapter = new MockEthereumChainAdapter({
+                const adapter = new EthereumChainAdapter({
                     provider: new BaseProvider({
                         channel: new BrowserProviderChannel({ path: path, chainId: 0 }),
                     }),

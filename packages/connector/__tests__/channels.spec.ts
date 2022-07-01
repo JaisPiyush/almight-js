@@ -2,7 +2,7 @@ import { BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
 import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform } from "../src/exceptions";
 import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
-import { EthereumChainAdapter } from "../src/adapters/ethereum"
+import { MockEthereumChainAdapter } from "../src/mocks/adapters"
 import { BaseProvider } from "../src/providers";
 import {startGanache, closeGanahceServer} from "@almight-sdk/utils/src/mocks"
 
@@ -134,7 +134,7 @@ describe("HTTPProviderChannel", () => {
 
     it("testing connect", async () => {
         
-        const provider = new BaseProvider<HTTPProviderChannel, EthereumChainAdapter>({
+        const provider = new BaseProvider<HTTPProviderChannel, MockEthereumChainAdapter>({
             channel: new HTTPProviderChannel({
                 endpoint: url,
                 chainId: 0
@@ -142,7 +142,7 @@ describe("HTTPProviderChannel", () => {
            
         });
 
-        const adapter = new EthereumChainAdapter({
+        const adapter = new MockEthereumChainAdapter({
             provider: provider,
             onConnect: (data): void => {
                 expect(data).to.have.property("accounts");

@@ -1,7 +1,6 @@
 import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
 
-import { EthereumChainAdapter, } from "./adapters";
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { BaseProvider, CoinbaseWalletProvider, KardiaChainProvider, MetamaskProvider } from "./providers";
 import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
@@ -53,7 +52,7 @@ export class IdentityProvider implements IdentityProviderInterface {
 }
 
 
-function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>,     
+export function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>,     
     providerClass: Class<BaseProvider>,filter?: ConnectionFilter,
     channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
     const META_DATA_SET = getMetaDataSet()
@@ -73,7 +72,7 @@ function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterCla
 export class CentralizedChainAdapter extends BaseChainAdapter{}
 
 
-function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
+export function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
     const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
@@ -93,18 +92,18 @@ function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvide
 const IGNORED_PROVIDER = ["walletconnect"]
 
 const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
-    [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {
-        adapterClass: EthereumChainAdapter,
-        providerClass: MetamaskProvider
-    }),
-    [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {
-        adapterClass: EthereumChainAdapter,
-        providerClass: KardiaChainProvider
-    }),
-    [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {
-        adapterClass:EthereumChainAdapter,
-        providerClass: CoinbaseWalletProvider
-    }),
+    // [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {
+    //     adapterClass: EthereumChainAdapter,
+    //     providerClass: MetamaskProvider
+    // }),
+    // [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {
+    //     adapterClass: EthereumChainAdapter,
+    //     providerClass: KardiaChainProvider
+    // }),
+    // [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {
+    //     adapterClass:EthereumChainAdapter,
+    //     providerClass: CoinbaseWalletProvider
+    // }),
 }
 const META_DATA_SET = getMetaDataSet()
 for(const [provider, metaData] of Object.entries(META_DATA_SET)){

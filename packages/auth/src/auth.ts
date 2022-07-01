@@ -16,9 +16,7 @@ export interface AuthenticationAppConstructorOptions {
 }
 
 export class AuthenticationApp implements IAuthenticationApp {
-
-
-
+    
     core: AlmightClient;
     frame?: IAuthenticationFrame;
     storage: BaseStorageInterface;

@@ -1,14 +1,10 @@
 {
-  "name": "@almight-sdk/connector",
+  "name": "@almight-sdk/ethereum-chain-adapter",
   "version": "0.0.1-alpha.98",
-  "publishConfig": {
-    "access": "public"
-  },
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
-  "private": false,
   "main": "lib/index.js",
   "directories": {
     "lib": "lib",
@@ -22,29 +18,16 @@
     "url": "git+https://github.com/Byta-Tigris/almight-js.git"
   },
   "scripts": {
+    "tsc": "tsc",
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register",
-    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
-    "tsc": "tsc"
+    "test:watch": ""
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "dependencies": {
+    "@almight-sdk/connector": "^0.0.1-alpha.98",
     "@almight-sdk/utils": "^0.0.1-alpha.98",
-    "@walletconnect/client": "^1.7.7",
-    "@walletconnect/utils": "^1.7.8",
-    "axios": "^0.27.2",
-    "bn.js": "^5.2.1",
-    "buffer": "^6.0.3",
-    "bufferutil": "^4.0.6",
-    "dotenv": "^16.0.1"
-  },
-  "devDependencies": {
-    "@babel/preset-env": "^7.17.10",
-    "@types/mocha": "^9.1.1",
-    "ethers": "^5.6.9",
-    "ganache": "^7.3.2",
-    "ts-mocha": "^10.0.0",
-    "ts-node": "^10.8.1"
+    "ethers": "^5.6.9"
   }
 }

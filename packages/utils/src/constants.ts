@@ -1,7 +1,7 @@
 
 // Inst: Upon adding any new provider one will have to add it in
 // @almight-sdk/utils/constants::META_DATA_SET
-// @almight-sdk/connector/identity_provider::IDENTITY_PROVIDERS
+// Add them in providers and identity_providers in respective chain adapters
 // buster/authentication/providers::Provider
 // buster/authentication/proviers::WEB3_PROVIDERS
 

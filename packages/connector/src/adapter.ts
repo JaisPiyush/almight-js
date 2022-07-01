@@ -27,7 +27,7 @@ interface IChainAdapterOptions {
 }
 export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
     P extends BaseProvider<C> = BaseProvider<C>>
-    implements IProviderAdapter<C> {
+    implements IProviderAdapter<C, P> {
 
     provider: P;
     bridge: any;
@@ -35,6 +35,9 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
 
     public get accounts(): Address[] { return this.provider.accounts }
     public get chainId(): number { return this.provider.chainId }
+
+    public set accounts(_accnts: Address[]) { this.provider.accounts = _accnts }
+    public set chainId(cid: number) { this.provider.chainId = cid }
 
     constructor(options: IChainAdapterOptions) {
         this.setProvider(options.provider as P)

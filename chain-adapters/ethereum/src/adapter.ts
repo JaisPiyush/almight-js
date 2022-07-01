@@ -1,19 +1,14 @@
-import { BaseChainAdapter } from "../adapter";
-import { Address, IProtocolDefinition } from "../types";
+import { BaseChainAdapter, Address, BaseProviderChannel, BaseProvider } from "@almight-sdk/connector";
 import { ethers } from "ethers";
-import { BaseProviderChannel } from "../channel";
-import { BaseProvider } from "../providers/base";
-
-
-
-
 
 
 export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
-    P extends BaseProvider<C> = BaseProvider<C>> extends BaseChainAdapter<C, P> implements IProtocolDefinition {
+    P extends BaseProvider<C> = BaseProvider<C>>
+    extends BaseChainAdapter<C, P>{
 
 
     public bridge: ethers.providers.Web3Provider;
+    public provider: P;
 
 
 
@@ -71,6 +66,9 @@ export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderCh
         return await this.bridge.getTransactionCount(account ?? this.accounts[0], block);
     }
 }
+
+
+
 
 
 
