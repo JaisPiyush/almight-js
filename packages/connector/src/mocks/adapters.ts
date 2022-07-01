@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { BaseChainAdapter } from "../adapter";
 import { BaseProviderChannel } from "../channel";
-import { BaseProvider } from "../providers";
+import { BaseProvider } from "../provider";
 import { Address } from "../types";
 
 

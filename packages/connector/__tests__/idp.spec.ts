@@ -16,7 +16,6 @@ describe('Testing IdentityProvider class', () => {
             channels: [BrowserProviderChannel]
         });
 
-
         expect(idp.identityProviderName).to.eq("TestIdentityProvider");
         expect(idp.getChannels().length).to.equal(1);
         expect(idp.getChannels()).to.includes(BrowserProviderChannel)

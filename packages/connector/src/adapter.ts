@@ -1,7 +1,7 @@
 
 import { BaseProviderChannel } from "./channel";
 
-import { BaseProvider } from "./providers";
+import { BaseProvider } from "./provider";
 import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
 
 /**

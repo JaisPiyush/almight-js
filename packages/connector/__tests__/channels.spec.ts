@@ -3,7 +3,7 @@ import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform } from "../s
 import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
 import { MockEthereumChainAdapter } from "../src/mocks/adapters"
-import { BaseProvider } from "../src/providers";
+import { BaseProvider } from "../src/provider";
 import {startGanache, closeGanahceServer} from "@almight-sdk/utils/src/mocks"
 
 let chainName = () => {

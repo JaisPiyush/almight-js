@@ -2,8 +2,8 @@ import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/uti
 import { BaseChainAdapter } from "./adapter";
 
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
-import { BaseProvider, CoinbaseWalletProvider, KardiaChainProvider, MetamaskProvider } from "./providers";
-import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface, ProviderFilter } from "./types";
+import { BaseProvider } from "./provider";
+import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface } from "./types";
 
 interface IdentityProviderConstructor { 
     name: string, 
@@ -89,27 +89,5 @@ export function getConfiguredWeb2IdentityProvider(provider: Providers): Identity
 
 
 
-const IGNORED_PROVIDER = ["walletconnect"]
+export const IGNORED_PROVIDER = ["walletconnect"]
 
-const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
-    // [Providers.MetaMask]: getConfiguredWeb3IdentityProvider(Providers.MetaMask, {
-    //     adapterClass: EthereumChainAdapter,
-    //     providerClass: MetamaskProvider
-    // }),
-    // [Providers.KardiaChain]: getConfiguredWeb3IdentityProvider(Providers.KardiaChain, {
-    //     adapterClass: EthereumChainAdapter,
-    //     providerClass: KardiaChainProvider
-    // }),
-    // [Providers.Coinbase]: getConfiguredWeb3IdentityProvider(Providers.Coinbase, {
-    //     adapterClass:EthereumChainAdapter,
-    //     providerClass: CoinbaseWalletProvider
-    // }),
-}
-const META_DATA_SET = getMetaDataSet()
-for(const [provider, metaData] of Object.entries(META_DATA_SET)){
-    if(metaData.webVersion === WebVersion.Centralized){
-        IDENTITY_PROVIDERS[provider] = getConfiguredWeb2IdentityProvider(provider as Providers);
-    }
-}
-
-export {IDENTITY_PROVIDERS}

@@ -1,6 +1,6 @@
-import { BaseProviderChannel, BrowserProviderChannel } from "../channel";
-import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "../exceptions";
-import { Address, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "../types";
+import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
+import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
+import { Address, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 import { Chains, Chainset, getChainManager } from "@almight-sdk/utils"
 
 
