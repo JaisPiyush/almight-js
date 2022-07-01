@@ -2,7 +2,8 @@ import { Class } from "@almight-sdk/utils"
 import { BaseChainAdapter } from "./adapter";
 import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed, NoSuitableAdapterFound } from "./exceptions";
-import { BrowserSessionStruct, ConnectionFilter, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter, IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, SubscriptionCallback, WalletConnectSessionStruct } from "./types";
+import { BrowserSessionStruct, ConnectionFilter, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter,
+     IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, WalletConnectSessionStruct } from "./types";
 
 export interface IConnectorOptions {
     idp?: IdentityProviderInterface;
