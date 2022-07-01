@@ -8,7 +8,12 @@ import {
     SubscriptionCallback, WalletConnectSessionStruct
 } from "./types";
 import { IWalletConnectOptions, IPushServerOptions } from "@walletconnect/types";
-import axios, { Axios, AxiosInstance } from "axios";
+import axios, { AxiosInstance } from "axios";
+
+
+export interface IChannelOptions<S> {
+    session?: S
+}
 
 /**
  * Channels are adapter for communication with wallets
@@ -18,7 +23,7 @@ import axios, { Axios, AxiosInstance } from "axios";
  * request task and operations
  * 
  */
-export class BaseProviderChannel implements ProviderChannelInterface {
+export class BaseProviderChannel<S extends ISession = ISession> implements ProviderChannelInterface {
 
 
 
@@ -27,7 +32,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public static isChannelClass = true;
 
     public get connectorType(): ConnectorType { return (this.constructor as any).connectorType }
-    protected _session?: ISession;
+    protected _session?: S;
     protected _provider?: any;
 
     protected clientMeta?: Record<string, any> = {};
@@ -58,15 +63,15 @@ export class BaseProviderChannel implements ProviderChannelInterface {
     public requestTimeout = 300000;
 
     public get isConnected(): boolean { return this._isConnected }
-    public get session(): ISession | undefined { return this._session }
+    public get session(): S | undefined { return this._session }
 
 
-    constructor(session?: ISession) {
+    constructor(session?: S) {
        this.init(session)
     }
 
 
-    getCompleteSessionForStorage(): ISession {
+    getCompleteSessionForStorage(): S {
         throw new Error("Method not implemented.");
     }
     checkEnvironment(): Promise<boolean> {
@@ -94,7 +99,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
         if (this.provider === undefined) throw new ProviderConnectionError();
         return await this._timeBoundRequest<T>(data, timeout || this.requestTimeout);
     }
-    init(session?: ISession): void {
+    init(session?: S): void {
         this._session = session;
     }
 
@@ -250,7 +255,7 @@ export class BaseProviderChannel implements ProviderChannelInterface {
 }
 
 
-export class BrowserProviderChannel extends BaseProviderChannel {
+export class BrowserProviderChannel extends BaseProviderChannel<BrowserSessionStruct> {
 
     public static connectorType: ConnectorType = ConnectorType.BrowserExtension;
     protected _session?: BrowserSessionStruct;
@@ -356,7 +361,7 @@ export class BrowserProviderChannel extends BaseProviderChannel {
 }
 
 
-export class WalletConnectChannel extends BaseProviderChannel {
+export class WalletConnectChannel extends BaseProviderChannel<WalletConnectSessionStruct> {
 
     public static connectorType: ConnectorType = ConnectorType.WalletConnector;
     protected _session?: WalletConnectSessionStruct;

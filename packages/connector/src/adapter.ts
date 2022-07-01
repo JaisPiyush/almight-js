@@ -21,7 +21,7 @@ import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequest
  */
 
 
-interface IChainAdapterOptions {
+export interface IChainAdapterOptions {
     provider: BaseProvider,
     onConnect?: (options?: any) => void
 }

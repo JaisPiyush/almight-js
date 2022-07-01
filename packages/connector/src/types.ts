@@ -50,6 +50,13 @@ export interface ProviderSessionStruct {
 }
 
 
+export interface CurrentSessionStruct <S = ISession> {
+    uid: string;
+    provider: string;
+    connector_type: ConnectorType;
+    session: S;
+}
+
 export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
 
 
@@ -210,17 +217,28 @@ export interface IConnectorConnectArguments {
 }
 
 
-export interface IConnector {
+export interface IConnector<S = ISession> {
+    currentSession?: CurrentSessionStruct<S>;
+    session?: S;
+    filter?: ConnectionFilter;
+    identityProvidersMap: Record<string, IdentityProviderInterface>;
+    adapter?: IProviderAdapter;
+    onConnectCallback: (options?: {accounts: Address[], chainId: number}) => void;
 
-    findChannels(): Class<ProviderChannelInterface>[];
-    findAdapter(): Class<IProviderAdapter>;
-    connect(args: IConnectorConnectArguments): Promise<void>;
-    getChannels(): Promise<Class<ProviderChannelInterface>[]>;
-    getSessions(): ISession[];
-    validateSessionStructure(session: ISession, filters: IConnectorSessionFilter): boolean;
-    validateChannel(channel: Class<ProviderChannelInterface>): Promise<boolean>;
-    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: ISession): Promise<boolean>;
-
+    isConnected(): boolean;
+    hasSession(): boolean;
+    setSession(session: S): void;
+    setCurrentSession(cSession: CurrentSessionStruct<S>): void;
+    getFormatedSession(): S;
+    getFormatedCurrentSession(): CurrentSessionStruct<S>;
+    getIdentityProvider(): IdentityProviderInterface;
+    getChainAdapter(): IProviderAdapter;
+    getProvider(): IProvider;
+    getChannel(): ProviderChannelInterface;
+    setChainAdapter(adapter: IProviderAdapter): void; 
+    checkConnection(raiseError: boolean): Promise<boolean>;
+    checkSession(): Promise<boolean>;
+    connect(options?: any): Promise<void>;
 
 }
 

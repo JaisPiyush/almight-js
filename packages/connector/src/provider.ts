@@ -4,7 +4,7 @@ import { Address, IProvider, IProviderAdapter, ISession, ProviderChannelInterfac
 import { Chains, Chainset, getChainManager } from "@almight-sdk/utils"
 
 
-interface IProviderOptions {
+export interface IProviderOptions {
     channel: BaseProviderChannel,
     onConnect?: (options?: any) => void,
     filter?: ProviderFilter

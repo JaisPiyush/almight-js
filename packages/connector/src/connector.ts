@@ -1,293 +1,307 @@
-import { Class } from "@almight-sdk/utils"
-import { BaseChainAdapter } from "./adapter";
+import { Class, isWebPlatform, Providers } from "@almight-sdk/utils";
+import { BaseChainAdapter, IChainAdapterOptions } from "./adapter";
 import { BaseProviderChannel } from "./channel";
-import { AdapterIsNotDefined, ConnectionEstablishmentFailed, NoSuitableAdapterFound } from "./exceptions";
-import { BrowserSessionStruct, ConnectionFilter, ConnectorType, IConnector, IConnectorConnectArguments, IConnectorSessionFilter,
-     IdentityProviderInterface, IProviderAdapter, ISession, ProviderChannelInterface, ProviderSessionStruct, WalletConnectSessionStruct } from "./types";
+import { AdapterIsNotDefined, ConnectionEstablishmentFailed } from "./exceptions";
+import { IdentityProvider } from "./identity_provider";
+import { BaseProvider, IProviderOptions } from "./provider";
+import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, IConnectorSessionFilter, ISession } from "./types";
 
-export interface IConnectorOptions {
-    idp?: IdentityProviderInterface;
-    adapter?: Class<IProviderAdapter> | IProviderAdapter;
-    channel?: Class<ProviderChannelInterface>;
-    sessions?: ProviderSessionStruct;
-    filter?: ConnectionFilter;
-    metaData?: Record<string, any>;
-    onConnect?: (options?: any) => void;
+export interface IConnectorOptions<S, C, P, A> {
+    onConnect?: (options?: { accounts: Address[], chainId: number }) => void;
+    session?: CurrentSessionStruct<S> | S;
+    filters?: ConnectionFilter;
+    channel?: Class<C> | C;
+    provider?: Class<P> | P;
+    identityProvider?: IdentityProvider | string | Providers,
+    adapter?: Class<A> | A;
+    args?: {
+        adapterArgs?: IChainAdapterOptions,
+        providerArgs?: IProviderOptions,
+        channelArgs?: S
+    }
 }
 
 
 
-export class BaseConnector implements IConnector {
 
-    protected _idp?: IdentityProviderInterface;
-    protected _adapter_class?: Class<IProviderAdapter>;
-    protected _adapter?: IProviderAdapter;
-    protected _channel?: Class<ProviderChannelInterface>;
-    public sessions?: ProviderSessionStruct;
-    public allowedConnectorTypes: ConnectorType[] = [];
-    protected _currentSession?: ISession;
-    public metaData?: Record<string, any> = {}
-    protected _sortedChannels: Class<BaseProviderChannel>[] = [];
+export class Connector<S extends ISession = ISession,
+    C extends BaseProviderChannel<S> = BaseProviderChannel<S>,
+    P extends BaseProvider<C> = BaseProvider<C>,
+    A extends BaseChainAdapter<C, P> = BaseChainAdapter<C, P>
 
-    protected connectorTypePriorityIndex = { [ConnectorType.BrowserExtension]: 0, [ConnectorType.WalletConnector]: 1 }
+    > implements IConnector<S> {
 
-    public get sortedChannels(): Class<BaseProviderChannel>[] { return this._sortedChannels };
+    filter?: ConnectionFilter;
+    identityProvidersMap: Record<string, IdentityProvider>;
+    readonly options: IConnectorOptions<S, C, P, A>;
 
-    protected _onConnect: (options?: any) => void = (options?: any) => { ; }
 
-    public get adapter(): BaseChainAdapter { return this._adapter as BaseChainAdapter }
+    currentSession?: CurrentSessionStruct<S>;
+    session?: S;
+    protected channelClass?: Class<C>;
+    protected channel?: C;
+    protected provider?: P;
+    protected providerIdentifier?: string | Providers;
+    protected identityProvider?: IdentityProvider;
+    protected adapterClass: Class<A>;
+    protected providerClass: Class<P>;
+    adapter?: A;
 
-    public get idp(): IdentityProviderInterface { return this._idp }
-    public get session(): ISession { return this._currentSession }
+    onConnectCallback: (options?: { accounts: Address[], chainId: number }) => void
 
-    constructor(args: IConnectorOptions) {
-        this._idp = args.idp;
-        if (args.adapter !== undefined) {
-            if ((args.adapter as any).isAdapterClass === true) {
-                this._adapter_class = args.adapter as Class<IProviderAdapter>;
+    readonly deadCallback = (options?: { accounts: Address[], chainId: number }): void => { }
 
-            } else if (args.adapter instanceof BaseChainAdapter) {
-                this._adapter = args.adapter as IProviderAdapter;
-            }
-        }
-        this._channel = args.channel;
-        this.sessions = args.sessions;
-        this.allowedConnectorTypes = args.filter.allowedConnectorTypes ?? [];
-        if (this.allowedConnectorTypes.length === 0 && this._idp !== undefined && this._idp.filter !== undefined) {
-            this.allowedConnectorTypes = this._idp.filter.allowedConnectorTypes;
-        }
-        this.metaData = args.metaData;
-        if (args.onConnect !== undefined) {
-            this._onConnect = args.onConnect;
+
+
+    constructor(options: IConnectorOptions<S, C, P, A>) {
+        this.options = options;
+        this.init(options)
+    }
+
+    isClass(arg: any): boolean {
+        return (arg.prototype !== undefined) && arg.constructor.name === "Function"
+    }
+
+    isClassInstance(arg: any, cls: any): boolean {
+        return (arg.prototype === undefined) && arg instanceof cls;
+    }
+
+    setupSession(session: CurrentSessionStruct<S> | S): void {
+        if ((session as CurrentSessionStruct<S>).uid !== undefined) {
+            this.currentSession = session as CurrentSessionStruct<S>;
+            this.session = (session as CurrentSessionStruct<S>).session;
+            this.providerIdentifier = this.currentSession.provider;
+            this.identityProvider = this.identityProvidersMap[this.providerIdentifier]
+        } else {
+            this.session = session as S;
         }
     }
 
-    findChannels(): Class<BaseProviderChannel>[] {
-        if (this._idp !== undefined) return this._idp.getChannels() as Class<BaseProviderChannel>[];
-        return [];
+
+    setupChannel(channel: Class<C> | C): void {
+        if (this.isClass(channel)) {
+            this.channelClass = channel as Class<C>;
+        } else if (this.isClassInstance(channel, BaseProviderChannel)) {
+            this.channel = channel as C;
+        }
+
     }
 
-    findAdapter(): Class<IProviderAdapter> {
-        if (this._adapter_class !== undefined) return this._adapter_class;
-        if (this._idp !== undefined) return this._idp.getAdapterClass();
-        throw new NoSuitableAdapterFound();
+    setupProvider(provider: Class<P> | P): void {
+        if (this.isClass(provider)) {
+            this.providerClass = provider as Class<P>;
+        } else if (this.isClassInstance(provider, BaseProvider)) {
+            this.provider = provider as P;
+        }
     }
 
 
-    bindAdapter(adapter: Class<BaseChainAdapter>, channel: BaseProviderChannel): BaseChainAdapter {
-        channel.setClientMeta(this.metaData);
-        return new adapter({ channel: channel, onConnect: this._onConnect });
+    setupIdentityProvider(idp: IdentityProvider | string | Providers): void {
+        if (idp instanceof IdentityProvider) {
+            this.identityProvider = idp;
+            this.providerIdentifier = idp.identifier as string;
+        } else if (this.identityProvidersMap[idp as string] !== undefined) {
+            this.identityProvider = this.identityProvidersMap[idp as string];
+            this.providerIdentifier = this.identityProvider.identifier as string;
+        }
+    }
+
+    setupAdapter(adapter: Class<A> | A): void {
+        if (this.isClass(adapter)) {
+            this.adapterClass = adapter as Class<A>;
+        } else if (this.isClassInstance(adapter, BaseChainAdapter)) {
+            this.adapter = adapter as A;
+        }
     }
 
 
-    protected async _baseConnect(args: IConnectorConnectArguments = {}): Promise<void> {
-        if (this._adapter !== undefined) {
-            if (!(this._adapter as BaseChainAdapter).provider.isConnected()) {
-                await this._adapter.connect();
+
+
+
+    init(options: IConnectorOptions<S, C, P, A>): void {
+        this.onConnectCallback = options.onConnect ?? this.deadCallback;
+        this.filter = options.filters;
+        if (options.channel !== undefined) {
+            this.setupChannel(options.channel);
+        }
+        if (options.provider !== undefined) {
+            this.setupProvider(options.provider);
+        }
+        if (options.identityProvider !== undefined) {
+            this.setupIdentityProvider(options.identityProvider);
+        }
+        if (options.adapter !== undefined) {
+            this.setupAdapter(options.adapter);
+        }
+        if (options.session !== undefined) {
+            this.setupSession(options.session);
+        }
+
+    }
+
+    validateArguments(): void {
+        if (this.identityProvider === undefined && this.channel === undefined && this.channelClass === undefined &&
+            this.provider === undefined && this.providerClass === undefined && this.adapter === undefined &&
+            this.adapterClass === undefined
+        ) {
+            throw new Error("Insufficient arguments to create Connector")
+        }
+    }
+
+
+    checkAdapterDefined(): void {
+        if (this.adapter === undefined) throw new AdapterIsNotDefined()
+    }
+
+    hasSession(): boolean {
+        return this.session !== undefined;
+    }
+    setSession(session: S): void {
+        this.session = session;
+    }
+    setCurrentSession(cSession: CurrentSessionStruct<S>): void {
+        this.setupSession(cSession);
+    }
+
+    getFormatedSession(): S {
+        this.checkAdapterDefined();
+        if (!this.isConnected()) {
+            throw new ConnectionEstablishmentFailed("No connection is able to establish, cannot produce session")
+        }
+        return this.adapter.getSession() as S;
+    }
+
+    getFormatedCurrentSession(): CurrentSessionStruct<S> {
+        const session = this.getFormatedSession();
+        const currentSession: CurrentSessionStruct<S> = {
+            uid: this.adapter.accounts[0],
+            provider: this.providerIdentifier,
+            connector_type: this.channel.connectorType,
+            session: session
+        }
+        return currentSession;
+    }
+
+    getIdentityProvider(): IdentityProvider {
+        return this.identityProvider;
+    }
+
+    getAdapterConstructorArguments(): IChainAdapterOptions {
+        const provider = this.getProvider()
+        let args: IChainAdapterOptions = { provider: provider };
+        if (this.options.args !== undefined && this.options.args.adapterArgs !== undefined) {
+            args = this.options.args.adapterArgs;
+        }
+        args.provider = provider;
+        args.onConnect = this.onConnectCallback;
+        return args
+    }
+
+    getChainAdapter(): A {
+        if (this.adapter !== undefined) return this.adapter;
+        if (this.identityProvider !== undefined) {
+            const cls: Class<A> = this.identityProvider.getAdapterClass() as Class<A>;
+            return new cls(this.getAdapterConstructorArguments());
+        }
+        if (this.adapterClass !== undefined) {
+            return new this.adapterClass(this.getAdapterConstructorArguments())
+        }
+        throw new Error("Not able to find any adapter for the connector")
+    }
+
+
+    getProviderConstructorArguments(): IProviderOptions {
+        let channel = this.getChannel();
+        let args: IProviderOptions = { channel: channel };
+        if (this.options.args !== undefined && this.options.args.providerArgs !== undefined) {
+            args = this.options.args.providerArgs;
+        }
+        args.channel = channel;
+        if (this.filter !== undefined) {
+            args.filter = {
+                allowedChains: this.filter.allowedChains,
+                restrictedChains: this.filter.restrictedChains
             }
-            return;
         }
+        return args
+    }
 
-        if (this._adapter_class === undefined) {
-            const _adapter_class = this.findAdapter();
-            if (_adapter_class === undefined) throw new AdapterIsNotDefined();
-            this._adapter_class = _adapter_class;
+    getProvider(): P {
+        if (this.provider !== undefined) return this.provider;
+        if (this.identityProvider !== undefined) {
+            const cls: Class<P> = this.identityProvider.getProviderClass() as Class<P>;
+            return new cls(this.getProviderConstructorArguments());
         }
-
-        let channel_class = args.channel ?? this._channel;
-        let channel: BaseProviderChannel;
-        // Argument guard to force user to define atleast one thing
-        if (channel_class === undefined && args.session === undefined && args.filters === undefined) {
-            throw new Error("Must provider either channel, session or filters to proceed")
+        if (this.providerClass !== undefined) {
+            return new this.providerClass(this.getProviderConstructorArguments());
         }
+        throw new Error("Not able to find any provider for the connector")
+    }
 
-        let session = args.session ?? this._currentSession;
-        if (session === undefined && args.filters !== undefined && this.sessions !== undefined) {
-            const sessions = this.getSessions().filter((session) => this.validateSessionStructure(session as any, args.filters));
-            if (sessions.length > 0) {
-                session = sessions[0] as any;
-                this._currentSession = session;
-            }
+    getChannelConstructorArguments(): S | undefined {
+        if (this.session !== undefined) return this.session;
+        if (this.options.args !== undefined && this.options.args.channelArgs !== undefined) {
+            return this.options.args.channelArgs;
         }
+        return;
+    }
 
+    getChannel(): C {
+        if (this.channel !== undefined) return this.channel;
+        if (this.identityProvider !== undefined) {
+            const channelClasses: Class<C>[] = this.identityProvider.getChannels() as Class<C>[];
+            for (const cls of channelClasses) {
+                const connectorType: ConnectorType = (cls as any).connectorType;
+                if (this.filter !== undefined && this.filter.allowedConnectorTypes !== undefined && !this.filter.allowedConnectorTypes.includes(connectorType)) {
+                    continue;
+                }
 
-
-
-
-
-
-        if (channel_class === undefined) {
-            // If session is not defined then throw the error
-            if (this._currentSession === undefined) {
-                throw new ConnectionEstablishmentFailed("A valid session must be provided to establish the connection");
-            }
-
-            let channel_classes = await this.getChannels();
-            for (const channel_cls of channel_classes) {
-                const _channel = await this.mountSessionOnChannel(channel_cls as any, session);
-                if (_channel !== undefined) {
-                    this._channel = this._channel ?? channel_cls;
-                    this._currentSession = session;
-                    channel = _channel;
-                    break;
+                if (this.session !== undefined && (cls as any).validateSession(this.session)) {
+                    const channel = new cls(this.getChannelConstructorArguments());
+                    return channel;
                 }
             }
-        } else if (channel_class instanceof BaseProviderChannel) {
-            channel = channel_class as BaseProviderChannel;
-        } else if ((channel_class as any).isChannelClass === true) {
-            channel = new (channel_class as Class<BaseProviderChannel>)(this._currentSession);
-            this._channel = this._channel ?? (channel_class as Class<BaseProviderChannel>);
         }
-
-
-
-        if (channel === undefined) {
-            throw new ConnectionEstablishmentFailed("Not able to find any suitable channel for connection establishment")
+        if (this.channelClass !== undefined) {
+            return new this.channelClass(this.getChannelConstructorArguments())
         }
-
-
-        this._adapter = this.bindAdapter(this._adapter_class as any, channel);
-        await this._adapter.connect();
-
+        throw new Error("Not able to find any channel for the connector")
     }
 
-
-    async connect(args?: IConnectorConnectArguments): Promise<void> {
-        await this._baseConnect(args)
+    setChainAdapter(adapter: A): void {
+        this.adapter = adapter;
+        this.provider = this.adapter.provider;
+        this.channel = this.adapter.provider.channel;
     }
 
-
-
-    async mountSessionOnChannel(channel: Class<BaseProviderChannel>, session: ISession, filter?: IConnectorSessionFilter): Promise<BaseProviderChannel | undefined> {
-        if (filter !== undefined && !this.validateSessionStructure(session as any, filter)) return;
-        if (await this.validateChannelSession(channel, session as any)) return new channel(session);
+    async checkConnection(raiseError: boolean = false): Promise<boolean> {
+        this.checkAdapterDefined()
+        return await this.adapter.checkConnection(raiseError);
+    }
+    isConnected(): boolean {
+        return this.adapter !== undefined && this.adapter.isConnected();
+    }
+    async checkSession(): Promise<boolean> {
+        this.checkAdapterDefined()
+        return (await this.adapter.checkSession())[0]
     }
 
-    /**
-     * The function will verify that the channel is allowed based on the @property allowedConnectorType
-     * if @property allowedConnectorType is empty then every channel will be valid
-     * 
-     * @param channel 
-     * @returns boolean indicating channel's connectorType is allowed in the connector
-     */
-    validateConnectorTypeOfChannel(channel: BaseProviderChannel): boolean {
-        return this.valdiateConnectorType(channel.connectorType)
-    }
+    async connect(opts?: {
+        provider?: string | Providers | IdentityProvider,
 
-    protected valdiateConnectorType(type: ConnectorType): boolean {
-        return this.allowedConnectorTypes.length === 0 || this.allowedConnectorTypes.includes(type)
-    }
-
-
-    protected getConnectorPriorityIndex(channel_class: Class<BaseProviderChannel>): number {
-        return this.connectorTypePriorityIndex[(channel_class as any).connectorType];
-    }
-
-    protected appendChannelClass(channel: Class<BaseProviderChannel>): void {
-        for (let i = 0; i < this._sortedChannels.length; i++) {
-            const channel_class = this._sortedChannels[i];
-            if (this.getConnectorPriorityIndex(channel) < this.getConnectorPriorityIndex(channel_class)) {
-                this._sortedChannels = this._sortedChannels.slice(0, i).concat([channel]).concat(this._sortedChannels.slice(i, this._sortedChannels.length));
-                return;
-            }
+        options?: any
+    }): Promise<void> {
+        if (opts !== undefined && opts.provider !== undefined) {
+            this.setupIdentityProvider(opts.provider);
+            this.validateArguments();
+            const adapter = this.getChainAdapter();
+            this.setChainAdapter(adapter);
         }
-        this._sortedChannels.push(channel);
-    }
-
-
-    protected sortChannels(channel_classes?: Class<BaseProviderChannel>[]): void {
-        for (const channel_class of channel_classes) {
-            this.appendChannelClass(channel_class);
+        this.checkAdapterDefined();
+        if (!this.isConnected()) {
+            const options = opts !== undefined ? opts.options : undefined;
+            await this.adapter.connect(options);
         }
+        await this.adapter.checkConnection(true)
     }
-
-    async getChannels(): Promise<Class<ProviderChannelInterface>[]> {
-        if (this.sortedChannels.length === 0) {
-            this.sortChannels(this.findChannels().filter((channel) => this.validateChannel(channel)))
-        }
-        return this.sortedChannels;
-    }
-
-    getSessions(): ISession[] {
-        let sessions = [];
-        if (this.sessions !== undefined) {
-            for (const connectorType of Object.keys(this.connectorTypePriorityIndex)) {
-                if (this.sessions[connectorType] !== undefined && this.valdiateConnectorType(connectorType as ConnectorType)) {
-                    sessions = sessions.concat(this.sessions[connectorType as ConnectorType])
-                }
-            }
-        }
-        return sessions;
-    }
-
-    /**
-     * @method validateSession will be used be the user/connector methods whenever
-     * sessions are required to filtered for particular usecases.
-     * 
-     * For e.g if user wants only to proceed with @enum ConnectorType.BrowserExtension sessions
-     * then they can filter session based on connectorTypes. Many other properties such as handshakeId,
-     * peerId, etc can be used to directly target any particular session
-     * 
-     * @param session - Session data
-     * @param filters - Filter to validate session data
-     * @returns boolean indicating validity of session data
-     */
-    validateSessionStructure(session: ISession, filters: IConnectorSessionFilter = {}): boolean {
-        let filterTruthy: boolean[] = []
-        for (const [prop, value] of Object.entries(filters)) {
-            // Session must contain the named prop or else it will directly be invalidated
-            if (session[prop] === undefined) return false;
-            filterTruthy.push(false);
-            let subFilterTruthy: boolean[] = []
-
-            /// Comparision of object upto 1 deepth level
-            if (value instanceof Object) {
-                for (const [subProp, subValue] of Object.entries(value)) {
-                    subFilterTruthy.push(false);
-                    subFilterTruthy[subFilterTruthy.length - 1] = session[prop][subProp] === subValue;
-                }
-            } else if (value instanceof Array) {
-                // Provided array filter will always works as an OR operator
-                subFilterTruthy.push(value.includes(session[prop]))
-            } else {
-                subFilterTruthy.push(value === session[prop])
-            }
-            filterTruthy[filterTruthy.length - 1] = subFilterTruthy.every((val, index, arr) => val)
-        }
-        return filterTruthy.length === 0 ? true : filterTruthy.every((val, index, arr) => val);
-    }
-
-    /**
-     * Every channel must implement @member checkEnvironment to validate the 
-     * working environment, such as BrowserBased channels must validate that
-     * the code is being executed inside a browser
-     * 
-     * This method is resoponsible to validate the connectType of channel i.e 
-     * only allowedConnectorType channels should validate and also the environment validity
-     * 
-     * @param channel_class 
-     * @returns boolean indicating validity of channel in current environment
-     */
-    async validateChannel(channel_class: Class<BaseProviderChannel>): Promise<boolean> {
-        const _chan = new channel_class();
-        return this.validateConnectorTypeOfChannel(_chan) && (await _chan.checkEnvironment())
-    }
-
-    /**
-     * Validate ChannelClass and Session pair using @method channel#checkSession
-     * @param channel_class 
-     * @param session 
-     * @returns boolean indicating validity of pair
-     */
-    async validateChannelSession(channel_class: Class<ProviderChannelInterface>, session?: BrowserSessionStruct | WalletConnectSessionStruct): Promise<boolean> {
-        const channel = new channel_class(session);
-        const adpater = new this._adapter_class({ channel: channel });
-        try {
-            return (adpater as any).channel !== undefined && (await (adpater as any).channel.checkSession(adpater))[0];
-        } catch (e) {
-            return false;
-        }
-    }
-
-
 }

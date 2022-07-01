@@ -1,5 +1,5 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
-import { BaseConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct } from "@almight-sdk/connector";
+import { BaseConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct } from "@almight-sdk/connector";
 import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
@@ -122,12 +122,12 @@ export interface UserData <S = ISession>{
 }
 
 
-export interface CurrentSessionStruct <S = ISession> {
-    uid: string;
-    provider: string;
-    connector_type: ConnectorType;
-    session: S;
-}
+// export interface CurrentSessionStruct <S = ISession> {
+//     uid: string;
+//     provider: string;
+//     connector_type: ConnectorType;
+//     session: S;
+// }
 
 
 export type SingleProviderConfiguration = Record<ConnectorType, Record<string, any>>;
