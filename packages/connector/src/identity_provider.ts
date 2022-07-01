@@ -1,4 +1,4 @@
-import { Class,  getMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
+import { Class,  getMetaDataSet,  IMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
 
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
@@ -52,10 +52,14 @@ export class IdentityProvider implements IdentityProviderInterface {
 }
 
 
-export function getConfiguredWeb3IdentityProvider(provider: Providers,data: {adapterClass: Class<BaseChainAdapter>,     
+export function getConfiguredWeb3IdentityProvider(provider: Providers,{ META_DATA_SET = getMetaDataSet(),...data}: {adapterClass: Class<BaseChainAdapter>,     
     providerClass: Class<BaseProvider>,filter?: ConnectionFilter,
-    channels?: Class<BaseProviderChannel>[], identifier?: string, allowedConnectorTypes?: ConnectorType[]}): IdentityProvider {
-    const META_DATA_SET = getMetaDataSet()
+    channels?: Class<BaseProviderChannel>[], identifier?: string, 
+    allowedConnectorTypes?: ConnectorType[],
+    META_DATA_SET?: Record<string,IMetaDataSet>
+    
+}): IdentityProvider {
+    // const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
         webVersion:WebVersion.Decentralized,
@@ -70,10 +74,11 @@ export function getConfiguredWeb3IdentityProvider(provider: Providers,data: {ada
 
 
 export class CentralizedChainAdapter extends BaseChainAdapter{}
+export class OAuthProvider extends BaseProvider {}
 
 
-export function getConfiguredWeb2IdentityProvider(provider: Providers): IdentityProvider {
-    const META_DATA_SET = getMetaDataSet()
+export function getConfiguredWeb2IdentityProvider(provider: Providers, META_DATA_SET = getMetaDataSet()): IdentityProvider {
+    // const META_DATA_SET = getMetaDataSet()
     return new IdentityProvider({
         name: META_DATA_SET[provider].name,
         filter: {
@@ -83,6 +88,7 @@ export function getConfiguredWeb2IdentityProvider(provider: Providers): Identity
         identifier: META_DATA_SET[provider].identifier,
         metaData: META_DATA_SET[provider],
         adapterClass: CentralizedChainAdapter,
+        providerClass: OAuthProvider,
         channels: []
     })
 }
