@@ -53,7 +53,17 @@ export class BaseProviderChannel<S extends ISession = ISession> implements Provi
     protected _isConnected = false;
 
 
-    public static validateSession(session: any): boolean {
+    public static validateSessionWithoutError(session: ISession, silent: boolean = true):boolean {
+        try {
+            return this.validateSession(session);
+        }catch(e){
+            if(silent) return false;
+            throw e;
+        }
+    }
+
+
+    public static validateSession(session: ISession): boolean {
         throw new Error("method not implemented")
     }
 
@@ -398,7 +408,7 @@ export class WalletConnectChannel extends BaseProviderChannel<WalletConnectSessi
 
     
 
-    public static validateSession(session: any, silent: boolean = false): boolean {
+    public static validateSession(session: WalletConnectSessionStruct, silent: boolean = false): boolean {
         for (const prop of ["chainId", "bridge", "key", "clientId", "peerId", "handshakeId", "handshakeTopic"]) {
             if (session[prop] === undefined) {
                 if (silent) {

@@ -1,6 +1,6 @@
 import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
 import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
-import { Address, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
+import { Address, ConnectorType, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
 import { Chains, Chainset, getChainManager } from "@almight-sdk/utils"
 
 
@@ -12,12 +12,13 @@ export interface IProviderOptions {
 
 export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A extends IProviderAdapter = IProviderAdapter> implements IProvider<C> {
 
-    public static providerPath = null;
+    public static providerPath: string = null;
 
     public adapter: A;
 
     public get providerPath(): string { return (this.constructor as any).providerPath }
     public accounts?: Address[];
+    public selectedAccount?: Address;
     public chainId?: number;
     public chainset?: Chainset;
     public filter?: ProviderFilter
@@ -54,6 +55,9 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
     setChannel(channel: C) {
         this.channel = channel;
+        if(this.channel.connectorType === ConnectorType.BrowserExtension && this.providerPath !== null){
+            (this.channel as any).providerPath = this.providerPath
+        }
     }
 
     setAdapter(adapter: A): void {
@@ -79,10 +83,20 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
         this.channelPing = async (options?: any): Promise<boolean> => {
             const accounts = await self.adapter.getAccounts();
             self.accounts = accounts;
+            if(accounts !== undefined && accounts.length > 0){
+                self.setSelectedAccount(accounts[0])
+            }
             const chainId = await self.adapter.getChainId();
             self.verifyConnectedChain(chainId);
             self.chainId = chainId;
             return true;
+        }
+    }
+
+
+    public setSelectedAccount(account: Address): void {
+        if(this.accounts === undefined || this.accounts.length === 0 || this.accounts.includes(account)){
+            this.selectedAccount = account;
         }
     }
 

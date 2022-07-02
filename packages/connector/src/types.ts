@@ -141,6 +141,7 @@ export interface IProvider<C = ProviderChannelInterface> {
 
     channel: C;
     accounts?: Address[];
+    selectedAccount?: Address;
     chainId?: number;
 
     setChannel(channel: C);
@@ -151,6 +152,7 @@ export interface IProvider<C = ProviderChannelInterface> {
     getSession(): ISession;
     getProvider<T = any>(): T
     bindChannelDelegations(): void
+    setSelectedAccount(account: Address): void
 
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;

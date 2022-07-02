@@ -47,3 +47,12 @@ export async function closeGanahceServer(server: Server<"ethereum">): Promise<vo
 }
 
 export {ServerOptions, Server};
+
+
+export function fail(e: Error | string): void {
+    if(e instanceof Error){
+        throw e;
+    }
+    throw new Error(e)
+
+}

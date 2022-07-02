@@ -53,6 +53,25 @@ export class Connector<S extends ISession = ISession,
     readonly deadCallback = (options?: { accounts: Address[], chainId: number }): void => { }
 
 
+    public get accounts(): Address[] {
+        this.checkAdapterDefined();
+        return this.adapter.accounts;
+    }
+
+    public get chainId(): number {
+        this.checkAdapterDefined();
+        return this.adapter.chainId;
+    }
+
+    public get selectedAccount(): Address {
+        this.checkAdapterDefined();
+        return this.adapter.provider.selectedAccount;
+    }
+
+    public set selectedAccount(account: Address){
+        this.checkAdapterDefined();
+        this.adapter.provider.setSelectedAccount(account);
+    }
 
     constructor(options: IConnectorOptions<S, C, P, A>) {
         this.options = options;
@@ -123,8 +142,8 @@ export class Connector<S extends ISession = ISession,
     init(options: IConnectorOptions<S, C, P, A>): void {
         this.onConnectCallback = options.onConnect ?? this.deadCallback;
         this.filter = options.filters;
-        if(options.identityProvidersMap !== undefined){
-            for(const [key, value] of Object.entries(options.identityProvidersMap)){
+        if (options.identityProvidersMap !== undefined) {
+            for (const [key, value] of Object.entries(options.identityProvidersMap)) {
                 this.identityProvidersMap[key] = value;
             }
         }
@@ -180,13 +199,13 @@ export class Connector<S extends ISession = ISession,
 
     getFormatedCurrentSession(): CurrentSessionStruct<S> {
 
-        if(this.providerIdentifier === undefined || this.adapter === undefined || this.adapter.accounts === undefined || this.adapter.accounts.length === 0){
+        if (this.providerIdentifier === undefined || this.adapter === undefined || this.adapter.accounts === undefined || this.adapter.accounts.length === 0) {
             throw new Error("providerIdentifier is not defined or connection not established to produce current session")
         }
         const session = this.getFormatedSession();
-        
+
         const currentSession: CurrentSessionStruct<S> = {
-            uid: this.adapter.accounts[0],
+            uid: this.selectedAccount,
             provider: this.providerIdentifier,
             connector_type: this.channel.connectorType,
             session: session
@@ -211,13 +230,15 @@ export class Connector<S extends ISession = ISession,
 
     getChainAdapter(): A {
         if (this.adapter !== undefined) return this.adapter;
+        const adapterArgs = this.getAdapterConstructorArguments()
+        if (this.adapterClass !== undefined) {
+            return new this.adapterClass(adapterArgs)
+        }
         if (this.identityProvider !== undefined) {
             const cls: Class<A> = this.identityProvider.getAdapterClass() as Class<A>;
-            return new cls(this.getAdapterConstructorArguments());
+            return new cls(adapterArgs);
         }
-        if (this.adapterClass !== undefined) {
-            return new this.adapterClass(this.getAdapterConstructorArguments())
-        }
+
         throw new Error("Not able to find any adapter for the connector")
     }
 
@@ -240,13 +261,15 @@ export class Connector<S extends ISession = ISession,
 
     getProvider(): P {
         if (this.provider !== undefined) return this.provider;
+        const providerArgs = this.getProviderConstructorArguments()
+        if (this.providerClass !== undefined) {
+            return new this.providerClass(providerArgs);
+        }
         if (this.identityProvider !== undefined) {
             const cls: Class<P> = this.identityProvider.getProviderClass() as Class<P>;
-            return new cls(this.getProviderConstructorArguments());
+            return new cls(providerArgs);
         }
-        if (this.providerClass !== undefined) {
-            return new this.providerClass(this.getProviderConstructorArguments());
-        }
+
         throw new Error("Not able to find any provider for the connector")
     }
 
@@ -260,6 +283,13 @@ export class Connector<S extends ISession = ISession,
 
     getChannel(): C {
         if (this.channel !== undefined) return this.channel;
+        const channelArgs = this.getChannelConstructorArguments()
+        if (this.channelClass !== undefined) {
+            if (channelArgs !== undefined && channelArgs.chainId !== undefined) {
+                (<any>this.channelClass).validateSession(channelArgs);
+            }
+            return new this.channelClass(this.getChannelConstructorArguments())
+        }
         if (this.identityProvider !== undefined) {
             const channelClasses: Class<C>[] = this.identityProvider.getChannels() as Class<C>[];
             for (const cls of channelClasses) {
@@ -267,15 +297,11 @@ export class Connector<S extends ISession = ISession,
                 if (this.filter !== undefined && this.filter.allowedConnectorTypes !== undefined && !this.filter.allowedConnectorTypes.includes(connectorType)) {
                     continue;
                 }
-
-                if (this.session !== undefined && (cls as any).validateSession(this.session)) {
-                    const channel = new cls(this.getChannelConstructorArguments());
+                if (this.session !== undefined && (cls as any).validateSessionWithoutError(this.session)) {
+                    const channel = new cls(channelArgs);
                     return channel;
                 }
             }
-        }
-        if (this.channelClass !== undefined) {
-            return new this.channelClass(this.getChannelConstructorArguments())
         }
         throw new Error("Not able to find any channel for the connector")
     }
@@ -306,9 +332,15 @@ export class Connector<S extends ISession = ISession,
         if (opts !== undefined && opts.provider !== undefined) {
             this.setupIdentityProvider(opts.provider);
             this.validateArguments();
+
+        }
+
+        if (this.adapter === undefined) {
             const adapter = this.getChainAdapter();
             this.setChainAdapter(adapter);
         }
+
+
         this.checkAdapterDefined();
         if (!this.isConnected()) {
             const options = opts !== undefined ? opts.options : undefined;
