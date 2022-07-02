@@ -1,110 +1,176 @@
-// import { expect, assert} from "chai"
-// import { EthereumAdapter } from "../src";
-// import { BrowserProviderChannel, WalletConnectChannel, IdentityProvider, BaseConnector, ConnectorType } from "../src";
+import { expect, assert } from "chai";
+import { AdapterIsNotDefined, BaseChainAdapter, BaseProvider, BaseProviderChannel, BrowserSessionStruct, Connector, ConnectorType, CurrentSessionStruct, getConfiguredWeb2IdentityProvider, IdentityProvider } from "../src"
+import { MockEthereumChainAdapter } from "../src/mocks/adapters";
+import { startGanache, closeGanahceServer } from "@almight-sdk/utils/src/mocks"
+import { Providers } from "@almight-sdk/utils";
+
+describe("Connector", () => {
 
 
-// let chainName = () => {
-//     return {
-//         isServiceProvider: () => true,
-//         request: async (data: { method: string, params: any[] }) => {
-//             if (data.method === "ping") {
-//                 throw new Error("Invalid JSON-RPC error")
-//             }
-//             return `${data.method}__${data.params.join("..")}`;
-//         },
-//         on: (name: string, callback: Function): void => {
-//             callback()
-//         }
-//     }
-// }
+    describe("Testing memeber functions", () => {
+        let connector: Connector;
+        const channel = new BaseProviderChannel({path: "ethereum", chainId: 0});
+        const idp = getConfiguredWeb2IdentityProvider(Providers.Google);
+
+
+        beforeEach(() => {
+            connector = new Connector({});
+
+
+        })
+        it("isClass", () => {
+
+            expect(connector.isClass(BaseProviderChannel)).to.be.true;
+            expect(connector.isClass(channel)).to.be.false;
+        });
+
+        it("isClassInstance", () => {
+            expect(connector.isClassInstance(channel, BaseProviderChannel)).to.be.true;
+            expect(connector.isClassInstance(BaseProviderChannel, BaseProviderChannel)).to.be.false;
+            expect(connector.isClassInstance(channel, Connector)).to.be.false;
+        });
+
+        describe("validateArguments", () => {
+            it("must throw error", () => {
+                try {
+                    connector.validateArguments();
+                    fail("`validateArguments` was expected to throw error")
+                } catch (e) {
+                    expect(e).to.be.instanceOf(Error);
+                    expect((e as Error).message).to.equal("Insufficient arguments to create Connector")
+                }
+            });
+
+            describe('validateArguments must not throw error', () => {
+                it("identityProvider is provided", () => {
+
+
+                    const connector = new Connector({
+                        identityProvider: idp
+                    });
+                    expect(connector.validateArguments()).to.be.undefined;
+
+                });
+
+                it("channel is provided", () => {
+                    const connector = new Connector({
+                        channel: new BaseProviderChannel()
+                    });
+                    expect(connector.validateArguments()).to.be.undefined;
+                })
+            })
+        });
+
+        describe("checkAdapterDefined", () => {
+            it("must throw error", () => {
+                try {
+                    connector.checkAdapterDefined();
+                    fail("`checkAdapterDefined` was expected to throw error")
+                } catch (e) {
+                    expect(e).to.be.instanceOf(AdapterIsNotDefined)
+                }
+            });
+            it("must not throw error", () => {
+                const connector = new Connector({
+                    adapter: new BaseChainAdapter({
+                        provider: new BaseProvider({ channel: new BaseProviderChannel() })
+                    })
+                });
+
+                expect(connector.checkAdapterDefined()).to.be.undefined
+            })
+        });
+
+        describe("hasSession", () => {
+            it("must return false", () => {
+                expect(connector.hasSession()).to.be.false;
+            });
+            it("must return true", () => {
+                const connector = new Connector({
+                    session: { path: Providers.Google, chainId: 0 }
+                });
+
+                assert(connector.hasSession());
+            })
+        });
+
+        describe("setupSession", () => {
+            it("sending currentSession", () => {
+                assert(!connector.hasSession());
+                const cSession: CurrentSessionStruct<BrowserSessionStruct> = {
+                    uid: "random-uid",
+                    provider: Providers.MetaMask,
+                    connector_type: ConnectorType.BrowserExtension,
+                    session: {path: "eth", chainId: 0}
+                }
+
+                connector.setupSession(cSession);
+                assert(connector.hasSession());
+                expect(connector.currentSession).not.to.be.undefined;
+                expect(connector.currentSession).to.deep.equal(cSession);
+                expect(connector.session).to.deep.eq(cSession.session)
+            });
+
+            it("sending sessions", () => {
+                assert(!connector.hasSession());
+                const session: BrowserSessionStruct = {path: "eth", chainId: 0};
+                connector.setSession(session);
+                assert(connector.hasSession());
+                expect(connector.session).to.deep.eq(session);
+                expect(connector.currentSession).to.be.undefined
+            })
+        })
+
+        describe("setupChannel", () => {
+            it("sending channelClass", () => {
+                connector.setupChannel(BaseProviderChannel);
+                expect((connector as any).channel).to.be.undefined;
+                expect((connector as any).channelClass).to.equal(BaseProviderChannel)
+                expect((connector as any).channelClass).not.instanceOf(BaseProviderChannel)
+                
+            });
+            it("sending channel instance", () => {
+                const connector = new Connector({});
+                connector.setupChannel(new BaseProviderChannel());
+                expect((connector as any).channel).not.to.be.undefined;
+                expect((connector as any).channel).to.be.instanceOf(BaseProviderChannel);
+                expect((connector as any).channelClass).to.be.undefined
+            })
+        });
+
+        describe("setupProvider", () => {
+            it("sending providerClass", () => {
+                connector.setupProvider(BaseProvider);
+                expect((connector as any).providerClass).not.to.be.undefined;
+                expect((connector as any).provider).to.be.undefined;
+                expect((connector as any).providerClass).to.eq(BaseProvider)
+            });
+            it("sending provider instance", () => {
+                connector.setupProvider(new BaseProvider({channel: channel}));
+                expect((connector as any).providerClass).to.be.undefined;
+                expect((connector as any).provider).not.to.be.undefined;
+                expect((connector as any).provider).to.be.instanceOf(BaseProvider);
+                expect((connector as any).channel).not.to.be.undefined;
+                expect((connector as any).channel).to.eq(channel)
+            });
+        });
+
+        it("setChainAdapter", () => {
+            const provider = new BaseProvider({channel: channel})
+            const adapter = new BaseChainAdapter({
+                provider: provider
+            })
+            connector.setChainAdapter(adapter);
+
+            expect(connector.adapter).not.to.be.undefined;
+            expect(connector.adapter).to.eq(adapter);
+            expect((connector as any).provider).to.eq(provider);
+            expect((connector as any).channel).to.eq(channel)
+        });
 
 
 
 
-// describe('Unit-testing Connector Class', () => {
+    })
 
-//     class AnotherBroweserChannel extends BrowserProviderChannel{
-//         // public static connectorType: ConnectorType = ConnectorType.BrowserExtension
-//     }
-
-//     const metamask = new IdentityProvider({
-//         name: "Metamask",
-//         webVersion: 3.0,
-//         identifier: "meta-mask",
-//         adapterClass: EthereumAdapter,
-//         channels: [BrowserProviderChannel, AnotherBroweserChannel, WalletConnectChannel]
-//     });
-
-
-//     Object.defineProperty(globalThis, "document", {value: {}, writable: true})
-//     Object.defineProperty(globalThis, EthereumAdapter.providerPath, {value: chainName(), writable: true})
-  
-
-
-//     it("Testing class property access", () => {
-//         expect((EthereumAdapter as any).isAdapterClass).to.be.true;
-//         expect(EthereumAdapter.providerPath).to.eq("ethereum");
-//         expect(globalThis[EthereumAdapter.providerPath]).not.to.be.undefined;
-//     });
-    
-//     it("Testing constructor with Idp", async() => {
-//         let connector = new BaseConnector({idp: metamask, allowedConnectorTypes: [ConnectorType.BrowserExtension]});
-        
-//         expect(connector.idp.identifier).to.equal(metamask.identifier);
-//         expect(connector.findAdapter()).to.eq(metamask.getAdapterClass());
-//         expect(connector.findChannels()).to.have.all.members(metamask.getChannels());
-//         expect(connector.allowedConnectorTypes.length).to.be.greaterThan(0);
-//         expect(await connector.getChannels()).to.have.all.members([BrowserProviderChannel, AnotherBroweserChannel, WalletConnectChannel]);
-//         expect(await connector.getChannels()).not.to.have.any.members([WalletConnectChannel]);
-        
-//         // Testing connect
-//         try {
-//             await connector.connect();
-//             fail("It must throw an erro");
-//         }catch(e){
-//             expect(e).to.be.instanceOf(Error);
-//             expect((e as Error).message).to.eq("Must provider either channel, session or filters to proceed")
-//         }
-//     });
-
-//     it("Testing constructor only by providing adapter and connecting by providing channel as argument", async () => {
-//         const connector2 = new BaseConnector({adapter: EthereumAdapter});
-
-//         expect(connector2.adapter).to.be.undefined;
-//         expect((await connector2.getChannels()).length).to.equal(0);
-//         await connector2.connect({channel: BrowserProviderChannel});
-//         expect(connector2.adapter).not.to.undefined;
-//         expect(connector2.adapter.channel.isConnected).to.be.true;
-//         expect(await connector2.adapter.request({method: "parajoint", params: []})).to.equal("parajoint__")
-//     });
-
-//     it("Testing constructor only by providing adapter and channel along with onConnect", async() => {
-//         const connector2 = new BaseConnector({adapter: EthereumAdapter, onConnect: (options) => {
-//             expect(options).not.to.be.undefined;
-//         }});
-
-//         expect(connector2.adapter).to.be.undefined;
-//         expect((await connector2.getChannels()).length).to.equal(0);
-//         await connector2.connect({channel: BrowserProviderChannel});
-//         expect(connector2.adapter).not.to.undefined;
-//         expect(connector2.adapter.channel.isConnected).to.be.true;
-//     });
-
-// });
-
-
-// describe("Testing connector with walletchannel connector", () => {
-
-//     it("Testing with providing adapter and channel", async() => {
-//         const connector = new BaseConnector({adapter: EthereumAdapter});
-//         await connector.connect({channel: WalletConnectChannel});
-//         expect(connector.adapter).not.to.undefined;
-//         expect(connector.adapter.channel).not.to.be.undefined;
-//         expect(connector.adapter.channel.provider).not.to.be.undefined;
-//         expect((connector.adapter.channel.provider as any).session).not.to.be.undefined;
-//         expect(connector.adapter.channel.isConnected).to.be.false;
-//         expect((connector.adapter.channel as WalletConnectChannel).getConnectorUri()).not.to.be.undefined;
-//         expect((connector.adapter.channel as WalletConnectChannel).getConnectorUri().length).to.be.greaterThan(0);
-
-//     })
-// })
+})

@@ -1,10 +1,10 @@
-import { Class, isWebPlatform, Providers } from "@almight-sdk/utils";
+import { Class, Providers } from "@almight-sdk/utils";
 import { BaseChainAdapter, IChainAdapterOptions } from "./adapter";
 import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed } from "./exceptions";
 import { IdentityProvider } from "./identity_provider";
 import { BaseProvider, IProviderOptions } from "./provider";
-import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, IConnectorSessionFilter, ISession } from "./types";
+import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession } from "./types";
 
 export interface IConnectorOptions<S, C, P, A> {
     onConnect?: (options?: { accounts: Address[], chainId: number }) => void;
@@ -18,7 +18,8 @@ export interface IConnectorOptions<S, C, P, A> {
         adapterArgs?: IChainAdapterOptions,
         providerArgs?: IProviderOptions,
         channelArgs?: S
-    }
+    },
+    identityProvidersMap?: Record<string, IdentityProvider>
 }
 
 
@@ -32,7 +33,7 @@ export class Connector<S extends ISession = ISession,
     > implements IConnector<S> {
 
     filter?: ConnectionFilter;
-    identityProvidersMap: Record<string, IdentityProvider>;
+    identityProvidersMap: Record<string, IdentityProvider> = {};
     readonly options: IConnectorOptions<S, C, P, A>;
 
 
@@ -92,6 +93,7 @@ export class Connector<S extends ISession = ISession,
             this.providerClass = provider as Class<P>;
         } else if (this.isClassInstance(provider, BaseProvider)) {
             this.provider = provider as P;
+            this.channel = this.provider.channel;
         }
     }
 
@@ -110,7 +112,7 @@ export class Connector<S extends ISession = ISession,
         if (this.isClass(adapter)) {
             this.adapterClass = adapter as Class<A>;
         } else if (this.isClassInstance(adapter, BaseChainAdapter)) {
-            this.adapter = adapter as A;
+            this.setChainAdapter(adapter as A);
         }
     }
 
@@ -121,6 +123,11 @@ export class Connector<S extends ISession = ISession,
     init(options: IConnectorOptions<S, C, P, A>): void {
         this.onConnectCallback = options.onConnect ?? this.deadCallback;
         this.filter = options.filters;
+        if(options.identityProvidersMap !== undefined){
+            for(const [key, value] of Object.entries(options.identityProvidersMap)){
+                this.identityProvidersMap[key] = value;
+            }
+        }
         if (options.channel !== undefined) {
             this.setupChannel(options.channel);
         }
@@ -172,7 +179,12 @@ export class Connector<S extends ISession = ISession,
     }
 
     getFormatedCurrentSession(): CurrentSessionStruct<S> {
+
+        if(this.providerIdentifier === undefined || this.adapter === undefined || this.adapter.accounts === undefined || this.adapter.accounts.length === 0){
+            throw new Error("providerIdentifier is not defined or connection not established to produce current session")
+        }
         const session = this.getFormatedSession();
+        
         const currentSession: CurrentSessionStruct<S> = {
             uid: this.adapter.accounts[0],
             provider: this.providerIdentifier,
