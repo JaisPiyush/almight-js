@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import {LocalStorageMock} from "@almight-sdk/utils/src/mocks"
+import {LocalStorageMock, MockServer} from "@almight-sdk/utils/src/mocks"
 import { beforeEach } from "mocha";
 import {AlmightClient} from "@almight-sdk/core"
 import { Providers, WebLocalStorage } from "@almight-sdk/utils";
@@ -10,6 +10,10 @@ import {DiscordIdentityProvider} from "@almight-sdk/oauth-adapters"
 
 describe("Web2AuthenticationDelegate", () => {
 
+
+
+    const mockServer = new MockServer();
+    const PORT = 8000;
     let almightClient: AlmightClient;
     let delegate: Web2AuthenticationDelegate;
     const idr = new Web3IdentityResolver(MetamaskIdentityProvider)
@@ -28,7 +32,16 @@ describe("Web2AuthenticationDelegate", () => {
         delegate = new Web2AuthenticationDelegate({
             storage: almightClient.storage,
             identityResolvers: [idr, discordIdr]
-        })
+        });
+    });
+
+
+    before(() => {
+        mockServer.start(PORT);
+    });
+
+    after(() => {
+        mockServer.stop();
     });
 
     describe("getOAuthUrl", () => {
@@ -52,9 +65,21 @@ describe("Web2AuthenticationDelegate", () => {
         } );
 
         it("success", async () => {
+            mockServer.forPath("/project/verify/api_key").forPost({status: 200, data: {is_valid: true}})
+            mockServer.forPath("/project/ident").forPost({status:200, data: {identifier: "project-ident-123"}})
             const projectIdentifier = await almightClient.getProjectIdentifier();
+            mockServer.forPath(`/auth/provider/url/${Providers.Discord}`).forGet({
+                status: 200,
+                data: {
+                    url: "https://discord.com",
+                    verifiers: {
+                        state: "random-state"
+                    }
+                }
+            })
             const data = await delegate.getOAuthUrl(Providers.Discord, projectIdentifier);
-            expect(data, JSON.stringify(data)).to.have.property("url");
+            
+            expect(data).to.have.property("url");
             expect(data).to.have.property("verifiers");
             expect(data.verifiers).to.has.property("state")
         })

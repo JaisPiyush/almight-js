@@ -1,4 +1,4 @@
-import { BaseStorageInterface, Chainset, ChainsManager, IMetaDataSet, isWebPlatform } from "utils/lib";
+import { BaseStorageInterface, Chainset, ChainsManager, IMetaDataSet } from "@almight-sdk/utils";
 import { projectAxiosInstance } from "./axios_clients";
 import { InvalidAPIKey } from "./excpetions";
 import { IAlmightClient } from "./types";
