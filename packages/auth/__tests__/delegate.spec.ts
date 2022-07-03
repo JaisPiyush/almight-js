@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import {LocalStorageMock, MockServer} from "@almight-sdk/utils/src/mocks"
+import {LocalStorageMock, MockServer} from "@almight-sdk/test-utils"
 import { beforeEach } from "mocha";
 import {AlmightClient} from "@almight-sdk/core"
 import { Providers, WebLocalStorage } from "@almight-sdk/utils";

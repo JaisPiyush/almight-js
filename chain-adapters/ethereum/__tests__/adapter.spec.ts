@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { startGanache, closeGanahceServer, Server } from "@almight-sdk/utils/src/mocks";
+import { startGanache, closeGanahceServer, Server } from "@almight-sdk/test-utils";
 import { BaseProvider, BrowserProviderChannel, BrowserSessionStruct, ChannelConnectionEstablishmentFailed, ConnectedChainNotAllowedError} from "@almight-sdk/connector"
 import {EthereumChainAdapter} from "../src/adapter";
 import { Chains } from "@almight-sdk/utils";

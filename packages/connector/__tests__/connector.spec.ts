@@ -1,7 +1,7 @@
 import { expect, assert } from "chai";
 import { AdapterIsNotDefined, BaseChainAdapter, BaseProvider, BaseProviderChannel, BrowserProviderChannel, BrowserSessionStruct, ConnectionEstablishmentFailed, Connector, ConnectorType, CurrentSessionStruct, getConfiguredWeb2IdentityProvider, getConfiguredWeb3IdentityProvider, IdentityProvider, IncompatibleSessionData, ISession, WalletConnectChannel } from "../src"
 import { MockEthereumChainAdapter } from "../src/mocks/adapters";
-import { startGanache, closeGanahceServer, Server, fail } from "@almight-sdk/utils/src/mocks"
+import { startGanache, closeGanahceServer, Server} from "@almight-sdk/test-utils"
 import { Providers } from "@almight-sdk/utils";
 
 describe("Connector", () => {

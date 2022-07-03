@@ -4,7 +4,7 @@ import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
 import { MockEthereumChainAdapter } from "../src/mocks/adapters"
 import { BaseProvider } from "../src/provider";
-import {startGanache, closeGanahceServer} from "@almight-sdk/utils/src/mocks"
+import {startGanache, closeGanahceServer} from "@almight-sdk/test-utils"
 
 let chainName = () => {
     return {
