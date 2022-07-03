@@ -1,10 +1,9 @@
 import { Class, isWebPlatform, Providers } from "@almight-sdk/utils";
-import { BaseChainAdapter, BaseConnector, BaseProviderChannel, BrowserProviderChannel, ConnectorType, IDENTITY_PROVIDERS, WalletConnectChannel } from "@almight-sdk/connector";
-import { AuthenticationApp } from "./auth";
+import { BaseChainAdapter, Connector, BaseProviderChannel, BrowserProviderChannel, ConnectorType, WalletConnectChannel, IdentityProvider, BaseProvider, IChainAdapterOptions, IProviderOptions, BrowserSessionStruct, WalletConnectSessionStruct, ISession } from "@almight-sdk/connector";
 import { Web3AuthenticationDelegate } from "./delegate";
-import { AuthenticationAppIsNotDefinedProperly, AuthenticationFailed } from "./exceptions";
+import { AuthenticationAppIsNotDefinedProperly } from "./exceptions";
 import { Web3NativeOriginFrameCommunicator } from "./frame_communicator";
-import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationFrame, ProviderConfiguration, RespondMessageData, RespondType } from "./types";
+import { AllowedQueryParams, AuthenticationFrameConfiguration, AuthenticationRespondStrategy, IAuthenticationApp, IAuthenticationFrame, RespondMessageData, RespondType } from "./types";
 import { WebConnectorModal } from "./components";
 import { Web2IdentityResolver } from "./resolvers";
 
@@ -14,15 +13,17 @@ export class AuthenticationFrame implements IAuthenticationFrame {
 
 
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
-    app?: AuthenticationApp;
-    configs?: ProviderConfiguration;
+    app?: IAuthenticationApp;
+    configs?: AuthenticationFrameConfiguration;
+
 
     async initAuth(data: Record<string, string>): Promise<void> {
         data[AllowedQueryParams.RespondStrategy] = this.respondStrategy;
         // data[AllowedQueryParams.TargetOrigin] = globalThis.location.origin;
     }
 
-    constructor(configs?: ProviderConfiguration) {
+
+    constructor(configs?: AuthenticationFrameConfiguration) {
         this.configs = configs
     }
 
@@ -61,7 +62,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
         // Implement Success
         try {
             this.handleSuccessResponse(data);
-        }catch(e){
+        } catch (e) {
             this.app.onFailureCallback({
                 [AllowedQueryParams.Error]: (e as Error).message,
                 [AllowedQueryParams.ErrorCode]: data[AllowedQueryParams.ErrorCode]
@@ -100,11 +101,15 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
     delegate?: Web3AuthenticationDelegate;
 
+    adapterClass?: Class<BaseChainAdapter>;
+
     connectionCount: number = 0;
 
-    browserAdapter?: BaseChainAdapter<BrowserProviderChannel>
-    walletconnectAdapter?: BaseChainAdapter<WalletConnectChannel>;
-    deeplinkAdapter?: BaseChainAdapter<WalletConnectChannel>;
+    browserConnector?: Connector<BrowserSessionStruct, BrowserProviderChannel>
+    walletconnectConnector?: Connector<WalletConnectSessionStruct, WalletConnectChannel>;
+    deeplinkConnector?: Connector<WalletConnectSessionStruct, WalletConnectChannel>;
+
+    connector?: Connector
 
     modal: WebConnectorModal = new WebConnectorModal();
 
@@ -121,24 +126,26 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         return this.getConfigForProvider(this.delegate.identityResolver.provider.identifier as string, connectorType);
     }
 
+
+
     // Element will dispatch 'buttonclick' event on button click
     mountModal(): void {
 
         this.modal.open({
-            hasConnectorButton: this.browserAdapter !== undefined,
-            hasQRCode: this.walletconnectAdapter !== undefined,
-            buttonText: (this.browserAdapter !== undefined) ? "Connect Browser Wallet" : "Connect",
-            uri: (this.walletconnectAdapter !== undefined) ? (this.walletconnectAdapter.channel as WalletConnectChannel).getConnectorUri() : undefined,
+            hasConnectorButton: this.browserConnector !== undefined,
+            hasQRCode: this.walletconnectConnector !== undefined,
+            buttonText: (this.browserConnector !== undefined) ? "Connect Browser Wallet" : "Connect",
+            uri: (this.walletconnectConnector !== undefined) ? (this.walletconnectConnector.adapter.provider.channel as WalletConnectChannel).getConnectorUri() : undefined,
             icon: this.delegate.identityResolver.provider.metaData.icon,
             provider: this.delegate.identityResolver.provider.identityProviderName,
             onConnectClick: () => {
-                if(this.deeplinkAdapter !== undefined){
-                    window.location.href = this.deeplinkAdapter.channel.getDeepLinkUri(this.delegate.identityResolver.provider.identifier as Providers);
-                }else if (this.browserAdapter !== undefined && this.browserAdapter.channel.connectorType === ConnectorType.BrowserExtension) {
-                    this.browserAdapter.connect(this.getConfigsForConnectorType(ConnectorType.BrowserExtension)).catch(err => {
-                        if (this.browserAdapter !== undefined && this.browserAdapter.onConnectCallback !== undefined) {
+                if (this.deeplinkConnector !== undefined) {
+                    window.location.href = this.deeplinkConnector.adapter.provider.getDeepLinkUri();
+                } else if (this.browserConnector !== undefined && this.browserConnector.adapter.provider.channel.connectorType === ConnectorType.BrowserExtension) {
+                    this.browserConnector.connect(this.getConfigsForConnectorType(ConnectorType.BrowserExtension)).catch(err => {
+                        if (this.browserConnector !== undefined && this.browserConnector.onConnectCallback !== undefined) {
                             this.connectionCount += 1;
-                            this.browserAdapter?.onConnectCallback({
+                            this.browserConnector.adapter.onConnectCallback({
                                 data: {
                                     [AllowedQueryParams.Error]: err.message,
                                     [AllowedQueryParams.ErrorCode]: err.code
@@ -152,62 +159,105 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         });
     }
 
+
+    createConnector<S extends ISession, C extends BaseProviderChannel<S>,
+        P extends BaseProvider<C> = BaseProvider<C>,
+        A extends BaseChainAdapter<C, P> = BaseChainAdapter<C, P>>(
+            channel: C,
+            providerClass: Class<P, IProviderOptions>,
+            adapterClass: Class<A, IChainAdapterOptions>
+        ): Connector<S, C, P, A> {
+        const provider = new providerClass({
+            channel: channel,
+
+        });
+
+        const adapter = new adapterClass({
+            provider: provider
+        });
+
+        const connector = new Connector<S, C, P, A>({
+            adapter: adapter,
+            onConnect: (options?: any) => {
+                if (this.connectionCount !== 0) return;
+                this.connectionCount += 1;
+                this.connector = connector;
+                this.modal.close();
+                options[AllowedQueryParams.ConnectorType] = provider.channel.connectorType;
+                provider.getCompleteSessionForStorage().then((session) => {
+                    options["session"] = session;
+                    this.delegate.identityResolver.onAuthenticationRedirect(options);
+                })
+
+            }
+        })
+
+        return connector;
+
+    }
+
     async handleAuthenticationOnWebNativePlatform(): Promise<void> {
-        const adapterClass: Class<BaseChainAdapter> = this.delegate.identityResolver.provider.getAdapterClass() as Class<BaseChainAdapter>;
+        const adapterClass = this.adapterClass ?? this.delegate.identityResolver.provider.getAdapterClass() as Class<BaseChainAdapter>;
+        const providerClass = this.delegate.identityResolver.provider.getProviderClass() as Class<BaseProvider>;
         const channelClasses: Class<BaseProviderChannel>[] = this.delegate.identityResolver.provider.getChannels();
 
-        const allAdaptersConnectd = [];
+        const allConnectorConnected = [];
 
 
         for (const channelClass of channelClasses) {
-            const adapter = new adapterClass({
-                channel: new channelClass(),
-                onConnect: (options?: any) => {
-                    // Multiple connect event fire guard  
-                    if (this.connectionCount !== 0) return;
-                    this.connectionCount += 1;
-                    this.modal.close();
-                    options[AllowedQueryParams.ConnectorType] = adapter.channel.connectorType;
-                    options["session"] = adapter.getSession();
-                    this.delegate.identityResolver.onAuthenticationRedirect(options);
-                }
-            });
 
-            // TODO: Implement method to allow only passing channels for mounting
+            const channel = new channelClass()
 
-            if (adapter.channel.connectorType === ConnectorType.BrowserExtension) {
-                this.browserAdapter = adapter as BaseChainAdapter<BrowserProviderChannel>;
-                allAdaptersConnectd.push(true);
-                if (allAdaptersConnectd.length === channelClasses.length) {
-                    this.mountModal();
+            if (channel.connectorType === ConnectorType.BrowserExtension) {
+                const connector = this.createConnector<BrowserSessionStruct, BrowserProviderChannel>(
+                    <BrowserProviderChannel>channel,
+                    providerClass as Class<BaseProvider<BrowserProviderChannel>, IProviderOptions>,
+                    adapterClass as Class<BaseChainAdapter<BrowserProviderChannel>>
+                );
+                allConnectorConnected.push(true);
+
+            } else if (channel.connectorType === ConnectorType.WalletConnector) {
+                const connector = this.createConnector<WalletConnectSessionStruct, WalletConnectChannel>(
+                    <WalletConnectChannel>channel,
+                    providerClass as Class<BaseProvider<WalletConnectChannel>, IProviderOptions>,
+                    adapterClass as Class<BaseChainAdapter<WalletConnectChannel>>
+                )
+
+                const args = this.getConfigsForConnectorType(ConnectorType.WalletConnector);
+                await connector.connect({ options: args })
+                this.walletconnectConnector = connector;
+                allConnectorConnected.push(true);
+
+                if (this.walletconnectConnector.adapter.provider.isDeepLinkPlantable()) {
+                    this.browserConnector = undefined;
+                    this.deeplinkConnector = this.walletconnectConnector;
                 }
-            } else if (adapter.channel.connectorType === ConnectorType.WalletConnector) {
-                adapter.connect(this.getConfigsForConnectorType(ConnectorType.WalletConnector)).then(() => {
-                    this.walletconnectAdapter = adapter as BaseChainAdapter<WalletConnectChannel>;
-                    allAdaptersConnectd.push(true);
-                    if (allAdaptersConnectd.length === channelClasses.length) {
-                        this.mountModal();
-                    }
-                    if(this.walletconnectAdapter.channel.isDeepLinkPlantable()) {
-                        this.browserAdapter = undefined;
-                        this.deeplinkAdapter = this.walletconnectAdapter;
-                    }
-                })
+
+            }
+            if (allConnectorConnected.length === channelClass.length) {
+                this.mountModal()
             }
         }
     }
 
-    override async initAuth(data: Record<string, string>): Promise<void> {
+    override async initAuth(data: Record<string, any>): Promise<void> {
         super.initAuth(data);
+
+
+        this.adapterClass = data["adapterClass"]
+
         /// setup the delegate and call authentication
         this.delegate = new Web3AuthenticationDelegate({
             storage: this.app.storage,
+            identityProviders: (<any>data["identityProviders"]) as IdentityProvider[],
             respondFrame: new Web3NativeOriginFrameCommunicator({
                 onResponse: (data: RespondMessageData) => {
                     this.captureResponse((data as unknown) as RespondMessageData);
                 }
             })
         });
+
+        delete data["identityProviders"];
 
         await this.delegate.clean();
 
@@ -227,7 +277,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
     override async handleSuccessResponse(data: RespondMessageData): Promise<void> {
         if (data.access === undefined) return;
         data.user = await this.app.fetchAndStoreUserData(data.access)
-        await this.app.setupConnector();
+        await this.app.setupConnector(this.connector);
         super.handleSuccessResponse(data);
 
     }
@@ -251,7 +301,7 @@ export class Web2ExternalAuthenticationFrame extends AuthenticationFrame {
             const delegate = new Web3AuthenticationDelegate({
                 storage: this.app.storage,
             });
-            delegate.setIdentityResolver(new Web2IdentityResolver(IDENTITY_PROVIDERS[data.provider]));
+            delegate.setIdentityResolver(new Web2IdentityResolver(this.app.getIdentityProvider(data.provider)));
             await delegate.setStates(data);
             const res = await delegate.handleUserRegistration();
             for (const key of Object.keys(data)) {

@@ -5,6 +5,7 @@ export class MetamaskProvider<C extends BaseProviderChannel = BaseProviderChanne
 A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
     
     public static providerPath = "ethereum";
+    readonly deepLinkUri: string = "https://metamask.app.link/";
 
 
     override async checkConnection(): Promise<boolean> {
@@ -68,6 +69,7 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
 export class KardiaChainProvider extends MetamaskProvider {
 
     public static providerPath = Providers.KardiaChain;
+    readonly deepLinkUri = undefined;
 
     override verifyBrowserSession(provider: any): boolean {
         return (provider as any).isKaiWallet === true
@@ -77,6 +79,8 @@ export class KardiaChainProvider extends MetamaskProvider {
 
 
 export class CoinbaseWalletProvider extends MetamaskProvider {
+
+    readonly deepLinkUri: string = "https://go.cb-w.com/"
 
     override verifyBrowserSession(provider: any): boolean {
         return (provider as any).isCoinbaseWallet === true;

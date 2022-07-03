@@ -2,6 +2,7 @@ node_modules/
 lerna-debug.log
 npm-debug.log
 packages/*/lib
+*/*/lib
 .idea
 .vscode
 .env

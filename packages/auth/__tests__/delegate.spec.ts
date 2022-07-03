@@ -3,13 +3,17 @@ import {LocalStorageMock} from "@almight-sdk/utils/src/mocks"
 import { beforeEach } from "mocha";
 import {AlmightClient} from "@almight-sdk/core"
 import { Providers, WebLocalStorage } from "@almight-sdk/utils";
-import {IDENTITY_RESOLVERS, Web2AuthenticationDelegate} from "../src"
+import {Web2AuthenticationDelegate, Web2IdentityResolver, Web3IdentityResolver} from "../src"
+import {MetamaskIdentityProvider} from "@almight-sdk/ethereum-chain-adapter"
+import {DiscordIdentityProvider} from "@almight-sdk/oauth-adapters"
 
 
 describe("Web2AuthenticationDelegate", () => {
 
     let almightClient: AlmightClient;
     let delegate: Web2AuthenticationDelegate;
+    const idr = new Web3IdentityResolver(MetamaskIdentityProvider)
+    const discordIdr = new Web2IdentityResolver(DiscordIdentityProvider)
 
     beforeEach(() => {
         Object.defineProperty(globalThis, "localStorage", {
@@ -22,13 +26,12 @@ describe("Web2AuthenticationDelegate", () => {
         });
 
         delegate = new Web2AuthenticationDelegate({
-            storage: almightClient.storage
+            storage: almightClient.storage,
+            identityResolvers: [idr, discordIdr]
         })
     });
 
     describe("getOAuthUrl", () => {
-        
-
         it("fail: due to invalid projectIdentifier", async () => {
             
             try {
@@ -44,7 +47,6 @@ describe("Web2AuthenticationDelegate", () => {
                 await delegate.getOAuthUrl(Providers.MetaMask, "");
                 fail("Expected Error: Provider not supported ")
             }catch(e){
-                const idr = IDENTITY_RESOLVERS[Providers.MetaMask]
                 expect((e as Error).message).to.equal(`Provider ${idr.provider.identityProviderName} not supported for current authentication strategy`)
             }
         } );

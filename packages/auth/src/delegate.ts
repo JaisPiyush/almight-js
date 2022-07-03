@@ -1,10 +1,13 @@
-import { BaseConnector } from "@almight-sdk/connector";
+import { Connector, IdentityProvider } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
 import { BaseStorageInterface, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
 import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
-import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
-import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, ResponseMessageCallbackArgument, SuccessResponseMessageCallbackArgument, UserRegistrationArgument, UserRegistrationResult } from "./types";
+import { IdentityResolver, Web3IdentityResolver } from "./resolver";
+import {
+    AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, ResponseMessageCallbackArgument,
+    SuccessResponseMessageCallbackArgument, UserRegistrationArgument, UserRegistrationResult
+} from "./types";
 
 
 export interface AuthenticationDelegateInitArgs {
@@ -20,6 +23,14 @@ export interface AuthenticationDelegateInitArgs {
 }
 
 
+export interface AuthenticationDelegateOptions {
+    storage?: BaseStorageInterface,
+    respondFrame?: BaseOriginFrameCommunicator,
+    respondStrategy?: AuthenticationRespondStrategy,
+    identityProviders?: IdentityProvider[];
+    identityResolvers?: IdentityResolver[];
+
+}
 
 export class AuthenticationDelegate implements IAuthenticationDelegate {
 
@@ -28,6 +39,8 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     respondStrategy: AuthenticationRespondStrategy;
     identityResolver?: IdentityResolver;
     respondFrame: BaseOriginFrameCommunicator;
+
+    identityResolversMap: Record<string, IdentityResolver> = {};
 
 
     protected _state: Record<string, string> = {};
@@ -49,27 +62,30 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     // readonly responseQueryParams: string[] = [];
     readonly nonStorableQueryParams = []
 
-    public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
+    public static identityResolverMap: Record<string, IdentityResolver> = {};
 
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
         [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
 
-    connector?: BaseConnector;
+    connector?: Connector;
 
     public storage: BaseStorageInterface;
 
-    constructor(options?: {
-        storage?: BaseStorageInterface,
-        respondFrame?: BaseOriginFrameCommunicator,
-        respondStrategy?: AuthenticationRespondStrategy,
-
-    }) {
+    constructor(options?: AuthenticationDelegateOptions) {
         if (options !== undefined) {
             this.storage = options.storage ?? new WebLocalStorage();
             this.respondFrame = options.respondFrame;
 
             this.respondStrategy = options.respondStrategy;
+            if (options.identityProviders !== undefined) {
+                this.setupIdentityResolversFromIdentityProviders(options.identityProviders);
+            }
+            if (options.identityResolvers !== undefined) {
+                for (const idr of options.identityResolvers) {
+                    this.identityResolversMap[idr.provider.identifier] = idr;
+                }
+            }
 
 
         }
@@ -82,6 +98,13 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
+    setupIdentityResolversFromIdentityProviders(idps: IdentityProvider[]): void {
+        for (const idp of idps) {
+            this.identityResolversMap[idp.identifier] = new Web3IdentityResolver(idp);
+        }
+    }
+
+
     async respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void> {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.respondSuccess(data);
@@ -89,7 +112,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         await this.close();
     }
 
-
+    getIdentityResolver(provider: string): IdentityResolver {
+        if (this.identityResolversMap[provider] === undefined) throw new Error("No resolver associated with provider is found");
+        return this.identityResolversMap[provider];
+    }
 
 
     async respondFailure(data: Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>): Promise<void> {
@@ -236,7 +262,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     async setStates(data: Record<string, any>): Promise<void> {
         if (await this.storage.isConnected()) {
             for (const [key, value] of Object.entries(data)) {
-                if(!this.nonStorableQueryParams.includes(key as AllowedQueryParams)){
+                if (!this.nonStorableQueryParams.includes(key as AllowedQueryParams)) {
                     await this.storage.setItem(key, value);
                 }
             }
@@ -327,7 +353,13 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
 
+interface Web3AuthenticationDelegateOptions extends AuthenticationDelegateOptions {
+    
+}
+
+
 export class Web3AuthenticationDelegate extends AuthenticationDelegate {
+
 
 
     override async getConfigurationData(): Promise<Record<string, string>> {
@@ -345,6 +377,7 @@ export class Web3AuthenticationDelegate extends AuthenticationDelegate {
 
 
 export class Web2AuthenticationDelegate extends AuthenticationDelegate {
+
 
     /**
      * URL location https://example.com/page?q1=v1&q2=v2
@@ -364,7 +397,7 @@ export class Web2AuthenticationDelegate extends AuthenticationDelegate {
 
     async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, verifiers: Record<string, string> }> {
 
-        const idr = IDENTITY_RESOLVERS[provider];
+        const idr = this.getIdentityResolver(provider);
         if (idr.provider.webVersion !== WebVersion.Centralized) {
             throw new Error(`Provider ${idr.provider.identityProviderName} not supported for current authentication strategy`)
         }

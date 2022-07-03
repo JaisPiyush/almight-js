@@ -143,6 +143,7 @@ export interface IProvider<C = ProviderChannelInterface> {
     accounts?: Address[];
     selectedAccount?: Address;
     chainId?: number;
+    deepLinkUri?: string;
 
     setChannel(channel: C);
 
@@ -160,6 +161,8 @@ export interface IProvider<C = ProviderChannelInterface> {
     channelOnConnect?: (options?: any) => void;
     channelbindSessionListener?: () => void;
     on(event: string, callback: SubscriptionCallback): void;
+    isDeepLinkPlantable(): boolean;
+    getDeepLinkUri(): string;
 
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
     verifyConnectedChain(chainId: number): void;

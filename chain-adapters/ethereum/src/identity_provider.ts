@@ -1,5 +1,5 @@
 import {getConfiguredWeb3IdentityProvider} from "@almight-sdk/connector";
-import { Providers } from "packages/utils/lib";
+import { Providers } from "@almight-sdk/utils";
 import { EthereumChainAdapter } from "./adapter";
 import { CoinbaseWalletProvider, KardiaChainProvider, MetamaskProvider } from "./providers";
 

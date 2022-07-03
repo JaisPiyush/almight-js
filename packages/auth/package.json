@@ -25,7 +25,7 @@
   "scripts": {
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
     "tsc": "tsc",
-    "test:watch": ""
+    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight/issues"
@@ -40,6 +40,8 @@
     "ts-node": "^10.8.1"
   },
   "devDependencies": {
+    "@almight-sdk/ethereum-chain-adapter": "^0.0.1-alpha.98",
+    "@almight-sdk/oauth-adapters": "^0.0.1-alpha.98",
     "@types/mocha": "^9.1.1",
     "ts-mocha": "^10.0.0"
   }
