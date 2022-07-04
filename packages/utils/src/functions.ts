@@ -48,19 +48,23 @@ export function isMobileWebPlatform(): boolean {
         /BlackBerry/i,
         /Windows Phone/i
     ];
+
+    if(globalThis.navigator === undefined) return false
     
     return toMatch.some((toMatchItem) => {
-        return navigator.userAgent.match(toMatchItem);
+        return globalThis.navigator.userAgent.match(toMatchItem);
     });
 }
 
 
 export function isIOSMobileBrowserPlatform(): boolean {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(globalThis.navigator === undefined) return false
+    return /iPhone|iPad|iPod/i.test(globalThis.navigator.userAgent);
 }
 
 export function isAndroidMobileBrowserPlatform(): boolean {
-    return /Android/i.test(navigator.userAgent);
+    if(globalThis.navigator === undefined) return false
+    return /Android/i.test(globalThis.navigator.userAgent);
 }
 
 export function getMetaDataSet(): Record<Providers | string, IMetaDataSet> {

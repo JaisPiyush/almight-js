@@ -158,6 +158,19 @@ export class MockServer {
 }
 
 
-export function createServer(port: number = 8000) {
+export class AlmightMockServer extends MockServer {
+
+    forAuthPath(path: string): PathMethodHandler {
+        return this.forPath(`/auth${path}`);
+    }
+
+    initialSetup(): void {
+        this.forPath("/project/verify/api_key").forPost({status: 200, data: {is_valid: true}})
+        this.forPath("/project/ident").forPost({status:200, data: {identifier: "project-ident-123"}})
+    }
+    constructor() {
+        super();
+        this.initialSetup();
+    }
 
 }

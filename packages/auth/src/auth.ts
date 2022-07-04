@@ -18,7 +18,7 @@ export interface AuthenticationAppConstructorOptions {
     baseAuthenticaionURL?: string;
     identityProviders: Array<IdentityProvider>;
     filters?: ConnectionFilter;
-    channelArgs: ChannelConfigurations
+    channelArgs?: ChannelConfigurations
 }
 
 export class AuthenticationApp implements IAuthenticationApp {
@@ -51,6 +51,7 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.onFailureCallback = options.onFailureCallback ?? this.deadFunction;
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
         this.setupAuthenticationFrameConfigurations(options)
+        this.setupIdentityProviders(options.identityProviders);
         this.initLoadings().then()
 
     }

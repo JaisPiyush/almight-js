@@ -123,7 +123,7 @@ export interface UserData <S = ISession>{
 
 
 
-export type ChannelConfigurations = Record<ConnectorType, Record<string, any>>;
+export type ChannelConfigurations = Partial<Record<ConnectorType, Record<string, any>>>;
 export interface AuthenticationFrameConfiguration {
     filters?: ConnectionFilter,
     channelArgs?: ChannelConfigurations

@@ -1,6 +1,8 @@
-import { AllowedQueryParams, AuthenticationDelegate, Web2AuthenticationDelegate } from "@almight-sdk/auth"
+import { AllowedQueryParams, AuthenticationDelegate, Web2AuthenticationDelegate, AuthenticationDelegateOptions } from "@almight-sdk/auth"
 import { Class, WebLocalStorage, WebVersion } from "@almight-sdk/utils"
-import { IDENTITY_PROVIDERS } from "@almight-sdk/connector"
+import { OAuthProviders } from "@almight-sdk/oauth-adapters"
+
+import { IdentityProvider } from "@almight-sdk/connector";
 
 export enum PageRoute {
     InitPage = "/auth/v1/init"
@@ -31,18 +33,27 @@ export class Controller {
         return query;
     }
 
-    async getCurrentAuthenticationDelegateClass(): Promise<Class<AuthenticationDelegate>> {
+    getIdentityProvider(provider: string): IdentityProvider {
+        for(const idp of OAuthProviders){
+            if(idp.identifier === provider) return idp;
+        }
+        throw new Error("No identity provider found")
+    }
+
+    async getCurrentAuthenticationDelegateClass(): Promise<Class<AuthenticationDelegate, AuthenticationDelegateOptions>> {
         const params = this.getQueryParams();
         const provider = (params[AllowedQueryParams.Provider] !== undefined) ? params[AllowedQueryParams.Provider]: await this.getProviderFromWebLocalStorage()
 
         if (DELEGATE_MAP[provider] !== undefined) return DELEGATE_MAP[provider];
-        const idp = IDENTITY_PROVIDERS[provider];
+        const idp = this.getIdentityProvider(provider);
         return DELEGATE_MAP[idp.webVersion];
     }
 
     async initControll(): Promise<void>{
         const delegateClass = await this.getCurrentAuthenticationDelegateClass();
-        const delegate = new delegateClass({});
+        const delegate = new delegateClass({
+            identityProviders: OAuthProviders,
+        });
         if(this.isCurrentPage(PageRoute.InitPage)){   
             window.delegate = delegate;
         }else{

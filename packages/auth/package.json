@@ -33,6 +33,7 @@
   "dependencies": {
     "@almight-sdk/connector": "^0.0.1-alpha.98",
     "@almight-sdk/core": "^0.0.1-alpha.98",
+    "@almight-sdk/ethereum-chain-adapter": "^0.0.1-alpha.98",
     "@almight-sdk/test-utils": "^0.0.1-alpha.98",
     "@almight-sdk/utils": "^0.0.1-alpha.98",
     "axios": "^0.27.2",
@@ -43,7 +44,9 @@
   "devDependencies": {
     "@almight-sdk/ethereum-chain-adapter": "^0.0.1-alpha.98",
     "@almight-sdk/oauth-adapters": "^0.0.1-alpha.98",
+    "@types/jsdom": "^16.2.14",
     "@types/mocha": "^9.1.1",
+    "jsdom": "^20.0.0",
     "ts-mocha": "^10.0.0"
   }
 }

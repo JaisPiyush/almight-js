@@ -14,7 +14,7 @@ export class AuthenticationFrame implements IAuthenticationFrame {
 
     respondStrategy: AuthenticationRespondStrategy = AuthenticationRespondStrategy.None;
     app?: IAuthenticationApp;
-    configs?: AuthenticationFrameConfiguration;
+    configs: AuthenticationFrameConfiguration;
 
 
     async initAuth(data: Record<string, string>): Promise<void> {
@@ -24,13 +24,15 @@ export class AuthenticationFrame implements IAuthenticationFrame {
 
 
     constructor(configs?: AuthenticationFrameConfiguration) {
-        this.configs = configs
+        this.configs = configs ?? {
+            channelArgs: {}
+        }
     }
 
 
-    getConfigForProvider(provider: Providers | string, connectorType: ConnectorType): Record<string, any> | undefined {
-        if (this.configs === undefined || this.configs[provider] === undefined) return;
-        return this.configs[provider][connectorType];
+    getConfigForChannelWithConnectorType(connectorType: ConnectorType): Record<string, any> | undefined {
+        if (this.configs === undefined || this.configs.channelArgs === undefined || this.configs.channelArgs[connectorType] === undefined) return;
+        return this.configs.channelArgs[connectorType];
     }
 
 
@@ -123,7 +125,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
     getConfigsForConnectorType(connectorType: ConnectorType): Record<string, any> | undefined {
         if (this.delegate === undefined) return;
-        return this.getConfigForProvider(this.delegate.identityResolver.provider.identifier as string, connectorType);
+        return this.getConfigForChannelWithConnectorType(connectorType);
     }
 
 
@@ -178,10 +180,13 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
         const connector = new Connector<S, C, P, A>({
             adapter: adapter,
+            filters: this.configs.filters,
+            identityProvider: this.delegate.identityResolver.provider,
             onConnect: (options?: any) => {
                 if (this.connectionCount !== 0) return;
                 this.connectionCount += 1;
                 this.connector = connector;
+                this.connector.checkConnection(true);
                 this.modal.close();
                 options[AllowedQueryParams.ConnectorType] = provider.channel.connectorType;
                 provider.getCompleteSessionForStorage().then((session) => {
@@ -214,6 +219,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
                     providerClass as Class<BaseProvider<BrowserProviderChannel>, IProviderOptions>,
                     adapterClass as Class<BaseChainAdapter<BrowserProviderChannel>>
                 );
+                this.browserConnector = connector
                 allConnectorConnected.push(true);
 
             } else if (channel.connectorType === ConnectorType.WalletConnector) {
@@ -240,13 +246,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         }
     }
 
-    override async initAuth(data: Record<string, any>): Promise<void> {
-        super.initAuth(data);
-
-
-        this.adapterClass = data["adapterClass"]
-
-        /// setup the delegate and call authentication
+    setDelegate(data: Record<string, any>): void {
         this.delegate = new Web3AuthenticationDelegate({
             storage: this.app.storage,
             identityProviders: (<any>data["identityProviders"]) as IdentityProvider[],
@@ -256,6 +256,16 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
                 }
             })
         });
+    }
+
+    override async initAuth(data: Record<string, any>): Promise<void> {
+        super.initAuth(data);
+
+
+        this.adapterClass = data["adapterClass"]
+
+        /// setup the delegate and call authentication
+        this.setDelegate(data)
 
         delete data["identityProviders"];
 

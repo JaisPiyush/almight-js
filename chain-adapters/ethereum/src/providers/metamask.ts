@@ -34,11 +34,9 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
         this.channelConnect = async (options?: any): Promise<void> => {
             await self.channel.defaultConnect(options, self)
             if (self.channel.connectorType === ConnectorType.WalletConnector) {
-                await self.channel.defaultConnect(options, self);
                 if (((self.channel as unknown) as WalletConnectChannel).isSessionConnected()) await self.checkConnection();
                 return;
             }
-            await self.channel.defaultConnect(options, self)
             self.accounts = await self.request<Address[]>({ method: "eth_requestAccounts", params: [] });
             self.checkConnection();
         }

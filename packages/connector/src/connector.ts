@@ -346,6 +346,6 @@ export class Connector<S extends ISession = ISession,
             const options = opts !== undefined ? opts.options : undefined;
             await this.adapter.connect(options);
         }
-        await this.adapter.checkConnection(true)
+        
     }
 }

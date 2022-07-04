@@ -90,16 +90,6 @@ export class WebConnectorModal implements IConnectorModal {
             document.dispatchEvent(event);
         }`)
 
-        // const mountQRCodeFunction = document.createTextNode(`function mountQRCode(){
-        //     console.log("runned", QRCode)
-        //     const canvas = document.getElementById("almight__qrcode")
-        //     new QRCode(canvas, "${data.uri}");
-        //     // QRCode.toCanvas(canvas, , function () {})
-        //     canvas.setAttribute("style", "width:90%;")
-        // }
-        // mountQRCode();
-        // `)
-
         jsfunctions.appendChild(handleCloseClickFunction)
         jsfunctions.appendChild(handleConnectClickFunction)
         if(this.el !== undefined){

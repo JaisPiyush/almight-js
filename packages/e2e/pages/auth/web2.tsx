@@ -4,6 +4,7 @@ import { AllowedQueryParams, AuthenticationApp, ErrorResponseMessageCallbackArgu
 import { expect } from "chai";
 import { NextPage } from "next";
 import { useEffect, useRef } from "react";
+import {OAuthProviders} from "@almight-sdk/oauth-adapters"
 
 const Web2: NextPage = () => {
     let almight = useRef<AlmightClient>();
@@ -17,6 +18,7 @@ const Web2: NextPage = () => {
         });
         auth.current = new AuthenticationApp({
             almightClient: almight.current,
+            identityProviders: OAuthProviders ,
             onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => {
                 console.log("Failure", data);
                 expect(data).to.have.property(AllowedQueryParams.Error);
