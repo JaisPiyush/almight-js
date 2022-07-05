@@ -5,6 +5,7 @@ export class MetamaskProvider<C extends BaseProviderChannel = BaseProviderChanne
 A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
     
     public static providerPath = "ethereum";
+    readonly deepLinkUri: string = "https://metamask.app.link/";
 
 
     override async checkConnection(): Promise<boolean> {
@@ -20,8 +21,13 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
     }
 
 
+    notMetaMaskSupportingWallets(provider: any):boolean {
+        return provider.isCoinbaseWallet === true;
+    }
+
+
     verifyBrowserSession(provider: any): boolean {
-        return (provider as any).isMetaMask === true;
+        return provider.isMetaMask === true && ! this.notMetaMaskSupportingWallets(provider);
     }
 
 
@@ -33,11 +39,9 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
         this.channelConnect = async (options?: any): Promise<void> => {
             await self.channel.defaultConnect(options, self)
             if (self.channel.connectorType === ConnectorType.WalletConnector) {
-                await self.channel.defaultConnect(options, self);
                 if (((self.channel as unknown) as WalletConnectChannel).isSessionConnected()) await self.checkConnection();
                 return;
             }
-            await self.channel.defaultConnect(options, self)
             self.accounts = await self.request<Address[]>({ method: "eth_requestAccounts", params: [] });
             self.checkConnection();
         }
@@ -68,6 +72,7 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
 export class KardiaChainProvider extends MetamaskProvider {
 
     public static providerPath = Providers.KardiaChain;
+    readonly deepLinkUri = undefined;
 
     override verifyBrowserSession(provider: any): boolean {
         return (provider as any).isKaiWallet === true
@@ -77,6 +82,8 @@ export class KardiaChainProvider extends MetamaskProvider {
 
 
 export class CoinbaseWalletProvider extends MetamaskProvider {
+
+    readonly deepLinkUri: string = "https://go.cb-w.com/"
 
     override verifyBrowserSession(provider: any): boolean {
         return (provider as any).isCoinbaseWallet === true;

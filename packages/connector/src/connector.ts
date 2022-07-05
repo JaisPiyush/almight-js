@@ -7,7 +7,7 @@ import { BaseProvider, IProviderOptions } from "./provider";
 import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession } from "./types";
 
 export interface IConnectorOptions<S, C, P, A> {
-    onConnect?: (options?: { accounts: Address[], chainId: number }) => void;
+    onConnect?: (options?: Partial<{ accounts: Address[], chainId: number, data: any }>) => void;
     session?: CurrentSessionStruct<S> | S;
     filters?: ConnectionFilter;
     channel?: Class<C> | C;
@@ -48,9 +48,9 @@ export class Connector<S extends ISession = ISession,
     protected providerClass: Class<P>;
     adapter?: A;
 
-    onConnectCallback: (options?: { accounts: Address[], chainId: number }) => void
+    onConnectCallback: (options?: Partial<{ accounts: Address[], chainId: number, data: any }>) => void
 
-    readonly deadCallback = (options?: { accounts: Address[], chainId: number }): void => { }
+    readonly deadCallback = (options?: Partial<{ accounts: Address[], chainId: number, data: any }>): void => { }
 
 
     public get accounts(): Address[] {
@@ -346,6 +346,6 @@ export class Connector<S extends ISession = ISession,
             const options = opts !== undefined ? opts.options : undefined;
             await this.adapter.connect(options);
         }
-        await this.adapter.checkConnection(true)
+        
     }
 }

@@ -510,28 +510,10 @@ export class WalletConnectChannel extends BaseProviderChannel<WalletConnectSessi
      * @returns uri string for wallet connect connection
      */
     getConnectorUri(): string {
+        if(this.provider === undefined) return;
         return this.provider.uri;
     }
 
-
-
-    public isDeepLinkPlantable(): boolean {
-        return isWebPlatform() && isMobileWebPlatform();
-    }
-
-
-
-    public getDeepLinkUri(provider?: Providers): string {
-        const uri = this.getConnectorUri()
-        const META_DATA_SET = getMetaDataSet()
-        if(isWebPlatform() && isMobileWebPlatform() && provider !== undefined){
-            const metaData = META_DATA_SET[provider];
-            if(metaData.supportDeepLink && metaData.deeplinkUri !== undefined){
-                return `${metaData.deeplinkUri}wc?uri=${this.getConnectorUri()}`
-            }
-        }
-        return uri;
-    }
 
 
     defaultbindSessionListener(): void {

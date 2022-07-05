@@ -1,7 +1,7 @@
-import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
+import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
 import { Address, ConnectorType, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
-import { Chains, Chainset, getChainManager } from "@almight-sdk/utils"
+import { Chains, Chainset, getChainManager, isMobileWebPlatform, isWebPlatform } from "@almight-sdk/utils"
 
 
 export interface IProviderOptions {
@@ -24,6 +24,7 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
     public filter?: ProviderFilter
     public allowedChainIds: number[] = [];
     public restrictedChainIds: number[] = [];
+    readonly deepLinkUri?: string;
 
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
@@ -62,6 +63,21 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
 
     setAdapter(adapter: A): void {
         this.adapter = adapter;
+    }
+
+    isDeepLinkPlantable(): boolean {
+        if(this.channel !== undefined && this.deepLinkUri !== undefined && this.channel instanceof WalletConnectChannel){
+            if(isWebPlatform()){
+                return isMobileWebPlatform()
+            }
+            return true;
+        }
+        return false;
+    }
+
+    getDeepLinkUri(): string {
+        if(this.deepLinkUri === undefined) throw new Error("Deeplink uri is not provided");
+        return `${this.deepLinkUri}wc?uri=${(<WalletConnectChannel>(this.channel as any)).getConnectorUri()}`
     }
 
     public bindChannelDelegations(): void {

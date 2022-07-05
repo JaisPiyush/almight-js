@@ -4,7 +4,7 @@ import { expect, assert } from "chai"
 import { BasicExternalProvider, IProvider } from "../src/types";
 import { MockEthereumChainAdapter } from "../src/mocks/adapters"
 import { BaseProvider } from "../src/provider";
-import {startGanache, closeGanahceServer} from "@almight-sdk/utils/src/mocks"
+import { startGanache, closeGanahceServer } from "@almight-sdk/test-utils"
 
 let chainName = () => {
     return {
@@ -72,10 +72,10 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
             expect(e).not.to.be.undefined;
         }
         expect(channel.provider).not.to.be.undefined;
-        
+
         try {
             await channel.connect(({ name: "testing", on: (name: string, callback: Function) => { callback() } } as unknown) as BasicExternalProvider);
-        }catch(e){
+        } catch (e) {
             expect(e).to.be.instanceOf(ChannelConnectionEstablishmentFailed)
         }
 
@@ -83,16 +83,19 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
 
     it("testing checkConnection and #onConnect on insertion", async function () {
 
-        let obj: unknown = {
-            onConnect: function (options: any) {
-                expect(options.isServiceProvider).not.to.be.undefined
-                assert(options.isServiceProvider())
+        let obj: Partial<IProvider> = {
+            channelOnConnect: function (options: any) {
+                // expect(2).to.be.equal(3)
+                expect(options).to.deep.eq({})
+                // assert(options.isServiceProvider());
             }
         }
-        await channel.connect(undefined, obj as IProvider);
+        await channel.connect(undefined, obj as IProvider)
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
         expect(channel.provider).to.have.property("isServiceProvider");
+        setTimeout(() => {}, 1500);
+
     });
 
     it("testing rawRequest, getSessionForStorage and  request", async function () {
@@ -125,28 +128,30 @@ describe("HTTPProviderChannel", () => {
     const url = `http://localhost:${PORT}`
 
     before(async () => {
-        server = await startGanache({port: PORT});
+        server = await startGanache({ port: PORT });
     })
 
-    after( async () => {
+    after(async () => {
         await closeGanahceServer(server);
     })
 
     it("testing connect", async () => {
-        
+
         const provider = new BaseProvider<HTTPProviderChannel, MockEthereumChainAdapter>({
             channel: new HTTPProviderChannel({
                 endpoint: url,
                 chainId: 0
             }),
-           
+
         });
 
         const adapter = new MockEthereumChainAdapter({
             provider: provider,
             onConnect: (data): void => {
                 expect(data).to.have.property("accounts");
+                expect(data["accounts"]).length.to.greaterThan(0)
                 expect(data).to.have.property("chainId");
+                expect(data["chainId"]).not.equal(0)
             }
         })
 

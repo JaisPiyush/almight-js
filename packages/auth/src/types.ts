@@ -1,5 +1,5 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
-import { BaseConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct } from "@almight-sdk/connector";
+import { IConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct, ConnectionFilter } from "@almight-sdk/connector";
 import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
@@ -90,7 +90,7 @@ export interface RespondMessageData extends ResponseMessageCallbackArgument {
 export interface IAuthenticationFrame {
     respondStrategy: AuthenticationRespondStrategy;
     app?: IAuthenticationApp
-    configs?: ProviderConfiguration;
+    configs?: AuthenticationFrameConfiguration;
     initAuth(data: Record<string, string>): Promise<void>;
     bindListener(): void;
     close(): Promise<void>;
@@ -122,23 +122,20 @@ export interface UserData <S = ISession>{
 }
 
 
-// export interface CurrentSessionStruct <S = ISession> {
-//     uid: string;
-//     provider: string;
-//     connector_type: ConnectorType;
-//     session: S;
-// }
 
+export type ChannelConfigurations = Partial<Record<ConnectorType, Record<string, any>>>;
+export interface AuthenticationFrameConfiguration {
+    filters?: ConnectionFilter,
+    channelArgs?: ChannelConfigurations
+}
 
-export type SingleProviderConfiguration = Record<ConnectorType, Record<string, any>>;
-
-export type ProviderConfiguration  = Record<Providers | string, SingleProviderConfiguration>
 export interface IAuthenticationApp {
     storage: BaseStorageInterface;
-    connector?: BaseConnector;
+    connector?: IConnector;
     core: IAlmightClient
     frame?: IAuthenticationFrame;
     baseAuthenticationURL: string;
+    configs?: AuthenticationFrameConfiguration;
 
 
 
@@ -160,6 +157,8 @@ export interface IAuthenticationApp {
     saveUserData(userData: UserData): Promise<void>;
     fetchAndStoreUserData(token:string): Promise<UserData>
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
+    setupConnector(connector?: IConnector): void;
+    getIdentityProvider(provider: string): IdentityProvider
 
     isAuthenticated(): Promise<boolean>;
 }

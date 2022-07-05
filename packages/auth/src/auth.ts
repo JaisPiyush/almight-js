@@ -1,8 +1,12 @@
-import { BaseConnector, IDENTITY_PROVIDERS, ISession, BaseChainAdapter, IdentityProvider, ConnectorType } from "@almight-sdk/connector";
+import { Connector, ISession, IdentityProvider, ConnectorType, CurrentSessionStruct, ConnectionFilter, BaseChainAdapter } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, getMetaDataSet, isWebPlatform,  Providers, WebVersion } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, getMetaDataSet, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
-import { IAuthenticationApp,  UserData, ErrorResponseMessageCallbackArgument, IAuthenticationFrame, AllowedQueryParams, ServerSentIdentityProvider, CurrentSessionStruct, ProviderConfiguration, User, SuccessResponseMessageCallbackArgument } from "./types";
+import {
+    IAuthenticationApp, UserData, ErrorResponseMessageCallbackArgument, AllowedQueryParams,
+    ServerSentIdentityProvider, ChannelConfigurations, AuthenticationFrameConfiguration
+} from "./types";
+
 
 
 
@@ -12,56 +16,31 @@ export interface AuthenticationAppConstructorOptions {
     onSuccessCallback?: (data: UserData) => void;
     onFailureCallback?: (data: ErrorResponseMessageCallbackArgument) => void;
     baseAuthenticaionURL?: string;
-    configs?: ProviderConfiguration;
+    identityProviders: Array<IdentityProvider>;
+    filters?: ConnectionFilter;
+    channelArgs?: ChannelConfigurations
 }
 
 export class AuthenticationApp implements IAuthenticationApp {
-    
-    core: AlmightClient;
-    frame?: IAuthenticationFrame;
-    storage: BaseStorageInterface;
-    connector?: BaseConnector;
-    sessions: ISession[] = [];
-    baseAuthenticationURL: string = "http://localhost:3080"
-    token?: string;
-    readonly configs?: ProviderConfiguration;
 
+    core: AlmightClient;
+    frame?: AuthenticationFrame;
+    storage: BaseStorageInterface;
+    connector?: Connector;
+    sessions: ISession[] = [];
+    baseAuthenticationURL: string = "http://localhost:3080";
+    identityProvidersMap: Record<string, IdentityProvider> = {};
+    identityProviders: IdentityProvider[] = [];
+
+    configs?: AuthenticationFrameConfiguration;
     readonly userKeyName = "almight_user";
     readonly userIdpsName = "almight_user_idps";
     readonly currentSessionName = "almight_connector_current_session"
     readonly AUTH_HEADER_KEY = "AUTHORIZATION"
+    readonly identifierStorageName = "csid_track_id"
 
     onSuccessCallback: (data: UserData) => void;
     onFailureCallback: (data: ErrorResponseMessageCallbackArgument) => void;
-
-
-
-    public set onSuccess(fn: (data: UserData) => void) {
-        this.onSuccessCallback = fn;
-    }
-
-    public set onFailure(fn: (data: ErrorResponseMessageCallbackArgument) => void) {
-        this.onFailureCallback = fn;
-    }
-
-    setFrame(frame?: IAuthenticationFrame): void {
-        if (frame !== undefined) {
-            this.frame = frame;
-            this.frame.app = this;
-        }
-    }
-
-
-    getFrame(provider: string): IAuthenticationFrame {
-        const idp = IDENTITY_PROVIDERS[provider];
-        if(idp.webVersion === WebVersion.Decentralized) return new Web3NativeAuthenticationFrame(this.configs);
-        if(isWebPlatform()){
-            return new Web2NativePopupAuthenticationFrame(this.configs);
-        }
-    }
-
-    deadFunction(data?: any): any { }
-
 
 
     constructor(options: AuthenticationAppConstructorOptions) {
@@ -71,18 +50,87 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.onSuccessCallback = options.onSuccessCallback ?? this.deadFunction;
         this.onFailureCallback = options.onFailureCallback ?? this.deadFunction;
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
-        this.configs = options.configs;
+        this.setupAuthenticationFrameConfigurations(options)
+        this.setupIdentityProviders(options.identityProviders);
+        this.initLoadings().then()
 
-        // TODO: need the below line to load token as variable from localstorage [JUST FOR TESTING]
-        this.storage.getItem<string>("auth_token").then((token) => { this.token = token })
+    }
+
+    public set onSuccess(fn: (data: UserData) => void) {
+        this.onSuccessCallback = fn;
+    }
+
+    public set onFailure(fn: (data: ErrorResponseMessageCallbackArgument) => void) {
+        this.onFailureCallback = fn;
+    }
+
+    setFrame(frame?: AuthenticationFrame): void {
+        if (frame !== undefined) {
+            this.frame = frame;
+            this.frame.app = this;
+        }
+    }
+
+
+    getIdentityProvider(provider: string, silent: boolean = false): IdentityProvider {
+        if (this.identityProvidersMap[provider] !== undefined) return this.identityProvidersMap[provider];
+        if (!silent) throw new Error(`IdentityProvider associated with ${provider} is not present`)
+    }
+
+
+    getPassableArguments(): AuthenticationFrameConfiguration {
+        if (this.configs === undefined) return;
+        return {
+            filters: this.configs.filters,
+            channelArgs: this.configs.channelArgs
+        }
+    }
+
+
+    getFrame(provider: string): AuthenticationFrame {
+        const idp = this.getIdentityProvider(provider)
+        const args = this.getPassableArguments()
+        if (idp.webVersion === WebVersion.Decentralized) {
+            const frame = new Web3NativeAuthenticationFrame(args);
+            return frame
+        }
+        if (isWebPlatform()) {
+            return new Web2NativePopupAuthenticationFrame(args);
+        }
+    }
+
+    deadFunction = (data?: any): void => { }
+
+
+    setupIdentityProviders(idps: IdentityProvider[]): void {
+        this.identityProviders = idps;
+        for (const idp of idps) {
+            this.identityProvidersMap[idp.identifier] = idp;
+        }
+    }
+
+
+
+    async initLoadings(): Promise<void> {
+
+    }
+
+
+    setupAuthenticationFrameConfigurations(options: AuthenticationAppConstructorOptions): void {
+        this.configs = {}
+        if (options.filters !== undefined) {
+            this.configs.filters = options.filters
+        }
+        if (options.channelArgs !== undefined) {
+            this.configs.channelArgs = options.channelArgs;
+        }
     }
 
 
 
     async getToken(token?: string): Promise<string> {
         if (token !== undefined && token !== null) return token;
-        if (this.token !== undefined && this.token !== null) return this.token;
-        return await this.storage.getItem<string>("fbid")
+        return await this.storage.getItem<string>(this.identifierStorageName)
     }
 
 
@@ -107,7 +155,7 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
     async verifyToken(token: string): Promise<boolean> {
-        const res = await authAxiosInstance.post("/verify", { "token": this.token });
+        const res = await authAxiosInstance.post("/verify", { "token": token });
         return res.status === 200
     }
 
@@ -115,8 +163,7 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
     async storeJWTToken(token: string): Promise<void> {
-        await this.convertTokenToCookie(token)
-        this.token = token;
+        await this.convertTokenToCookie(token);
         //TODO: Need cover aspects of react native
     }
 
@@ -161,7 +208,6 @@ export class AuthenticationApp implements IAuthenticationApp {
     }
 
     getAuthenticationHeaders(token?: string): Record<string, string> {
-        token = token ?? this.token;
         return (token === undefined && token !== null) ? {} : {
             [this.AUTH_HEADER_KEY]: `Bearer ${token}`
         }
@@ -174,7 +220,7 @@ export class AuthenticationApp implements IAuthenticationApp {
         return res.data.data
     }
 
-    async fetchAndStoreUserData(token:string): Promise<UserData>{
+    async fetchAndStoreUserData(token: string): Promise<UserData> {
         await this.storeJWTToken(token);
         const userData = await this.getUserData(token);
         await this.saveUserData(userData);
@@ -184,13 +230,18 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
 
-    async startAuthentication(provider: Providers): Promise<void> {
-        this.setFrame(this.getFrame(provider));
+    async startAuthentication(provider: Providers, adapterClass?: Class<BaseChainAdapter>): Promise<void> {
+        const frame = this.getFrame(provider)
+        this.setFrame(frame);
         const projectIdentifier = await this.getProjectIdentifier();
         const data = {
             [AllowedQueryParams.ProjectId]: projectIdentifier,
             [AllowedQueryParams.Provider]: provider,
 
+        }
+        if(frame instanceof Web3NativeAuthenticationFrame){
+            data["identityProviders"] = this.identityProviders;
+            data["adapterClass"] = adapterClass;
         }
         if (await this.isAuthenticated()) {
             data[AllowedQueryParams.UserIdentifier] = await this.getUserIdentifier()
@@ -209,11 +260,11 @@ export class AuthenticationApp implements IAuthenticationApp {
         await this.setupConnector();
     }
 
-    async updateCurrentSession(data: CurrentSessionStruct, token?: string): Promise<UserData>{
-        const res = await authAxiosInstance.post<{data: UserData}>("/me", {"current_session": data}, {
+    async updateCurrentSession(data: CurrentSessionStruct, token?: string): Promise<UserData> {
+        const res = await authAxiosInstance.post<{ data: UserData }>("/me", { "current_session": data }, {
             headers: this.getAuthenticationHeaders(await this.getToken(token))
         })
-        if (res.status === 200){
+        if (res.status === 200) {
             this.saveUserData(res.data.data);
         }
         return res.data.data;
@@ -269,23 +320,17 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
 
-    async setupConnector(): Promise<void> {
-        const currentSession = await this.getCurrentSession();
-        const idp: IdentityProvider = IDENTITY_PROVIDERS[currentSession.provider]
-        const adapterClass = idp.getAdapterClass() as Class<BaseChainAdapter>;
-        for (const channelClass of idp.getChannels()) {
-            if ((channelClass as any).connectorType === currentSession.connector_type) {
-                const channel = new channelClass(currentSession.session);
-                const adapter = new adapterClass({
-                    channel: channel
-                });
-                adapter.accounts = [currentSession.uid]
-                adapter.chainId = (currentSession.session as any).chainId
-                this.connector = new BaseConnector({ adapter: adapter });
-                await this.connector.adapter.connect();
-                return;
-            }
+    async setupConnector(connector?: Connector): Promise<void> {
+        if (connector === undefined) {
+            const currentSession = await this.getCurrentSession();
+            if (currentSession === null) throw new Error("No connection history available, try to reconnect")
+            const idp = this.getIdentityProvider(currentSession.provider);
+            connector = new Connector({
+                session: currentSession,
+                identityProvider: idp
+            });
         }
+        this.connector = connector;
     }
 
 

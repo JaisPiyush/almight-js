@@ -97,7 +97,7 @@ export interface BaseStorageInterface {
 }
 
 // Class constructor signature
-export type Class<T> = new (...args: any[]) => T;
+export type Class<T, C= any> = new (...args: C[]) => T;
 
 
 export interface ChainData {
