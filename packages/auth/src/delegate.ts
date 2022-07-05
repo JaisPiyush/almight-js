@@ -1,9 +1,9 @@
 import { Connector, IdentityProvider } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
 import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
-import { IdentityResolver, Web3IdentityResolver } from "./resolver";
+import { IdentityResolver, Web2IdentityResolver, Web3IdentityResolver } from "./resolver";
 import {
     AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, ResponseMessageCallbackArgument,
     SuccessResponseMessageCallbackArgument, UserRegistrationArgument, UserRegistrationResult
@@ -66,6 +66,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
 
+    readonly identityResolversClassMap: Record<string | number, Class<IdentityResolver>> = {
+        [WebVersion.Decentralized]: Web3IdentityResolver,
+        [WebVersion.Centralized]: Web2IdentityResolver
+    }
+
     connector?: Connector;
 
     public storage: BaseStorageInterface;
@@ -96,9 +101,17 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
+    getIdentityResolverClassForidentityProvider(idp: IdentityProvider): Class<IdentityResolver> {
+        if(this.identityResolversClassMap[idp.identifier] !== undefined) return this.identityResolversClassMap[idp.identifier];
+        if(this.identityResolversClassMap[idp.webVersion] !== undefined) return this.identityResolversClassMap[idp.webVersion];
+        throw new Error(`No Identity Resolver found for the provider ${idp.identifier}`)
+    }
+
+
     setupIdentityResolversFromIdentityProviders(idps: IdentityProvider[]): void {
         for (const idp of idps) {
-            this.identityResolversMap[idp.identifier] = new Web3IdentityResolver(idp);
+            const idrClass = this.getIdentityResolverClassForidentityProvider(idp)
+            this.identityResolversMap[idp.identifier] = new idrClass(idp);
         }
     }
 
