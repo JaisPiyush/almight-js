@@ -328,7 +328,11 @@ describe("Connector", () => {
             it("identityProvider instance in the constructor", async () => {
                 const connector = new Connector({
                     identityProvider: idp,
-                    session: session
+                    session: session,
+                    onConnect:(options):void => {
+                        expect(options).not.to.be.undefined;
+                        expect(options?.accounts).length.to.be.greaterThan(0);
+                    }
                 });
 
                 await connector.connect();

@@ -138,7 +138,9 @@ describe("EthereumChainAdapter", () => {
                         provider: new BaseProvider<BrowserProviderChannel>({
                             channel: new BrowserProviderChannel({ path: "stocks", chainId: 0 })
                         }),
-                        onConnect: (opt?: any): void => { }
+                        onConnect: (opt): void => {
+                            fail("will never run")
+                         }
                     });
 
                     try {
@@ -157,6 +159,13 @@ describe("EthereumChainAdapter", () => {
 
             describe("connect will succeed", () => {
                 it("connect without any filters", async () => {
+                    const adapter = new MockEthereumChainAdapter<BrowserProviderChannel, typeof provider>({
+                        provider: provider,
+                        onConnect: (options): void => { 
+                            expect(options?.accounts).length.to.be.greaterThan(0)
+                            expect(options?.chainId).to.equal(CHAIN_ID)
+                        }
+                    });
                     adapter.provider.setFilter({
                         allowedChains: [],
                         restrictedChains: []
@@ -174,6 +183,13 @@ describe("EthereumChainAdapter", () => {
                 });
 
                 it("connect with filters", async () => {
+                    const adapter = new MockEthereumChainAdapter<BrowserProviderChannel, typeof provider>({
+                        provider: provider,
+                        onConnect: (options): void => { 
+                            expect(options?.accounts).length.to.be.greaterThan(0)
+                            expect(options?.chainId).to.equal(CHAIN_ID)
+                        }
+                    });
                     adapter.provider.setFilter({
                         allowedChains: [Chains.Ethereum],
                         restrictedChains: []
