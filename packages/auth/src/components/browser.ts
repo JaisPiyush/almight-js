@@ -70,7 +70,6 @@ export class WebConnectorModal implements IConnectorModal {
                 new (window as any).QRious({element:canvas, value:data.uri,
                     level: "H",
                     size: dims.width,
-                
                 })
                 
                
@@ -209,7 +208,7 @@ export class WebConnectorModal implements IConnectorModal {
         }
     
         .almight__qr-box {
-            display: ${(data.uri !== null && data.uri !== undefined && data.hasQRCode) ? 'flex' : 'none'};
+            display: ${(data.uri !== undefined && data.hasQRCode) ? 'flex' : 'none'};
             width: 100%;
             height: auto;
             flex-direction: row;

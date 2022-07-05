@@ -23,7 +23,7 @@ import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequest
 
 export interface IChainAdapterOptions {
     provider: BaseProvider,
-    onConnect?: (options?: any) => void
+    onConnect?: (options?: { accounts?: Address[], chainId?: number, data?: any }) => void
 }
 export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
     P extends BaseProvider<C> = BaseProvider<C>>
@@ -31,7 +31,7 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
 
     provider: P;
     bridge: any;
-    onConnectCallback?: (options?: any) => void;
+    onConnectCallback?: (options?: { accounts?: Address[], chainId?: number, data?: any }) => void;
 
     public get accounts(): Address[] { return this.provider.accounts }
     public get chainId(): number { return this.provider.chainId }
@@ -43,7 +43,6 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
         this.setProvider(options.provider as P)
         this.onConnectCallback = options.onConnect;
         this.provider.onConnectCallback = (options?: any): void => {
-
             this.onConnect(options);
             if (this.onConnectCallback !== undefined) {
                 this.onConnectCallback(options)
@@ -52,7 +51,7 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
     }
 
 
-    public onConnect(options: any): void {
+    public onConnect(options: { accounts?: Address[], chainId?: number, data?: any }): void {
 
     }
 

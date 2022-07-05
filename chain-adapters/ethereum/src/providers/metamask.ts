@@ -21,8 +21,13 @@ A extends BaseChainAdapter = BaseChainAdapter> extends BaseProvider<C, A> {
     }
 
 
+    notMetaMaskSupportingWallets(provider: any):boolean {
+        return provider.isCoinbaseWallet === true;
+    }
+
+
     verifyBrowserSession(provider: any): boolean {
-        return (provider as any).isMetaMask === true;
+        return provider.isMetaMask === true && ! this.notMetaMaskSupportingWallets(provider);
     }
 
 

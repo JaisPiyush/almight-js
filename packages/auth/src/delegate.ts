@@ -62,8 +62,6 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     // readonly responseQueryParams: string[] = [];
     readonly nonStorableQueryParams = []
 
-    public static identityResolverMap: Record<string, IdentityResolver> = {};
-
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
         [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
@@ -131,6 +129,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             for (const query of Object.values(AllowedQueryParams)) {
                 await this.storage.removeItem(query);
             }
+            const removableProps = ["hasServerRequested",this.frozenStateKey, "webVersion", "data", "adapterClass" , "accounts","session"]
+            for(const prop of removableProps ){
+                await this.storage.removeItem(prop)
+            }
         }
     }
 
@@ -142,7 +144,6 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
-
     }
 
 
@@ -181,7 +182,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             switch (key) {
                 case AllowedQueryParams.Provider:
                     if (this.identityResolver === undefined) {
-                        this.identityResolver = (this.constructor as any).identityResolverMap[value];
+                        this.identityResolver = this.identityResolversMap[value];
                     }
 
                     if (this.identityResolver !== undefined) this.identityResolver.delegate = this;
@@ -352,10 +353,6 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 }
 
 
-
-interface Web3AuthenticationDelegateOptions extends AuthenticationDelegateOptions {
-    
-}
 
 
 export class Web3AuthenticationDelegate extends AuthenticationDelegate {

@@ -510,6 +510,7 @@ export class WalletConnectChannel extends BaseProviderChannel<WalletConnectSessi
      * @returns uri string for wallet connect connection
      */
     getConnectorUri(): string {
+        if(this.provider === undefined) return;
         return this.provider.uri;
     }
 

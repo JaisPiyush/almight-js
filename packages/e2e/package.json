@@ -14,6 +14,7 @@
     "@almight-sdk/auth": "^0.0.1-alpha.98",
     "@almight-sdk/connector": "^0.0.1-alpha.98",
     "@almight-sdk/core": "^0.0.1-alpha.98",
+    "@almight-sdk/ethereum-chain-adapter": "^0.0.1-alpha.98",
     "@almight-sdk/oauth-adapters": "^0.0.1-alpha.98",
     "@almight-sdk/utils": "^0.0.1-alpha.98",
     "@walletconnect/client": "^1.7.8",

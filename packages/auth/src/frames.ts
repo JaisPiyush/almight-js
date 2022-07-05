@@ -137,22 +137,24 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
             hasConnectorButton: this.browserConnector !== undefined,
             hasQRCode: this.walletconnectConnector !== undefined,
             buttonText: (this.browserConnector !== undefined) ? "Connect Browser Wallet" : "Connect",
-            uri: (this.walletconnectConnector !== undefined) ? (this.walletconnectConnector.adapter.provider.channel as WalletConnectChannel).getConnectorUri() : undefined,
+            uri: (this.walletconnectConnector !== undefined) ? this.walletconnectConnector.adapter.provider.channel.getConnectorUri() : undefined,
             icon: this.delegate.identityResolver.provider.metaData.icon,
             provider: this.delegate.identityResolver.provider.identityProviderName,
             onConnectClick: () => {
                 if (this.deeplinkConnector !== undefined) {
                     window.location.href = this.deeplinkConnector.adapter.provider.getDeepLinkUri();
-                } else if (this.browserConnector !== undefined && this.browserConnector.adapter.provider.channel.connectorType === ConnectorType.BrowserExtension) {
-                    this.browserConnector.connect(this.getConfigsForConnectorType(ConnectorType.BrowserExtension)).catch(err => {
+                } else if (this.browserConnector !== undefined) {
+                    this.browserConnector.connect(this.getConfigsForConnectorType(ConnectorType.BrowserExtension)).then(() => {
+                    }).catch(err => {
                         if (this.browserConnector !== undefined && this.browserConnector.onConnectCallback !== undefined) {
+                            this.modal.close();
                             this.connectionCount += 1;
-                            this.browserConnector.adapter.onConnectCallback({
+                            this.delegate.identityResolver.onAuthenticationRedirect({
                                 data: {
                                     [AllowedQueryParams.Error]: err.message,
                                     [AllowedQueryParams.ErrorCode]: err.code
-                                }
-                            })
+                                }});
+                            
                         }
                     })
 
@@ -174,26 +176,22 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
 
         });
 
-        const adapter = new adapterClass({
-            provider: provider
-        });
-
         const connector = new Connector<S, C, P, A>({
-            adapter: adapter,
+            adapter: adapterClass,
+            provider: provider,
             filters: this.configs.filters,
             identityProvider: this.delegate.identityResolver.provider,
             onConnect: (options?: any) => {
+                // console.trace()
                 if (this.connectionCount !== 0) return;
                 this.connectionCount += 1;
                 this.connector = connector;
                 this.connector.checkConnection(true);
                 this.modal.close();
                 options[AllowedQueryParams.ConnectorType] = provider.channel.connectorType;
-                provider.getCompleteSessionForStorage().then((session) => {
-                    options["session"] = session;
-                    this.delegate.identityResolver.onAuthenticationRedirect(options);
-                })
-
+                const session = this.connector.adapter.getSession();
+                options["session"] = session
+                this.delegate.identityResolver.onAuthenticationRedirect(options);
             }
         })
 
@@ -240,7 +238,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
                 }
 
             }
-            if (allConnectorConnected.length === channelClass.length) {
+            if (allConnectorConnected.length === channelClasses.length) {
                 this.mountModal()
             }
         }
@@ -249,7 +247,7 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
     setDelegate(data: Record<string, any>): void {
         this.delegate = new Web3AuthenticationDelegate({
             storage: this.app.storage,
-            identityProviders: (<any>data["identityProviders"]) as IdentityProvider[],
+            identityProviders: (<any>data["identityProviders"] ?? []) as IdentityProvider[],
             respondFrame: new Web3NativeOriginFrameCommunicator({
                 onResponse: (data: RespondMessageData) => {
                     this.captureResponse((data as unknown) as RespondMessageData);
@@ -265,15 +263,17 @@ export class Web3NativeAuthenticationFrame extends AuthenticationFrame {
         this.adapterClass = data["adapterClass"]
 
         /// setup the delegate and call authentication
-        this.setDelegate(data)
-
+        this.setDelegate(data);
         delete data["identityProviders"];
 
         await this.delegate.clean();
 
         await this.delegate.setStates(data);
 
-        await this.delegate.captureData()
+        await this.delegate.captureData();
+        if(this.delegate.identityResolver === undefined){
+            throw new Error("Identity Resolver not found");
+        }
 
         // TODO: Show UI for authentication for web
         if (isWebPlatform()) {

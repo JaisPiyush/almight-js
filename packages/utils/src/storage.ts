@@ -87,6 +87,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @returns Deserialize stored data to desired object
      */
     deserialize<T>(value: any): T {
+        if(value === undefined || value === "undefined" || value === null) return value;
         return JSON.parse(value) as T;
     }
 
