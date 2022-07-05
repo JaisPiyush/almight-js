@@ -87,7 +87,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @returns Deserialize stored data to desired object
      */
     deserialize<T>(value: any): T {
-        if(value === undefined || value === "undefined" || value === null) return value;
+        // if(value === undefined || value === "undefined" || value === null) {return value};
         return JSON.parse(value) as T;
     }
 
@@ -96,6 +96,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     }
 
     async setItem(key: string, value: any): Promise<void> {
+        if(value === undefined || value === null) return;
         this.storage.setItem(this.getPrefixedName(key), this.serialize(value));
     }
     async getItem<T = any>(key: string): Promise<T | null> {

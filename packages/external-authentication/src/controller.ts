@@ -8,7 +8,7 @@ export enum PageRoute {
     InitPage = "/auth/v1/init"
 }
 
-export const DELEGATE_MAP: Record<string | number, Class<AuthenticationDelegate>> = {
+export const DELEGATE_MAP: Record<string | number, Class<AuthenticationDelegate, AuthenticationDelegateOptions>> = {
     [WebVersion.Centralized]: Web2AuthenticationDelegate
 }
 
@@ -53,6 +53,7 @@ export class Controller {
         const delegateClass = await this.getCurrentAuthenticationDelegateClass();
         const delegate = new delegateClass({
             identityProviders: OAuthProviders,
+            storage: new WebLocalStorage()
         });
         if(this.isCurrentPage(PageRoute.InitPage)){   
             window.delegate = delegate;
