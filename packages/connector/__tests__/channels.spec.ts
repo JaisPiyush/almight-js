@@ -1,12 +1,14 @@
-import { BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
+import { BaseProviderChannel, BrowserProviderChannel, HTTPProviderChannel } from "../src/channel";
 import { ChannelConnectionEstablishmentFailed, IncompatiblePlatform } from "../src/exceptions";
 import { expect, assert } from "chai"
-import { BasicExternalProvider, IProvider } from "../src/types";
+import { BasicExternalProvider, IProvider, ProviderChannelInterface, SessioUpdateArguments } from "../src/types";
 import { MockEthereumChainAdapter } from "../src/mocks/adapters"
 import { BaseProvider } from "../src/provider";
 import { startGanache, closeGanahceServer } from "@almight-sdk/test-utils"
 
 let chainName = () => {
+
+    
     return {
         isServiceProvider: () => true,
         request: async (data: { method: string, params: any[] }) => {
@@ -17,7 +19,8 @@ let chainName = () => {
         },
         on: (name: string, callback: Function): void => {
             callback();
-        }
+        },
+       
     }
 }
 
@@ -97,9 +100,33 @@ describe("Mock Testing BrowserProviderChannel class with injected prop", () => {
         setTimeout(() => {}, 1500);
 
     });
+    it("testing onSessionUpdate", async function() {
+        let obj = {
+            channelbindSessionListener: (channel: BaseProviderChannel): void => {
+               channel.on("session_update", () => {
+                channel._onSessionUpdate({accounts: ["account-1"], chainId: 1337})
+               });
+            }
+        }
+
+        channel.onSessionUpdate = (options: SessioUpdateArguments): void => {
+            expect(options.accounts).not.to.be.undefined;
+            expect(options.accounts).length.to.be.greaterThan(0);
+            expect(options.chainId).to.equal(1337)
+            // expect(2).to.be.equal(4)
+
+        }
+
+        await channel.connect(undefined, obj as IProvider);
+        expect(channel.isConnected).to.be.true;
+        expect(channel.provider).not.to.be.undefined;
+        // (channel.provider as any).dispatch("session_update", {accounts: ["account-1"], chainId: 1337})
+        channel.onSessionUpdate = undefined as any
+
+    })
 
     it("testing rawRequest, getSessionForStorage and  request", async function () {
-        await channel.connect()
+        await channel.connect(undefined)
         expect(channel.isConnected).to.be.true;
         expect(channel.provider).not.to.be.undefined;
 
@@ -137,7 +164,7 @@ describe("HTTPProviderChannel", () => {
 
     it("testing connect", async () => {
 
-        const provider = new BaseProvider<HTTPProviderChannel, MockEthereumChainAdapter>({
+        const provider = new BaseProvider<HTTPProviderChannel>({
             channel: new HTTPProviderChannel({
                 endpoint: url,
                 chainId: 0

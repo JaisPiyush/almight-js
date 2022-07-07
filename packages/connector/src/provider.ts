@@ -1,13 +1,14 @@
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
-import { Address, ConnectorType, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
+import { Address, ConnectorType, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SessioUpdateArguments, SubscriptionCallback } from "./types";
 import { Chains, Chainset, getChainManager, isMobileWebPlatform, isWebPlatform } from "@almight-sdk/utils"
 
 
 export interface IProviderOptions {
     channel: BaseProviderChannel,
-    onConnect?: (options?: any) => void,
-    filter?: ProviderFilter
+    onConnect?: (options: any) => void,
+    filter?: ProviderFilter,
+    onSessionUpdate?: (options: SessioUpdateArguments) => void;
 }
 
 export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A extends IProviderAdapter = IProviderAdapter> implements IProvider<C> {
@@ -29,13 +30,13 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
     channelPing?: (options?: any) => Promise<boolean>;
-    channelOnConnect?: (options?: any) => void;
-    channelbindSessionListener?: () => void;
+    channelOnConnect?: (options: any) => void;
+    channelbindSessionListener?: (channel: BaseProviderChannel) => void;
 
 
     channel: C;
 
-    public onConnectCallback: (options?: any) => void = (opt?: any): void => {};
+    public onConnectCallback: (optionsS: any) => void = (opt?: any): void => {};
 
 
     constructor(options: IProviderOptions) {
@@ -43,6 +44,7 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
         this.onConnectCallback = options.onConnect;
         this.checkChannel()
         this.bindChannelDelegations();
+        this.onSessionUpdate = options.onSessionUpdate;
         if(options.filter !== undefined){
             this.setFilter(options.filter);
         }
@@ -52,6 +54,20 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
     setFilter(filter: ProviderFilter): void {
         this.filter = filter;
         this.enflateFilter()
+    }
+
+    public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
+        this.channel.onSessionUpdate = (options: SessioUpdateArguments): void => {
+            if(options.accounts !== undefined){
+                this.selectedAccount = options.accounts[0];
+                this.accounts = options.accounts;
+
+            }
+            if(options.chainId !== undefined){
+                this.chainId = options.chainId;
+            }
+            fn(options);
+        }
     }
 
     setChannel(channel: C) {

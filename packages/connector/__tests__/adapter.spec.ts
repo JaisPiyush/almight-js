@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { startGanache, closeGanahceServer, Server } from "@almight-sdk/test-utils";
-import { BaseProvider, BrowserProviderChannel, BrowserSessionStruct, ChannelConnectionEstablishmentFailed, ConnectedChainNotAllowedError} from "../src"
+import { BaseProvider, BaseProviderChannel, BrowserProviderChannel, BrowserSessionStruct, ChannelConnectionEstablishmentFailed, ConnectedChainNotAllowedError, SessioUpdateArguments} from "../src"
 import {MockEthereumChainAdapter} from "../src/mocks/adapters";
 import { Chains } from "@almight-sdk/utils";
 
@@ -258,6 +258,30 @@ describe("EthereumChainAdapter", () => {
 
                     }
                 });
+            })
+        });
+
+        describe("onSessionUpdate", () => {
+
+            const channel = new BrowserProviderChannel({path: path, chainId:0})
+            
+            it("onSessionUpdate test", async () => {
+                // const accountIndex = 3;
+                const adapter = new MockEthereumChainAdapter({
+                    provider: new BaseProvider({
+                        channel: channel
+                    }),
+                    onSessionUpdate: (options): void => {
+                        expect(options.accounts).not.to.be.undefined;
+                        expect(options.accounts?.length).to.equal(1)
+                    }
+                })
+                await adapter.connect();
+                expect(adapter.isConnected()).to.be.true;
+                expect(adapter.accounts).length.greaterThan(0);
+                // expect(eventsFunctionMap["session_update"]).not.to.be.undefined;
+                adapter.provider.channel._onSessionUpdate({accounts: [adapter.accounts[1]]})
+
             })
         })
 

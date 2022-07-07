@@ -4,7 +4,7 @@ import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed } from "./exceptions";
 import { IdentityProvider } from "./identity_provider";
 import { BaseProvider, IProviderOptions } from "./provider";
-import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession } from "./types";
+import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession, SessioUpdateArguments } from "./types";
 
 export interface IConnectorOptions<S, C, P, A> {
     onConnect?: (options?: Partial<{ accounts: Address[], chainId: number, data: any }>) => void;
@@ -19,7 +19,8 @@ export interface IConnectorOptions<S, C, P, A> {
         providerArgs?: IProviderOptions,
         channelArgs?: S
     },
-    identityProvidersMap?: Record<string, IdentityProvider>
+    identityProvidersMap?: Record<string, IdentityProvider>,
+    onSessionUpdate?: (options: SessioUpdateArguments) => void;
 }
 
 
@@ -48,7 +49,8 @@ export class Connector<S extends ISession = ISession,
     protected providerClass: Class<P>;
     adapter?: A;
 
-    onConnectCallback: (options?: Partial<{ accounts: Address[], chainId: number, data: any }>) => void
+    onConnectCallback: (options: Partial<{ accounts: Address[], chainId: number, data: any }>) => void;
+    onSessionUpdateCallback: (options: SessioUpdateArguments) => void;
 
     readonly deadCallback = (options?: Partial<{ accounts: Address[], chainId: number, data: any }>): void => { }
 
@@ -140,7 +142,7 @@ export class Connector<S extends ISession = ISession,
 
 
     init(options: IConnectorOptions<S, C, P, A>): void {
-        this.onConnectCallback = options.onConnect ?? this.deadCallback;
+        this.onConnectCallback = options.onConnect;
         this.filter = options.filters;
         if (options.identityProvidersMap !== undefined) {
             for (const [key, value] of Object.entries(options.identityProvidersMap)) {
@@ -161,6 +163,9 @@ export class Connector<S extends ISession = ISession,
         }
         if (options.session !== undefined) {
             this.setupSession(options.session);
+        }
+        if(options.onSessionUpdate !== undefined){
+            this.onSessionUpdateCallback = options.onSessionUpdate
         }
 
     }
@@ -216,6 +221,7 @@ export class Connector<S extends ISession = ISession,
     getIdentityProvider(): IdentityProvider {
         return this.identityProvider;
     }
+    
 
     getAdapterConstructorArguments(): IChainAdapterOptions {
         const provider = this.getProvider()
@@ -225,11 +231,14 @@ export class Connector<S extends ISession = ISession,
         }
         args.provider = provider;
         args.onConnect = this.onConnectCallback;
+        args.onSessionUpdate = this.onSessionUpdateCallback;
         return args
     }
 
     getChainAdapter(): A {
-        if (this.adapter !== undefined) return this.adapter;
+        if (this.adapter !== undefined){
+            return this.adapter;
+        }
         const adapterArgs = this.getAdapterConstructorArguments()
         if (this.adapterClass !== undefined) {
             return new this.adapterClass(adapterArgs)
@@ -308,6 +317,12 @@ export class Connector<S extends ISession = ISession,
 
     setChainAdapter(adapter: A): void {
         this.adapter = adapter;
+        if(this.onConnectCallback !== undefined){
+            this.adapter.onConnectCallback = this.onConnectCallback
+        }
+        if(this.onSessionUpdateCallback !== undefined){
+            this.adapter.onSessionUpdate = this.onSessionUpdateCallback;
+        }
         this.provider = this.adapter.provider;
         this.channel = this.adapter.provider.channel;
     }

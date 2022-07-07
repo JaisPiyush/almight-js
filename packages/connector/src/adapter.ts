@@ -2,7 +2,7 @@
 import { BaseProviderChannel } from "./channel";
 
 import { BaseProvider } from "./provider";
-import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
+import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SessioUpdateArguments, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -23,7 +23,8 @@ import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequest
 
 export interface IChainAdapterOptions {
     provider: BaseProvider,
-    onConnect?: (options?: { accounts?: Address[], chainId?: number, data?: any }) => void
+    onConnect?: (options: { accounts?: Address[], chainId?: number, data?: any }) => void,
+    onSessionUpdate?: (options: SessioUpdateArguments) => void;
 }
 export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
     P extends BaseProvider<C> = BaseProvider<C>>
@@ -31,7 +32,7 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
 
     provider: P;
     bridge: any;
-    onConnectCallback?: (options?: { accounts?: Address[], chainId?: number, data?: any }) => void;
+    onConnectCallback?: (options: { accounts?: Address[], chainId?: number, data?: any }) => void;
 
     public get accounts(): Address[] { return this.provider.accounts }
     public get chainId(): number { return this.provider.chainId }
@@ -42,12 +43,18 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
     constructor(options: IChainAdapterOptions) {
         this.setProvider(options.provider as P)
         this.onConnectCallback = options.onConnect;
+        this.onSessionUpdate = options.onSessionUpdate;
         this.provider.onConnectCallback = (options?: any): void => {
             this.onConnect(options);
             if (this.onConnectCallback !== undefined) {
                 this.onConnectCallback(options)
             }
         }
+    }
+
+    public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
+
+        this.provider.onSessionUpdate = fn
     }
 
 
@@ -58,6 +65,7 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
     public setProvider(provider: P): void {
         this.provider = provider;
         this.provider.adapter = this;
+        
     }
 
     public setBridge(bridge: any): void {

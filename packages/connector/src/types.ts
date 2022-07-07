@@ -80,7 +80,7 @@ export interface ProviderChannelInterface {
     checkSession(obj?: IProvider): Promise<[boolean, any | null]>;
     checkEnvironment(): Promise<boolean>;
     connect(options?: any, obj?: IProvider): Promise<void>;
-    onSessionUpdate(options?: SessioUpdateArguments): void;
+    _onSessionUpdate(options?: SessioUpdateArguments): void;
     bindSessionListener(obj?: IProvider): void;
     defaultbindSessionListener(): void;
     checkConnection(obj?: IProvider, raiseError?: boolean): Promise<boolean>;
@@ -158,8 +158,8 @@ export interface IProvider<C = ProviderChannelInterface> {
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
     channelPing?: (options?: any) => Promise<boolean>;
-    channelOnConnect?: (options?: any) => void;
-    channelbindSessionListener?: () => void;
+    channelOnConnect?: (options: any) => void;
+    channelbindSessionListener?: (channel: ProviderChannelInterface) => void;
     on(event: string, callback: SubscriptionCallback): void;
     isDeepLinkPlantable(): boolean;
     getDeepLinkUri(): string;

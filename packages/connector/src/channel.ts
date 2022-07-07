@@ -45,6 +45,12 @@ export class BaseProviderChannel<S extends ISession = ISession> implements Provi
     public get provider(): any { return this._provider }
     public get accounts(): Address[] { return this._accounts }
 
+    protected onSessionUpdateCallback?: (options: SessioUpdateArguments) => void;
+
+    public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
+        this.onSessionUpdateCallback = fn;
+    }
+
 
     public setProvider(provider: BasicExternalProvider | WalletConnect): void {
         this._provider = provider;
@@ -249,13 +255,15 @@ export class BaseProviderChannel<S extends ISession = ISession> implements Provi
         if (method !== undefined) return method(options, this)
     }
 
-    onSessionUpdate(options?: SessioUpdateArguments): void {
-
+    _onSessionUpdate(options: SessioUpdateArguments): void {
+        if(this.onSessionUpdateCallback !== undefined){
+            this.onSessionUpdateCallback(options)
+        }
     }
 
     bindSessionListener(obj?: IProvider): void {
         const method = this.getBehaviourMethod("channelbindSessionListener", obj);
-        if (method !== undefined) return method();
+        if (method !== undefined) return method(this);
         this.defaultbindSessionListener();
     }
     defaultbindSessionListener(): void {
@@ -331,15 +339,15 @@ export class BrowserProviderChannel extends BaseProviderChannel<BrowserSessionSt
 
 
     defaultbindSessionListener(): void {
-        if (this.provider === undefined) return;
-        this.on("accountsChanged", (accounts: any) => {
-            this.onSessionUpdate({
-                accounts: accounts as Address[]
-            });
-        })
-        this.on("chainChanged", (chainId) => {
-            this.onSessionUpdate({ chainId })
-        })
+        // if (this.provider === undefined) return;
+        // this.on("accountsChanged", (accounts: any) => {
+        //     this._onSessionUpdate({
+        //         accounts: accounts as Address[]
+        //     });
+        // })
+        // this.on("chainChanged", (chainId) => {
+        //     this._onSessionUpdate({ chainId })
+        // })
     }
 
 
@@ -526,7 +534,7 @@ export class WalletConnectChannel extends BaseProviderChannel<WalletConnectSessi
             }
             const { accounts, chainId } = this._params;
             this._session = this._provider.session;
-            this.onSessionUpdate({ accounts, chainId });
+            this._onSessionUpdate({ accounts, chainId });
         })
     }
 
