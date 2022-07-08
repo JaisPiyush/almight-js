@@ -1,4 +1,4 @@
-import { Connector, ISession, IdentityProvider, ConnectorType, CurrentSessionStruct, ConnectionFilter, BaseChainAdapter } from "@almight-sdk/connector";
+import { Connector, ISession, IdentityProvider, ConnectorType, CurrentSessionStruct, ConnectionFilter, BaseChainAdapter, SessionDetailedData, IChainAdapterOptions } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
 import { BaseStorageInterface, Class, getMetaDataSet, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
@@ -18,7 +18,8 @@ export interface AuthenticationAppConstructorOptions {
     baseAuthenticaionURL?: string;
     identityProviders: Array<IdentityProvider>;
     filters?: ConnectionFilter;
-    channelArgs?: ChannelConfigurations
+    channelArgs?: ChannelConfigurations;
+    adapters?: Class<BaseChainAdapter, IChainAdapterOptions>[]
 }
 
 export class AuthenticationApp implements IAuthenticationApp {
@@ -31,6 +32,7 @@ export class AuthenticationApp implements IAuthenticationApp {
     baseAuthenticationURL: string = "http://localhost:3080";
     identityProvidersMap: Record<string, IdentityProvider> = {};
     identityProviders: IdentityProvider[] = [];
+    adapterClassMap: Record<string, Class<BaseChainAdapter, IChainAdapterOptions>> = {}
 
     configs?: AuthenticationFrameConfiguration;
     readonly userKeyName = "almight_user";
@@ -52,6 +54,9 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
         this.setupAuthenticationFrameConfigurations(options)
         this.setupIdentityProviders(options.identityProviders);
+        if(options.adapters !== undefined){
+            this.setupAdapterClassMap(options.adapters)
+        }
         this.initLoadings().then()
 
     }
@@ -68,6 +73,12 @@ export class AuthenticationApp implements IAuthenticationApp {
         if (frame !== undefined) {
             this.frame = frame;
             this.frame.app = this;
+        }
+    }
+
+    setupAdapterClassMap(adapterClasses: Class<BaseChainAdapter>[]):void {
+        for (const adapterClass of adapterClasses){
+            this.adapterClassMap[(adapterClass as any).adapterIdentifier] = adapterClass;
         }
     }
 
@@ -106,6 +117,10 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.identityProviders = idps;
         for (const idp of idps) {
             this.identityProvidersMap[idp.identifier] = idp;
+            const adapterClass = idp.getAdapterClass() as Class<BaseChainAdapter>
+            if(adapterClass !== undefined){
+                this.setupAdapterClassMap([adapterClass])
+            }
         }
     }
 
@@ -239,7 +254,7 @@ export class AuthenticationApp implements IAuthenticationApp {
             [AllowedQueryParams.Provider]: provider,
 
         }
-        if(frame instanceof Web3NativeAuthenticationFrame){
+        if (frame instanceof Web3NativeAuthenticationFrame) {
             data["identityProviders"] = this.identityProviders;
             data["adapterClass"] = adapterClass;
         }
@@ -260,6 +275,16 @@ export class AuthenticationApp implements IAuthenticationApp {
         await this.setupConnector();
     }
 
+    async updateSessionOnServer(data: CurrentSessionStruct, token?: string): Promise<void> {
+        const res = await authAxiosInstance.put(`/idps?uid=${data.uid}&provider=${data.provider}`, {
+            "sessions": {
+                [data.connector_type]: data.session
+            }
+        }, {
+            headers: this.getAuthenticationHeaders(await this.getToken(token))
+        });
+    }
+
     async updateCurrentSession(data: CurrentSessionStruct, token?: string): Promise<UserData> {
         const res = await authAxiosInstance.post<{ data: UserData }>("/me", { "current_session": data }, {
             headers: this.getAuthenticationHeaders(await this.getToken(token))
@@ -270,21 +295,32 @@ export class AuthenticationApp implements IAuthenticationApp {
         return res.data.data;
     }
 
+    async logout(token?: string): Promise<void> {
+        const res = await projectAxiosInstance.post("/logout", {}, {
+            headers: this.getAuthenticationHeaders(await this.getToken(token))
+        })
+        await this.cleanUserData();
+    }
+
+    async cleanUserData(): Promise<void> {
+        await this.storage.clear()
+    }
+
 
     getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): { icon: string, name: string } | undefined {
-        const META_DATA_SET = getMetaDataSet();
-        const data = META_DATA_SET[provider];
-        if (data === undefined) return undefined;
-        let icon = data.icon;
-        if (connectorType !== undefined) {
-            switch (connectorType) {
-                case ConnectorType.WalletConnector:
-                    icon = META_DATA_SET["walletconnect"].icon;
-                    break;
-            }
+        const idp = this.getIdentityProvider(provider);
+        if (idp === undefined) return undefined;
+        return {
+            icon: idp.metaData.icon as string,
+            name: idp.identityProviderName,
+
         }
-        return { icon: icon, name: data.name };
     }
+
+
+    // async isCurrentSession(cSession: CurrentSessionStruct): boolean {
+    //     // TODO: neet to implement this
+    // }
 
 
     getCurrentSessionStructsFromIdp(idp: ServerSentIdentityProvider): CurrentSessionStruct[] {
@@ -295,7 +331,7 @@ export class AuthenticationApp implements IAuthenticationApp {
                     uid: idp.uid,
                     provider: idp.provider,
                     connector_type: connectorType as ConnectorType,
-                    session: session as ISession
+                    session: session as SessionDetailedData<ISession>
 
                 };
                 cSessions.push(cSess);
@@ -319,25 +355,42 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
 
-
-    async setupConnector(connector?: Connector): Promise<void> {
+    async setupConnector(connector?: Connector, throw_no_conn: boolean = true): Promise<void> {
         if (connector === undefined) {
-            const currentSession = await this.getCurrentSession();
-            if (currentSession === null) throw new Error("No connection history available, try to reconnect")
+            const currentSession = (await this.getCurrentSession()) ?? undefined;
+            if (currentSession === null) {
+                if (throw_no_conn) throw new Error("No connection history available, try to reconnect")
+                return;
+            }
             const idp = this.getIdentityProvider(currentSession.provider);
+            if (idp.webVersion === WebVersion.Centralized) return;
             connector = new Connector({
                 session: currentSession,
                 identityProvider: idp
             });
         }
         this.connector = connector;
+        this.connector.adapterClassesMap = this.adapterClassMap;
+        const cSession = await this.getCurrentSession()
+        if (cSession !== undefined) {
+            this.connector.setupSession(cSession)
+        }
+
     }
 
 
 
-    async getCurrentSession<S = ISession>(): Promise<CurrentSessionStruct<S>> {
-        return await this.storage.getItem<CurrentSessionStruct<S>>(this.currentSessionName);
+
+
+
+    async getCurrentSession<S extends ISession = ISession>(): Promise<CurrentSessionStruct<S>> {
+        if (this.connector === undefined || this.connector.session === undefined) {
+            return await this.storage.getItem<CurrentSessionStruct<S>>(this.currentSessionName);
+        }
+        return this.connector.getFormatedCurrentSession() as CurrentSessionStruct<S>;
     }
+
+
 
 
 
