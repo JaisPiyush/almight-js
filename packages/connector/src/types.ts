@@ -38,6 +38,15 @@ export interface HTTPSessionStruct extends ISession {
     endpoint: string;
 }
 
+export interface SessionDetailedData<S = ISession> {
+    data: S;
+    meta?: {
+        adapter_indentifier?: string;
+        provider?: string;
+        last_interaction?: number;
+    }
+}
+
 /**
  * Session structure formats used to save and load sessions
  * SDK is based on injection based browser provider and walletconnect provider
@@ -54,7 +63,7 @@ export interface CurrentSessionStruct <S = ISession> {
     uid: string;
     provider: string;
     connector_type: ConnectorType;
-    session: S;
+    session: SessionDetailedData<S>;
 }
 
 export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
@@ -224,7 +233,7 @@ export interface IConnectorConnectArguments {
 
 export interface IConnector<S = ISession> {
     currentSession?: CurrentSessionStruct<S>;
-    session?: S;
+    session?: SessionDetailedData<S>;
     filter?: ConnectionFilter;
     identityProvidersMap: Record<string, IdentityProviderInterface>;
     adapter?: IProviderAdapter;
@@ -232,9 +241,9 @@ export interface IConnector<S = ISession> {
 
     isConnected(): boolean;
     hasSession(): boolean;
-    setSession(session: S): void;
+    setSession(session: SessionDetailedData<S>): void;
     setCurrentSession(cSession: CurrentSessionStruct<S>): void;
-    getFormatedSession(): S;
+    getFormatedSession(): SessionDetailedData<S>;
     getFormatedCurrentSession(): CurrentSessionStruct<S>;
     getIdentityProvider(): IdentityProviderInterface;
     getChainAdapter(): IProviderAdapter;

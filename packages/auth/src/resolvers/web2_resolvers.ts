@@ -87,7 +87,7 @@ export class Web2IdentityResolver extends IdentityResolver {
             [AllowedQueryParams.Code]: await this.delegate.storage.getItem<string>(AllowedQueryParams.Code),
             [AllowedQueryParams.Provider]: provider,
             sessions: {
-                [ConnectorType.OAuth]: {"provider": provider}
+                [ConnectorType.OAuth]: {"data": {"provider": provider}}
             } 
 
         }

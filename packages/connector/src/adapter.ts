@@ -32,10 +32,16 @@ export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChanne
 
     provider: P;
     bridge: any;
+    public static adapterIdentifier: string = this.name.replace(" ", "__").toLowerCase();
     onConnectCallback?: (options: { accounts?: Address[], chainId?: number, data?: any }) => void;
 
     public get accounts(): Address[] { return this.provider.accounts }
     public get chainId(): number { return this.provider.chainId }
+    public get adapterIdentifier(): string {
+        let iden = (this.constructor as any).adapterIdentifier;
+        if(iden === null) return this.constructor.name.replace(" ", "__").toLowerCase();
+        return iden;
+    }
 
     public set accounts(_accnts: Address[]) { this.provider.accounts = _accnts }
     public set chainId(cid: number) { this.provider.chainId = cid }

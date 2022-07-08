@@ -1,5 +1,5 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
-import { IConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct, ConnectionFilter } from "@almight-sdk/connector";
+import { IConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct, ConnectionFilter, SessionDetailedData } from "@almight-sdk/connector";
 import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
@@ -123,6 +123,8 @@ export interface UserData <S = ISession>{
 
 
 
+
+
 export type ChannelConfigurations = Partial<Record<ConnectorType, Record<string, any>>>;
 export interface AuthenticationFrameConfiguration {
     filters?: ConnectionFilter,
@@ -146,8 +148,11 @@ export interface IAuthenticationApp {
     getUserData(token: string): Promise<UserData>;
     startAuthentication(provider: Providers): Promise<void>;
     getToken(): Promise<string>;
+    logout(): Promise<void>;
 
-    getCurrentSession<S = ISession>(): Promise<CurrentSessionStruct<S>>;
+    getCurrentSession<S extends ISession = ISession>(): Promise<CurrentSessionStruct<S>>;
+    
+    
     setCurrentSession<S=ISession>(data: CurrentSessionStruct<S>): Promise<void>;
 
     getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): {icon: string, name: string} | undefined;
@@ -193,7 +198,7 @@ export interface IdentityResolverInterface {
 }
 
 
-export type SendableSession = ISession | {[AllowedQueryParams.Provider]: Providers}
+export type SendableSession = SessionDetailedData<ISession> | {data: {[AllowedQueryParams.Provider]: Providers}}
 export interface UserRegistrationArgument{
     [AllowedQueryParams.Provider]: string;
     sessions: Partial<Record<ConnectorType, SendableSession>>;

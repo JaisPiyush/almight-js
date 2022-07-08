@@ -4,16 +4,17 @@ import { BaseProviderChannel } from "./channel";
 import { AdapterIsNotDefined, ConnectionEstablishmentFailed } from "./exceptions";
 import { IdentityProvider } from "./identity_provider";
 import { BaseProvider, IProviderOptions } from "./provider";
-import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession, SessioUpdateArguments } from "./types";
+import { Address, ConnectionFilter, ConnectorType, CurrentSessionStruct, IConnector, ISession, SessionDetailedData, SessioUpdateArguments } from "./types";
 
 export interface IConnectorOptions<S, C, P, A> {
     onConnect?: (options?: Partial<{ accounts: Address[], chainId: number, data: any }>) => void;
-    session?: CurrentSessionStruct<S> | S;
+    session?: CurrentSessionStruct<S> | SessionDetailedData<S>;
     filters?: ConnectionFilter;
     channel?: Class<C> | C;
     provider?: Class<P> | P;
     identityProvider?: IdentityProvider | string | Providers,
     adapter?: Class<A> | A;
+    adapters?: Class<A>[],
     args?: {
         adapterArgs?: IChainAdapterOptions,
         providerArgs?: IProviderOptions,
@@ -35,11 +36,12 @@ export class Connector<S extends ISession = ISession,
 
     filter?: ConnectionFilter;
     identityProvidersMap: Record<string, IdentityProvider> = {};
+    adapterClassesMap: Record<string, Class<BaseChainAdapter, IChainAdapterOptions>> = {}
     readonly options: IConnectorOptions<S, C, P, A>;
 
 
     currentSession?: CurrentSessionStruct<S>;
-    session?: S;
+    session?: SessionDetailedData<S>;
     protected channelClass?: Class<C>;
     protected channel?: C;
     protected provider?: P;
@@ -70,9 +72,20 @@ export class Connector<S extends ISession = ISession,
         return this.adapter.provider.selectedAccount;
     }
 
-    public set selectedAccount(account: Address){
+    public set selectedAccount(account: Address) {
         this.checkAdapterDefined();
         this.adapter.provider.setSelectedAccount(account);
+    }
+
+    public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
+        this.onSessionUpdateCallback = (opt: SessioUpdateArguments) => {
+            if (opt.accounts !== undefined || opt.chainId !== undefined) {
+                this.setupSession(this.getFormatedCurrentSession());
+            }
+            if (fn !== undefined) {
+                fn(opt)
+            }
+        }
     }
 
     constructor(options: IConnectorOptions<S, C, P, A>) {
@@ -88,14 +101,14 @@ export class Connector<S extends ISession = ISession,
         return (arg.prototype === undefined) && arg instanceof cls;
     }
 
-    setupSession(session: CurrentSessionStruct<S> | S): void {
+    setupSession(session: CurrentSessionStruct<S> | SessionDetailedData<S>): void {
         if ((session as CurrentSessionStruct<S>).uid !== undefined) {
             this.currentSession = session as CurrentSessionStruct<S>;
             this.session = (session as CurrentSessionStruct<S>).session;
             this.providerIdentifier = this.currentSession.provider;
             this.identityProvider = this.identityProvidersMap[this.providerIdentifier]
         } else {
-            this.session = session as S;
+            this.session = session as SessionDetailedData<S>;
         }
     }
 
@@ -118,11 +131,18 @@ export class Connector<S extends ISession = ISession,
         }
     }
 
+    setupAdapterClassMap(adapterClasses: Class<BaseChainAdapter, IChainAdapterOptions>[]): void {
+        for (const adapterClass of adapterClasses) {
+            this.adapterClassesMap[(adapterClass as any).adapterIdentifier] = adapterClass;
+        }
+    }
+
 
     setupIdentityProvider(idp: IdentityProvider | string | Providers): void {
         if (idp instanceof IdentityProvider) {
             this.identityProvider = idp;
             this.providerIdentifier = idp.identifier as string;
+
         } else if (this.identityProvidersMap[idp as string] !== undefined) {
             this.identityProvider = this.identityProvidersMap[idp as string];
             this.providerIdentifier = this.identityProvider.identifier as string;
@@ -164,8 +184,8 @@ export class Connector<S extends ISession = ISession,
         if (options.session !== undefined) {
             this.setupSession(options.session);
         }
-        if(options.onSessionUpdate !== undefined){
-            this.onSessionUpdateCallback = options.onSessionUpdate
+        if (options.onSessionUpdate !== undefined) {
+            this.onSessionUpdate = options.onSessionUpdate;
         }
 
     }
@@ -187,19 +207,27 @@ export class Connector<S extends ISession = ISession,
     hasSession(): boolean {
         return this.session !== undefined;
     }
-    setSession(session: S): void {
+    setSession(session: SessionDetailedData<S>): void {
         this.session = session;
     }
     setCurrentSession(cSession: CurrentSessionStruct<S>): void {
         this.setupSession(cSession);
     }
 
-    getFormatedSession(): S {
+    getFormatedSession(): SessionDetailedData<S> {
         this.checkAdapterDefined();
         if (!this.isConnected()) {
             throw new ConnectionEstablishmentFailed("No connection is able to establish, cannot produce session")
         }
-        return this.adapter.getSession() as S;
+        const session = this.adapter.getSession() as S;
+        return {
+            data: session,
+            meta: {
+                adapter_indentifier: this.adapter.adapterIdentifier,
+                provider: this.providerIdentifier,
+                last_interaction: (new Date()).getTime()
+            }
+        }
     }
 
     getFormatedCurrentSession(): CurrentSessionStruct<S> {
@@ -221,7 +249,7 @@ export class Connector<S extends ISession = ISession,
     getIdentityProvider(): IdentityProvider {
         return this.identityProvider;
     }
-    
+
 
     getAdapterConstructorArguments(): IChainAdapterOptions {
         const provider = this.getProvider()
@@ -236,12 +264,17 @@ export class Connector<S extends ISession = ISession,
     }
 
     getChainAdapter(): A {
-        if (this.adapter !== undefined){
+        if (this.adapter !== undefined) {
             return this.adapter;
         }
         const adapterArgs = this.getAdapterConstructorArguments()
         if (this.adapterClass !== undefined) {
             return new this.adapterClass(adapterArgs)
+        }
+        if(this.session !== undefined && this.session.meta !== undefined && this.session.meta.adapter_indentifier !== undefined &&
+             this.adapterClassesMap[this.session.meta.adapter_indentifier] !== undefined){
+                const cls = this.adapterClassesMap[this.session.meta.adapter_indentifier] as Class<A, IChainAdapterOptions>;
+                return new cls(adapterArgs);
         }
         if (this.identityProvider !== undefined) {
             const cls: Class<A> = this.identityProvider.getAdapterClass() as Class<A>;
@@ -283,7 +316,7 @@ export class Connector<S extends ISession = ISession,
     }
 
     getChannelConstructorArguments(): S | undefined {
-        if (this.session !== undefined) return this.session;
+        if (this.session !== undefined) return this.session.data;
         if (this.options.args !== undefined && this.options.args.channelArgs !== undefined) {
             return this.options.args.channelArgs;
         }
@@ -306,7 +339,7 @@ export class Connector<S extends ISession = ISession,
                 if (this.filter !== undefined && this.filter.allowedConnectorTypes !== undefined && !this.filter.allowedConnectorTypes.includes(connectorType)) {
                     continue;
                 }
-                if (this.session !== undefined && (cls as any).validateSessionWithoutError(this.session)) {
+                if (this.session !== undefined && (cls as any).validateSessionWithoutError(this.session.data)) {
                     const channel = new cls(channelArgs);
                     return channel;
                 }
@@ -317,10 +350,10 @@ export class Connector<S extends ISession = ISession,
 
     setChainAdapter(adapter: A): void {
         this.adapter = adapter;
-        if(this.onConnectCallback !== undefined){
+        if (this.onConnectCallback !== undefined) {
             this.adapter.onConnectCallback = this.onConnectCallback
         }
-        if(this.onSessionUpdateCallback !== undefined){
+        if (this.onSessionUpdateCallback !== undefined) {
             this.adapter.onSessionUpdate = this.onSessionUpdateCallback;
         }
         this.provider = this.adapter.provider;
@@ -361,6 +394,6 @@ export class Connector<S extends ISession = ISession,
             const options = opts !== undefined ? opts.options : undefined;
             await this.adapter.connect(options);
         }
-        
+
     }
 }

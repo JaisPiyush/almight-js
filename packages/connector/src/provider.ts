@@ -1,6 +1,6 @@
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
 import { ChannelIsNotDefined, ConnectedChainNotAllowedError } from "./exceptions";
-import { Address, ConnectorType, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SessioUpdateArguments, SubscriptionCallback } from "./types";
+import { Address, ConnectorType, CurrentSessionStruct, IProvider, IProviderAdapter, ISession, ProviderChannelInterface, ProviderFilter, ProviderRequestMethodArguments, SessioUpdateArguments, SubscriptionCallback } from "./types";
 import { Chains, Chainset, getChainManager, isMobileWebPlatform, isWebPlatform } from "@almight-sdk/utils"
 
 
@@ -59,8 +59,8 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
     public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
         this.channel.onSessionUpdate = (options: SessioUpdateArguments): void => {
             if(options.accounts !== undefined){
-                this.selectedAccount = options.accounts[0];
                 this.accounts = options.accounts;
+                this.setSelectedAccount(this.accounts[0])
 
             }
             if(options.chainId !== undefined){
@@ -201,13 +201,14 @@ export class BaseProvider<C extends BaseProviderChannel = BaseProviderChannel, A
         return this.channel.provider as T;
     }
 
-    getSession(): ISession {
+    getSession<S extends ISession = ISession>(): S {
         let sesion = this.channel.getCompleteSessionForStorage();
         if (this.chainId !== undefined) {
             sesion["chainId"] = this.chainId
         }
-        return sesion;
+        return sesion as S;
     }
+
 
 
 

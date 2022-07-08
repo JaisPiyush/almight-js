@@ -87,7 +87,9 @@ describe("Connector", () => {
             });
             it("must return true", () => {
                 const connector = new Connector({
-                    session: { path: Providers.Google, chainId: 0 }
+                    session: {
+                        data: { path: Providers.Google, chainId: 0 }
+                    }
                 });
 
                 assert(connector.hasSession());
@@ -101,7 +103,9 @@ describe("Connector", () => {
                     uid: "random-uid",
                     provider: Providers.MetaMask,
                     connector_type: ConnectorType.BrowserExtension,
-                    session: { path: "eth", chainId: 0 }
+                    session: {
+                        data: { path: "eth", chainId: 0 }
+                    }
                 }
 
                 connector.setupSession(cSession);
@@ -114,9 +118,9 @@ describe("Connector", () => {
             it("sending sessions", () => {
                 assert(!connector.hasSession());
                 const session: BrowserSessionStruct = { path: "eth", chainId: 0 };
-                connector.setSession(session);
+                connector.setSession({data: session});
                 assert(connector.hasSession());
-                expect(connector.session).to.deep.eq(session);
+                expect(connector.session?.data).to.deep.eq(session);
                 expect(connector.currentSession).to.be.undefined
             })
         })
@@ -174,7 +178,7 @@ describe("Connector", () => {
             const session: BrowserSessionStruct = { path: "ethereum", chainId: 0 };
             it("session is provided", () => {
                 const connector = new Connector<BrowserSessionStruct>({
-                    session: session
+                    session: {data: session}
                 });
                 expect(connector.session).not.to.be.undefined;
                 expect(connector.getChannelConstructorArguments()).to.deep.eq(session)
@@ -213,7 +217,7 @@ describe("Connector", () => {
 
                     const connector = new Connector<BrowserSessionStruct>({
                         identityProvider: idp,
-                        session: session
+                        session: {data: session}
                     });
                     expect((connector as any).identityProvider).to.equal(idp);
                     expect((connector as any).providerIdentifier).to.eq(Providers.MetaMask);
@@ -228,7 +232,7 @@ describe("Connector", () => {
 
                     const connector = new Connector<BrowserSessionStruct>({
                         identityProvider: idp,
-                        session: session,
+                        session: {data: session},
                         filters: {
                             allowedConnectorTypes: [ConnectorType.WalletConnector]
                         }
@@ -261,10 +265,10 @@ describe("Connector", () => {
                     const session: BrowserSessionStruct = { path: "ethereuem", chainId: 0 }
                     const connector = new Connector({
                         channel: WalletConnectChannel,
-                        session: session as ISession
+                        session: {data: session as ISession}
                     });
                     expect((<any>connector).channelClass).not.to.be.undefined;
-                    expect(connector.session).to.deep.eq(session);
+                    expect(connector.session?.data).to.deep.eq(session);
                     try {
                         connector.getChannel();
                     } catch (e) {
@@ -275,10 +279,10 @@ describe("Connector", () => {
                     const session: BrowserSessionStruct = { path: "ethereuem", chainId: 0 }
                     const connector = new Connector<BrowserSessionStruct, BrowserProviderChannel>({
                         channel: BrowserProviderChannel,
-                        session: session
+                        session: {data: session}
                     });
                     expect((<any>connector).channelClass).not.to.be.undefined;
-                    expect(connector.session).to.deep.eq(session);
+                    expect(connector.session?.data).to.deep.eq(session);
 
                     const channel = connector.getChannel();
                     expect(channel).to.be.instanceOf(BrowserProviderChannel);
@@ -328,7 +332,7 @@ describe("Connector", () => {
             it("identityProvider instance in the constructor", async () => {
                 const connector = new Connector({
                     identityProvider: idp,
-                    session: session,
+                    session: {data: session},
                     onConnect:(options):void => {
                         expect(options).not.to.be.undefined;
                         expect(options?.accounts).length.to.be.greaterThan(0);
@@ -343,7 +347,7 @@ describe("Connector", () => {
 
             it("identityProvider instance in connect", async () => {
                 const connector = new Connector({
-                    session: session
+                    session: {data: session}
                 });
 
                 await connector.connect({ provider: idp });
@@ -353,7 +357,7 @@ describe("Connector", () => {
 
             it("using identityProviderMap and correct provider will succeed", async () => {
                 const connector = new Connector({
-                    session: session,
+                    session: {data: session},
                     identityProvidersMap: {
                         [Providers.MetaMask]: idp
                     }
@@ -366,7 +370,7 @@ describe("Connector", () => {
 
             it("using identityProviderMap and wrong provider will fail", async () => {
                 const connector = new Connector({
-                    session: session,
+                    session: {data: session},
                     identityProvidersMap: {
                         [Providers.MetaMask]: idp
                     }
@@ -429,9 +433,9 @@ describe("Connector", () => {
                 await connector.connect({provider: Providers.MetaMask});
                 const session = connector.getFormatedSession();
                 expect(session).not.to.be.undefined;
-                expect(session.path).to.equal(path);
-                expect(session.chainId).to.equal(connector.chainId)
-                expect(session.chainId).not.to.eq(0)
+                expect(session.data.path).to.equal(path);
+                expect(session.data.chainId).to.equal(connector.chainId)
+                expect(session.data.chainId).not.to.eq(0)
             });
 
             it("will produce current session", async() => {
