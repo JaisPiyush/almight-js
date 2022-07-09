@@ -1,6 +1,6 @@
 import { Connector, ISession, IdentityProvider, ConnectorType, CurrentSessionStruct, ConnectionFilter, BaseChainAdapter, SessionDetailedData, IChainAdapterOptions } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, compareTwoRecords, getMetaDataSet, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, compareTwoRecords, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
 import {
     IAuthenticationApp, UserData, ErrorResponseMessageCallbackArgument, AllowedQueryParams,
