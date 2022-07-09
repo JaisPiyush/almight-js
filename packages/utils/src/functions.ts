@@ -83,3 +83,22 @@ export function getChainManager(): ChainsManager {
     if(globalThis.chainManager !== undefined) return globalThis.chainManager;
     return DefaultChainManager;
 }
+
+
+export function sortRecord<T = Record<string, any>>(s: T): T {
+    const newS = {} as T;
+    const keys = Object.keys(s).sort();
+    for(const key of keys){
+        if(s[key] !== undefined && typeof s[key] === "object"){
+            newS[key] = sortRecord(s[key])
+        }else{
+            newS[key] = s[key]
+        }
+    }
+    return newS;
+}
+
+
+export function compareTwoRecords(r1: Record<string, any>, r2: Record<string, any>): boolean{
+    return JSON.stringify(sortRecord<Record<string,any>>(r1)) === JSON.stringify(sortRecord<Record<string,any>>(r2));
+}

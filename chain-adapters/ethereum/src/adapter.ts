@@ -6,7 +6,7 @@ export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderCh
     P extends BaseProvider<C> = BaseProvider<C>>
     extends BaseChainAdapter<C, P>{
 
-
+    public static adapterIdentifier: string = "ethereum_chain_adapter"
     public bridge: ethers.providers.Web3Provider;
     public provider: P;
 

@@ -1,6 +1,6 @@
 import { Connector, ISession, IdentityProvider, ConnectorType, CurrentSessionStruct, ConnectionFilter, BaseChainAdapter, SessionDetailedData, IChainAdapterOptions } from "@almight-sdk/connector";
 import { AlmightClient, authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, Class, getMetaDataSet, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, compareTwoRecords, getMetaDataSet, isWebPlatform, Providers, WebVersion } from "@almight-sdk/utils";
 import { AuthenticationFrame, Web2NativePopupAuthenticationFrame, Web3NativeAuthenticationFrame } from "./frames";
 import {
     IAuthenticationApp, UserData, ErrorResponseMessageCallbackArgument, AllowedQueryParams,
@@ -320,9 +320,15 @@ export class AuthenticationApp implements IAuthenticationApp {
     }
 
 
-    // async isCurrentSession(cSession: CurrentSessionStruct): boolean {
-    //     // TODO: neet to implement this
-    // }
+    areCurrentSessionsEqual(s1: CurrentSessionStruct<ISession>, s2: CurrentSessionStruct<ISession>): boolean {
+        return compareTwoRecords(s1, s2);
+    }
+
+
+    async isCurrentSessionBeingUsed(cSession: CurrentSessionStruct): Promise<boolean> {
+        const _cSession = await this.getCurrentSession();
+        return this.areCurrentSessionsEqual(cSession, _cSession);
+    }
 
 
     getCurrentSessionStructsFromIdp(idp: ServerSentIdentityProvider): CurrentSessionStruct[] {

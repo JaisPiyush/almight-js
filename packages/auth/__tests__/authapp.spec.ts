@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { AuthenticationApp } from "../src"
 import { EthereumChainAdapter, MetamaskIdentityProvider, MetamaskProvider } from "@almight-sdk/ethereum-chain-adapter"
 import { closeGanahceServer, LocalStorageMock, Server, startGanache } from "@almight-sdk/test-utils"
-import { BrowserProviderChannel, BrowserSessionStruct, Connector, ConnectorType, CurrentSessionStruct } from "@almight-sdk/connector";
+import { BrowserProviderChannel, BrowserSessionStruct, ConnectorType, CurrentSessionStruct } from "@almight-sdk/connector";
 
 
 describe("AuthenticationApp", () => {

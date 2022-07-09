@@ -152,7 +152,7 @@ export interface IAuthenticationApp {
 
     getCurrentSession<S extends ISession = ISession>(): Promise<CurrentSessionStruct<S>>;
     
-    
+    isCurrentSessionBeingUsed(cSession: CurrentSessionStruct): Promise<boolean>
     setCurrentSession<S=ISession>(data: CurrentSessionStruct<S>): Promise<void>;
 
     getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): {icon: string, name: string} | undefined;
