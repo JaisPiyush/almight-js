@@ -54,7 +54,7 @@ export class AuthenticationApp implements IAuthenticationApp {
         this.baseAuthenticationURL = options.baseAuthenticaionURL ?? this.baseAuthenticationURL;
         this.setupAuthenticationFrameConfigurations(options)
         this.setupIdentityProviders(options.identityProviders);
-        if(options.adapters !== undefined){
+        if (options.adapters !== undefined) {
             this.setupAdapterClassMap(options.adapters)
         }
         this.initLoadings().then()
@@ -76,8 +76,8 @@ export class AuthenticationApp implements IAuthenticationApp {
         }
     }
 
-    setupAdapterClassMap(adapterClasses: Class<BaseChainAdapter>[]):void {
-        for (const adapterClass of adapterClasses){
+    setupAdapterClassMap(adapterClasses: Class<BaseChainAdapter>[]): void {
+        for (const adapterClass of adapterClasses) {
             this.adapterClassMap[(adapterClass as any).adapterIdentifier] = adapterClass;
         }
     }
@@ -118,7 +118,7 @@ export class AuthenticationApp implements IAuthenticationApp {
         for (const idp of idps) {
             this.identityProvidersMap[idp.identifier] = idp;
             const adapterClass = idp.getAdapterClass() as Class<BaseChainAdapter>
-            if(adapterClass !== undefined){
+            if (adapterClass !== undefined) {
                 this.setupAdapterClassMap([adapterClass])
             }
         }
@@ -155,8 +155,10 @@ export class AuthenticationApp implements IAuthenticationApp {
             const user = await this.getUserData();
             if (user.user !== undefined && user.user.user_id !== undefined) {
                 await this.saveUserData(user);
+                //TODO: Add function in backend to verify whether any idp with given session exists or not
+                // And then an OAuth Connector will be created for covering such the process
                 await this.setupConnector();
-                return true
+                return await this.checkConnection();
             }
 
         } catch (e) {
@@ -355,27 +357,42 @@ export class AuthenticationApp implements IAuthenticationApp {
 
 
 
+    protected _constructConnectorFromCurrentSession(currentSession: CurrentSessionStruct<ISession>): Connector {
+        const idp = this.getIdentityProvider(currentSession.provider);
+        if (idp === undefined) throw new Error(`IdentityProvider ${currentSession.provider} is not present`)
+        if (idp.webVersion === WebVersion.Centralized) return;
+        const connector = new Connector({
+            session: currentSession,
+            identityProvider: idp
+        });
+        return connector;
+
+    }
+
+
+
     async setupConnector(connector?: Connector, throw_no_conn: boolean = true): Promise<void> {
+        const currentSession = (await this.getCurrentSession()) ?? null;
         if (connector === undefined) {
-            const currentSession = (await this.getCurrentSession()) ?? undefined;
             if (currentSession === null) {
                 if (throw_no_conn) throw new Error("No connection history available, try to reconnect")
                 return;
             }
-            const idp = this.getIdentityProvider(currentSession.provider);
-            if (idp.webVersion === WebVersion.Centralized) return;
-            connector = new Connector({
-                session: currentSession,
-                identityProvider: idp
-            });
+            connector = this._constructConnectorFromCurrentSession(currentSession)
+            connector.adapterClassesMap = this.adapterClassMap;
         }
         this.connector = connector;
-        this.connector.adapterClassesMap = this.adapterClassMap;
-        const cSession = await this.getCurrentSession()
-        if (cSession !== undefined) {
-            this.connector.setupSession(cSession)
+        if (currentSession !== null) {
+            this.connector.setupSession(currentSession)
         }
 
+    }
+
+    async checkConnection(raiseError:boolean = true): Promise<boolean> {
+        if (!this.connector.isConnected()) {
+            await this.connector.connect();
+        }
+        return await this.connector.checkConnection(raiseError);
     }
 
 

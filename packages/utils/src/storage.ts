@@ -136,7 +136,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @param name Name of the class instance
      */
     checkPlatform(): void {
-        if (globalThis === undefined || globalThis === null || ! isWebPlatform()) {
+        if (globalThis === undefined || globalThis === null || !isWebPlatform()) {
             throw new UnsuitablePlatformException(`${this.constructor.name} only supports web platform`)
         }
     }

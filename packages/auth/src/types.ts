@@ -164,7 +164,7 @@ export interface IAuthenticationApp {
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
     setupConnector(connector?: IConnector): void;
     getIdentityProvider(provider: string): IdentityProvider
-
+    checkConnection(): Promise<boolean>;
     isAuthenticated(): Promise<boolean>;
 }
 
@@ -195,6 +195,7 @@ export interface IdentityResolverInterface {
     authenticateAndRespond(data: Record<string, string>): Promise<void>;
     getUserRegistrationArguments(): Promise<UserRegistrationArgument>;
     getItemFromStorage<T=any>(key: string): Promise<T | null>;
+    
 }
 
 

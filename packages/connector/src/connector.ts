@@ -45,8 +45,8 @@ export class Connector<S extends ISession = ISession,
     protected channelClass?: Class<C>;
     protected channel?: C;
     protected provider?: P;
-    protected providerIdentifier?: string | Providers;
-    protected identityProvider?: IdentityProvider;
+    providerIdentifier?: string | Providers;
+    identityProvider?: IdentityProvider;
     protected adapterClass: Class<A>;
     protected providerClass: Class<P>;
     adapter?: A;
@@ -106,7 +106,14 @@ export class Connector<S extends ISession = ISession,
             this.currentSession = session as CurrentSessionStruct<S>;
             this.session = (session as CurrentSessionStruct<S>).session;
             this.providerIdentifier = this.currentSession.provider;
-            this.identityProvider = this.identityProvidersMap[this.providerIdentifier]
+            this.setupIdentityProvider(this.providerIdentifier)
+            if(this.filter === undefined){
+                this.filter = {}
+            }
+            if(this.filter.allowedConnectorTypes === undefined){
+                this.filter.allowedConnectorTypes = []
+            }
+            this.filter.allowedConnectorTypes.push(this.currentSession.connector_type)
         } else {
             this.session = session as SessionDetailedData<S>;
         }
@@ -139,14 +146,15 @@ export class Connector<S extends ISession = ISession,
 
 
     setupIdentityProvider(idp: IdentityProvider | string | Providers): void {
+        let _idp: IdentityProvider;
         if (idp instanceof IdentityProvider) {
-            this.identityProvider = idp;
-            this.providerIdentifier = idp.identifier as string;
-
+            _idp = idp
         } else if (this.identityProvidersMap[idp as string] !== undefined) {
-            this.identityProvider = this.identityProvidersMap[idp as string];
-            this.providerIdentifier = this.identityProvider.identifier as string;
+            _idp = this.identityProvidersMap[idp as string]
         }
+        if(_idp === undefined) return;
+        this.identityProvider = _idp;
+        this.providerIdentifier = _idp.identifier as string;
     }
 
     setupAdapter(adapter: Class<A> | A): void {
@@ -232,8 +240,11 @@ export class Connector<S extends ISession = ISession,
 
     getFormatedCurrentSession(): CurrentSessionStruct<S> {
 
-        if (this.providerIdentifier === undefined || this.adapter === undefined || this.adapter.accounts === undefined || this.adapter.accounts.length === 0) {
+        if (this.providerIdentifier === undefined || this.adapter === undefined) {
             throw new Error("providerIdentifier is not defined or connection not established to produce current session")
+        }
+        if(this.selectedAccount === undefined){
+            throw new Error("no account is connected")
         }
         const session = this.getFormatedSession();
 
@@ -271,10 +282,10 @@ export class Connector<S extends ISession = ISession,
         if (this.adapterClass !== undefined) {
             return new this.adapterClass(adapterArgs)
         }
-        if(this.session !== undefined && this.session.meta !== undefined && this.session.meta.adapter_indentifier !== undefined &&
-             this.adapterClassesMap[this.session.meta.adapter_indentifier] !== undefined){
-                const cls = this.adapterClassesMap[this.session.meta.adapter_indentifier] as Class<A, IChainAdapterOptions>;
-                return new cls(adapterArgs);
+        if (this.session !== undefined && this.session.meta !== undefined && this.session.meta.adapter_indentifier !== undefined &&
+            this.adapterClassesMap[this.session.meta.adapter_indentifier] !== undefined) {
+            const cls = this.adapterClassesMap[this.session.meta.adapter_indentifier] as Class<A, IChainAdapterOptions>;
+            return new cls(adapterArgs);
         }
         if (this.identityProvider !== undefined) {
             const cls: Class<A> = this.identityProvider.getAdapterClass() as Class<A>;
