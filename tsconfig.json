@@ -20,7 +20,8 @@
             "@lamight-sdk/platform-node/*": ["packages/paltform-node/src/*"],
             "@almight-sdk/connector/*": ["packages/connector/src/*"],
             "@almight-sdk/utils/*": ["packages/utils/src/*"],
-            "@almight-sdk/ethereum-chain-adapter/*": ["chain-adapters/ethereum/src/*"]
+            "@almight-sdk/ethereum-chain-adapter/*": ["chain-adapters/ethereum/src/*"],
+            "@almight-sdk/uikit/*": ["packages/uikit/src/*"]
         },
         "skipLibCheck": true
     },
