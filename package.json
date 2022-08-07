@@ -25,7 +25,10 @@
   "scripts": {
     "build": "lerna run tsc",
     "tsc": "tsc",
-    "bootstrap": "lerna bootstrap --include-dependencies"
+    "bootstrap": "lerna bootstrap --include-dependencies",
+    "docs:start": "npm run start --prefix docs/",
+    "docs:build": "npm run build --prefix docs/",
+    "docs:serve": "npm run serve --prefix docs/"
   },
   "dependencies": {
     "dotenv": "^16.0.1"
