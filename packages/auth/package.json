@@ -35,6 +35,7 @@
     "@almight-sdk/core": "^0.0.1-alpha.98",
     "@almight-sdk/ethereum-chain-adapter": "^0.0.1-alpha.98",
     "@almight-sdk/test-utils": "^0.0.1-alpha.98",
+    "@almight-sdk/types": "^0.0.1-alpha.98",
     "@almight-sdk/utils": "^0.0.1-alpha.98",
     "axios": "^0.27.2",
     "bn.js": "^5.2.1",

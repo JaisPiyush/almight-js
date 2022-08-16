@@ -1,0 +1,6 @@
+**/*.spec.js
+**/*.spec.ts
+**/*.test.ts
+**/*.test.js
+**/*.config.js
+**/lib/*

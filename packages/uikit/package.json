@@ -20,12 +20,26 @@
   "scripts": {
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
     "tsc": "tsc",
-    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts"
+    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
   },
   "dependencies": {
+    "@almight-sdk/types": "^0.0.1-alpha.98",
     "lit": "^2.2.8"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.10",
+    "@storybook/addon-actions": "^6.5.10",
+    "@storybook/addon-essentials": "^6.5.10",
+    "@storybook/addon-links": "^6.5.10",
+    "@storybook/builder-webpack4": "^6.5.10",
+    "@storybook/manager-webpack4": "^6.5.10",
+    "@storybook/web-components": "^6.5.10",
+    "babel-loader": "^8.2.5",
+    "lit-html": "^2.3.0"
   }
 }

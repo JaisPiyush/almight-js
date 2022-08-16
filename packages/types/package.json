@@ -1,12 +1,11 @@
 {
-  "name": "@almight-sdk/utils",
+  "name": "@almight-sdk/types",
   "version": "0.0.1-alpha.98",
   "description": "> TODO: description",
   "author": "Piyush Jaiswal <iampiyushjaiswal103@gmail.com>",
   "homepage": "https://github.com/Byta-Tigris/almight-js#readme",
   "license": "ISC",
   "main": "lib/index.js",
-  "private": false,
   "directories": {
     "lib": "lib",
     "test": "__tests__"
@@ -19,23 +18,11 @@
     "url": "git+https://github.com/Byta-Tigris/almight-js.git"
   },
   "scripts": {
-    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
     "tsc": "tsc",
-    "prod": "tsc --outDir=src",
+    "test": "",
     "test:watch": ""
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"
-  },
-  "dependencies": {
-    "@almight-sdk/types": "^0.0.1-alpha.98",
-    "axios": "^0.27.2",
-    "dotenv": "^16.0.1",
-    "ts-node": "^10.8.1"
-  },
-  "devDependencies": {
-    "@types/mocha": "^9.1.1",
-    "ganache": "^7.3.2",
-    "ts-mocha": "^10.0.0"
   }
 }

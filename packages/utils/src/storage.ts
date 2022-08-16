@@ -5,9 +5,9 @@ import { BaseStorageInterface, BaseStorageOptions, NaiveStorage, StorageType } f
 
 
 
-export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> implements BaseStorageInterface {
+export class BaseWebStorage implements BaseStorageInterface {
 
-    protected storage: NaiveStorage | Record<string, any>;
+    protected storage: NaiveStorage;
     readonly type: StorageType;
     public prefix?: string;
 
@@ -18,19 +18,23 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
     * @callback beforeDisconnectCallback will be called just before the connection is established
     * @defaultValue empty function
     */
-    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
-    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => void = (self) => {};
+    protected onConnectCallback: (self: ThisType<BaseStorageInterface>) => void;
+    protected beforeDisconnectCallback: (self: ThisType<BaseStorageInterface>) => void;
 
     /**
      * Set default values for the class properties
      */
     setDefaultArguments(): void {
-        this.onConnectCallback = async (self: ThisType<typeof this>) => { ; };
-        this.beforeDisconnectCallback = async (self: ThisType<typeof this>) => { ; };
+
+        type selfType = ThisType<typeof this>;
+
+        const empty_function = async function (self: selfType) {};
+        this.onConnectCallback = empty_function;
+        this.beforeDisconnectCallback = empty_function;
 
     }
 
-    constructor(options?: T) {
+    constructor(options?: BaseStorageOptions<BaseStorageInterface>) {
         this.setDefaultArguments();
         if (options !== undefined) {
             if (options.onConnectCallback !== undefined) {
@@ -77,7 +81,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @param value 
      * @returns Serialized version of the provided value
      */
-    serialize(value: any) {
+    serialize(value: unknown) {
         return JSON.stringify(value);
     }
 
@@ -86,8 +90,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
      * @param value 
      * @returns Deserialize stored data to desired object
      */
-    deserialize<T>(value: any): T {
-        // if(value === undefined || value === "undefined" || value === null) {return value};
+    deserialize<T>(value: string): T {
         return JSON.parse(value) as T;
     }
 
@@ -95,11 +98,11 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         return this.prefix === undefined ? name: `${this.prefix}__${name}`
     }
 
-    async setItem(key: string, value: any): Promise<void> {
+    async setItem(key: string, value: unknown): Promise<void> {
         if(value === undefined || value === null) return;
         this.storage.setItem(this.getPrefixedName(key), this.serialize(value));
     }
-    async getItem<T = any>(key: string): Promise<T | null> {
+    async getItem<T = unknown>(key: string): Promise<T | null> {
         const value = this.storage.getItem(this.getPrefixedName(key));
         if (value === null || value === undefined) return null;
         return this.deserialize<T>(value);
@@ -121,8 +124,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
         this.storage.clear();
     }
     async disconnect(): Promise<void> {
-        const self = this;
-        await this.beforeDisconnectCallback(self);
+        await this.beforeDisconnectCallback(this);
         await this.clear();
         this.storage = null;
     }
@@ -143,7 +145,7 @@ export class BaseWebStorage<T extends BaseStorageOptions = BaseStorageOptions> i
 }
 
 
-export class WebLocalStorage extends BaseWebStorage<BaseStorageOptions> {
+export class WebLocalStorage extends BaseWebStorage {
 
     readonly type = StorageType.Local;
 
@@ -217,12 +219,12 @@ export class WebWindowStore extends BaseWebStorage {
         return (this.storage !== null && (globalThis as any)[this.keyName] !== undefined);
     }
 
-    serialize(value: any): any {
-        return value;
+    serialize(value: unknown): string {
+        return JSON.stringify(value);
     }
 
-    deserialize<T>(value: any): T {
-        return value as T;
+    deserialize<T>(value: string): T {
+        return JSON.parse(value) as T;
     }
 
     /**
@@ -235,11 +237,11 @@ export class WebWindowStore extends BaseWebStorage {
     }
 
 
-    async setItem(key: string, value: any): Promise<void> {
+    async setItem(key: string, value: unknown): Promise<void> {
         this.storage[key] = this.serialize(value);
     }
 
-    async getItem<T = any>(key: string): Promise<T> {
+    async getItem<T = unknown>(key: string): Promise<T> {
         return this.deserialize<T>(this.storage[key]);
     }
 

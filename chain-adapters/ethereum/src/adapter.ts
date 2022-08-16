@@ -6,13 +6,13 @@ export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderCh
     P extends BaseProvider<C> = BaseProvider<C>>
     extends BaseChainAdapter<C, P>{
 
-    public static adapterIdentifier: string = "ethereum_chain_adapter"
+    public static adapterIdentifier = "ethereum_chain_adapter"
     public bridge: ethers.providers.Web3Provider;
     public provider: P;
 
 
 
-    public onConnect(options: any): void {
+    public onConnect(options: unknown): void {
         if (this.provider.isConnected()) {
             this.bridge = new ethers.providers.Web3Provider(this.provider.channel as ethers.providers.ExternalProvider);
         }
@@ -37,21 +37,15 @@ export class EthereumChainAdapter<C extends BaseProviderChannel = BaseProviderCh
 
 
     async getNetworkId(): Promise<number> {
-        try {
-            const chainId = await this.request<string>({ method: "net_version", params: [] });
-            return parseInt(chainId);
-        } catch (e) {
-            throw e;
-        }
+        const chainId = await this.request<string>({ method: "net_version", params: [] });
+        return parseInt(chainId);
+        
     }
 
     async getChainId(): Promise<number> {
-        try {
-            const chainId = await this.request<string>({ method: "eth_chainId", params: [] });
-            return parseInt(chainId);
-        } catch (e) {
-            throw e;
-        }
+        const chainId = await this.request<string>({ method: "eth_chainId", params: [] });
+        return parseInt(chainId);
+       
     }
     async getAccounts(): Promise<Address[]> {
         return await this.request<Address[]>({
