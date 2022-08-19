@@ -20,7 +20,8 @@
   "scripts": {
     "test": "",
     "tsc": "tsc",
-    "test:watch": ""
+    "test:watch": "",
+    "coverage": ""
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"

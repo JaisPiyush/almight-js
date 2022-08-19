@@ -29,7 +29,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "test:watch": ""
+    "test:watch": "",
+    "coverage": "nyc npm run test"
   },
   "eslintConfig": {
     "extends": [

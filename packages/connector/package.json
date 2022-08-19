@@ -22,9 +22,10 @@
     "url": "git+https://github.com/Byta-Tigris/almight-js.git"
   },
   "scripts": {
-    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register",
-    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
-    "tsc": "tsc"
+    "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
+    "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
+    "tsc": "tsc",
+    "coverage": "nyc npm run test"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"

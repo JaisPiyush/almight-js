@@ -24,7 +24,8 @@
   "scripts": {
     "tsc": "tsc",
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit -r ts-node/register",
-    "test:watch": ""
+    "test:watch": "",
+    "coverage": "nyc npm run test"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight-js/issues"

@@ -6,6 +6,7 @@
     "@babel/preset-react": "^7.16.7",
     "@babel/preset-typescript": "^7.16.7",
     "@babel/register": "^7.17.7",
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@microsoft/tsdoc": "^0.13.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@types/chai": "^4.3.1",
@@ -32,9 +33,26 @@
     "docs:start": "npm run start --prefix docs/",
     "docs:build": "npm run build --prefix docs/",
     "docs:serve": "npm run serve --prefix docs/",
-    "pre-push": "npx eslint ."
+    "lint": "npm eslint .",
+    "test": "npx nyc@latest lern run test",
+    "check": "npm run lint; npm rub build; npm run test",
+    "reset": "lerna clean; npm run check",
+    "new-version": "lerna version --no-git-tag-version --exact",
+    "pre-publish": "npm run new-version; npm run reset",
+    "npm-public:rc": "lerna exec -- npm public --access public --tag rc",
+    "npm-publish:latest": "lerna exec -- npm publish --access public --tag latest",
+    "npm-publish:next": "lerna exec -- npm publish --access public --tag next",
+    "npm-publish:canary": "lerna exec -- npm publish --access public --tag canary",
+    "coverage:combined": "lerna run coverage"
   },
   "dependencies": {
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-standard": "^5.0.0"
   }
 }
