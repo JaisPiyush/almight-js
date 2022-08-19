@@ -1,5 +1,6 @@
 node_modules/
 lerna-debug.log
+asta/
 npm-debug.log
 packages/*/lib
 */*/lib
