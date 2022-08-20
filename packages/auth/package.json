@@ -26,7 +26,7 @@
     "test": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha --exit",
     "tsc": "tsc",
     "test:watch": "env TS_NODE_PROJECT=\"tsconfig.json\" mocha -r ts-node/register --watch --watch-files src/**/*.ts,__tests__/**/*.spec.ts",
-    "coverage": "nyc npm run test --reporter=lcov --reporter=text"
+    "coverage": "nyc npm run test"
   },
   "bugs": {
     "url": "https://github.com/Byta-Tigris/almight/issues"
