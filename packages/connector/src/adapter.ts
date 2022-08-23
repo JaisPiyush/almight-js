@@ -1,7 +1,8 @@
-import { BaseProviderChannel, BrowserProviderChannel } from "./channel";
-import { ChannelIsNotDefined } from "./exceptions";
-import { BaseProtocolDefination } from "./protocol_definition";
-import { Address, IProtocolDefinition, IProviderAdapter, ISession, ProviderRequestMethodArguments, SubscriptionCallback } from "./types";
+
+import { BaseProviderChannel } from "./channel";
+
+import { BaseProvider } from "./provider";
+import { Address, BalanceReturnType, IProviderAdapter, ISession, ProviderRequestMethodArguments, RequestReturnType, SessioUpdateArguments, SignMessageArgument, SignMessageReturnType, SubscriptionCallback, TransactionData, TransactionReturnType } from "./types";
 
 /**
  * ChainAdapters wrap individual setup and method calls for different chains
@@ -20,129 +21,128 @@ import { Address, IProtocolDefinition, IProviderAdapter, ISession, ProviderReque
  */
 
 
-interface IChainAdapterOptions {
-    channel: BaseProviderChannel,
-    protocolDefination?: BaseProtocolDefination,
-    onConnect?: (options?: any) => void
+export interface IChainAdapterOptions {
+    provider: BaseProvider,
+    onConnect?: (options: { accounts?: Address[], chainId?: number, data?: any }) => void,
+    onSessionUpdate?: (options: SessioUpdateArguments) => void;
 }
-export class BaseChainAdapter implements IProviderAdapter {
+export class BaseChainAdapter<C extends BaseProviderChannel = BaseProviderChannel,
+    P extends BaseProvider<C> = BaseProvider<C>>
+    implements IProviderAdapter<C, P> {
 
-    public static providerPath = null;
+    provider: P;
+    bridge: any;
+    public static adapterIdentifier: string = this.name.replace(" ", "__").toLowerCase();
+    onConnectCallback?: (options: { accounts?: Address[], chainId?: number, data?: any }) => void;
 
-    public get providerPath(): string { return (this.constructor as any).providerPath }
-
-    protected _channel: BaseProviderChannel;
-    public protocol?: IProtocolDefinition;
-
-    // Allow high-order classes to easily differentiate between an instance and class
-    public static isAdapterClass = true;
-
-    public accounts?: Address[];
-    public chainId?: number;
-    public networkId?: number;
-
-
-
-    public channelConnect?: (options?: any) => Promise<void>;
-    public channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
-
-    public channelOnConnect?: (options?: any) => void;
-
-    public channelPing?: (options?: any) => Promise<boolean>;
-
-
-    public onConnectCallback?: (options?: any) => void;
-
-
-    public get channel(): BaseProviderChannel { return this._channel }
-
-    public set channel(_channel: BaseProviderChannel) { this._channel = _channel }
-
-
-    isConnected(): boolean {
-        return this._channel !== undefined && this._channel.isConnected;
+    public get accounts(): Address[] { return this.provider.accounts }
+    public get chainId(): number { return this.provider.chainId }
+    public get adapterIdentifier(): string {
+        let iden = (this.constructor as any).adapterIdentifier;
+        if(iden === null) return this.constructor.name.replace(" ", "__").toLowerCase();
+        return iden;
     }
 
+    public set accounts(_accnts: Address[]) { this.provider.accounts = _accnts }
+    public set chainId(cid: number) { this.provider.chainId = cid }
 
-  
-
-
-    public bindChannelDelegations(): void {
-        let self = this;
-        if (this.channel instanceof BrowserProviderChannel) {
-            this.channel.providerPath = this.providerPath;
-        }
-
-        this.channelOnConnect = function (options?: any): void {
-            if(self.onConnectCallback !== undefined){
-                self.onConnectCallback({
-                    data: options,
-                    accounts: options.accounts ?? self.accounts,
-                    chainId: options.chainId ?? self.chainId
-                });
+    constructor(options: IChainAdapterOptions) {
+        this.setProvider(options.provider as P)
+        this.onConnectCallback = options.onConnect;
+        this.onSessionUpdate = options.onSessionUpdate;
+        this.provider.onConnectCallback = (options?: any): void => {
+            this.onConnect(options);
+            if (this.onConnectCallback !== undefined) {
+                this.onConnectCallback(options)
             }
         }
     }
 
+    public set onSessionUpdate(fn: (options: SessioUpdateArguments) => void) {
 
-
-    constructor(options: IChainAdapterOptions) {
-        this.channel = options.channel;
-        if(options.protocolDefination !== undefined ){
-            this.bindProtocol(options.protocolDefination);
-        }
-        this.onConnectCallback = options.onConnect;
-        this.checkChannel()
-        this.bindChannelDelegations();
+        this.provider.onSessionUpdate = fn
     }
+
+
+    public onConnect(options: { accounts?: Address[], chainId?: number, data?: any }): void {
+
+    }
+
+    public setProvider(provider: P): void {
+        this.provider = provider;
+        this.provider.adapter = this;
+        
+    }
+
+    public setBridge(bridge: any): void {
+        this.bridge = bridge;
+    }
+
+    public getChannel(): C {
+        return this.provider.channel;
+    }
+
     getSession(): ISession {
-        let sesion = this.channel.getCompleteSessionForStorage();
-        if(this.chainId !== undefined){
-            sesion["chainId"] = this.chainId
-        }
-        return sesion;
-    }
-    
-    bindProtocol(protocol: IProtocolDefinition): void {
-        this.protocol = protocol;
-        this.protocol.bindAdapter(this);
+        return this.provider.getSession();
     }
 
-    async checkSession<P>(): Promise<[boolean, P]> {
-        this.checkChannel()
-        return await this.channel.checkSession(this)
+
+    isConnected(): boolean {
+        return this.provider.isConnected();
+    }
+
+    async getAccounts(): Promise<Address[]> {
+        throw new Error("Method not implemented")
+    }
+
+    async getChainId(): Promise<number> {
+        throw new Error("Method not implemented")
+    }
+
+
+
+    sendTransaction(data: TransactionData): Promise<TransactionReturnType> {
+        throw new Error("Method not implemented.");
+    }
+    signTransaction(data: TransactionData): Promise<TransactionReturnType> {
+        throw new Error("Method not implemented.");
+    }
+    signPersonalMessage(data: SignMessageArgument): Promise<SignMessageReturnType> {
+        throw new Error("Method not implemented.");
+    }
+    getNetworkId(): Promise<RequestReturnType> {
+        throw new Error("Method not implemented.");
+    }
+    getBalance(account?: string, blockTag?: string): Promise<BalanceReturnType> {
+        throw new Error("Method not implemented.");
+    }
+    getTransactionCount(): Promise<number> {
+        throw new Error("Method not implemented.");
+    }
+
+
+
+    async checkSession<T>(): Promise<[boolean, T]> {
+        return await this.provider.checkSession<T>()
     }
 
     async connect(options?: any): Promise<void> {
-        this.checkChannel()
-        await this.channel.connect(options, this)
+        await this.provider.connect(options)
 
-    }
-
-    protected checkChannel(): void {
-        if (this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name);
     }
 
     async request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T> {
-        this.checkChannel();
-        return await this.channel.request<T>(data, timeout);
+        return await this.provider.request<T>(data, timeout) as T;
     }
 
 
-    async checkConnection(): Promise<boolean> {
-        return await this.channel.checkConnection(this);
+    async checkConnection(raiseError: boolean = false): Promise<boolean> {
+        return await this.provider.checkConnection(raiseError);
     }
 
     on(event: string, callback: SubscriptionCallback): void {
-        if (this.channel === undefined) throw new ChannelIsNotDefined(this.constructor.name)
-        this.channel.on(event, callback);
+        this.provider.on(event, callback);
     }
-}
-
-export class EthereumChainAdapter extends BaseChainAdapter {
-
-    public static providerPath = "ethereum";
-
 }
 
 

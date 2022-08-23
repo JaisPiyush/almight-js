@@ -1,10 +1,13 @@
-import { BaseConnector } from "@almight-sdk/connector";
+import { Connector, IdentityProvider } from "@almight-sdk/connector";
 import { authAxiosInstance, projectAxiosInstance } from "@almight-sdk/core";
-import { BaseStorageInterface, WebLocalStorage } from "@almight-sdk/utils";
+import { BaseStorageInterface, Class, Providers, WebLocalStorage, WebVersion } from "@almight-sdk/utils";
 import { InvalidProjectIdError, StorageIsNotConnected } from "./exceptions";
-import { BaseOriginFrameCommunicator } from "./frame_communicator";
-import { IdentityResolver, IDENTITY_RESOLVERS } from "./resolver";
-import { AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, UserRegistrationArgument, UserRegistrationResult } from "./types";
+import { BaseOriginFrameCommunicator, WebOriginCommunicator } from "./frame_communicator";
+import { IdentityResolver, Web2IdentityResolver, Web3IdentityResolver } from "./resolver";
+import {
+    AllowedQueryParams, AuthenticationRespondStrategy, IAuthenticationDelegate, ResponseMessageCallbackArgument,
+    SuccessResponseMessageCallbackArgument, UserRegistrationArgument, UserRegistrationResult
+} from "./types";
 
 
 export interface AuthenticationDelegateInitArgs {
@@ -20,12 +23,24 @@ export interface AuthenticationDelegateInitArgs {
 }
 
 
+export interface AuthenticationDelegateOptions {
+    storage?: BaseStorageInterface,
+    respondFrame?: BaseOriginFrameCommunicator,
+    respondStrategy?: AuthenticationRespondStrategy,
+    identityProviders?: IdentityProvider[];
+    identityResolvers?: IdentityResolver[];
+
+}
 
 export class AuthenticationDelegate implements IAuthenticationDelegate {
+
+
 
     respondStrategy: AuthenticationRespondStrategy;
     identityResolver?: IdentityResolver;
     respondFrame: BaseOriginFrameCommunicator;
+
+    identityResolversMap: Record<string, IdentityResolver> = {};
 
 
     protected _state: Record<string, string> = {};
@@ -44,30 +59,36 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     // Query Parameters of url that can appear in a response url types
     // Respose urls are final stage urls from which results will be deduced
     // And then responded back to the origin
-    readonly responseQueryParams: string[] = [];
+    // readonly responseQueryParams: string[] = [];
+    readonly nonStorableQueryParams = []
 
-    public static identityResolverMap: Record<string, IdentityResolver> = IDENTITY_RESOLVERS;
     public static respondStrategyMap: Record<string, BaseOriginFrameCommunicator> = {
+        [AuthenticationRespondStrategy.Web]: new WebOriginCommunicator()
     }
 
-    connector?: BaseConnector;
+    readonly identityResolversClassMap: Record<string | number, Class<IdentityResolver>> = {
+        [WebVersion.Decentralized]: Web3IdentityResolver,
+        [WebVersion.Centralized]: Web2IdentityResolver
+    }
+
+    connector?: Connector;
 
     public storage: BaseStorageInterface;
 
-    constructor(options?: {
-        storage?: BaseStorageInterface,
-        respondFrame?: BaseOriginFrameCommunicator,
-        respondStrategy?: AuthenticationRespondStrategy,
-
-    }) {
-        // if (!isWebPlatform()) {
-        //     throw new IncompatiblePlatformForAuthenticationDelegate();
-        // }
+    constructor(options?: AuthenticationDelegateOptions) {
         if (options !== undefined) {
             this.storage = options.storage ?? new WebLocalStorage();
             this.respondFrame = options.respondFrame;
 
             this.respondStrategy = options.respondStrategy;
+            if (options.identityProviders !== undefined) {
+                this.setupIdentityResolversFromIdentityProviders(options.identityProviders);
+            }
+            if (options.identityResolvers !== undefined) {
+                for (const idr of options.identityResolvers) {
+                    this.identityResolversMap[idr.provider.identifier] = idr;
+                }
+            }
 
 
         }
@@ -80,10 +101,50 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
+    getIdentityResolverClassForidentityProvider(idp: IdentityProvider): Class<IdentityResolver> {
+        if(this.identityResolversClassMap[idp.identifier] !== undefined) return this.identityResolversClassMap[idp.identifier];
+        if(this.identityResolversClassMap[idp.webVersion] !== undefined) return this.identityResolversClassMap[idp.webVersion];
+        throw new Error(`No Identity Resolver found for the provider ${idp.identifier}`)
+    }
+
+
+    setupIdentityResolversFromIdentityProviders(idps: IdentityProvider[]): void {
+        for (const idp of idps) {
+            const idrClass = this.getIdentityResolverClassForidentityProvider(idp)
+            this.identityResolversMap[idp.identifier] = new idrClass(idp);
+        }
+    }
+
+
+    async respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void> {
+        if (this.respondFrame !== undefined) {
+            await this.respondFrame.respondSuccess(data);
+        }
+        await this.close();
+    }
+
+    getIdentityResolver(provider: string): IdentityResolver {
+        if (this.identityResolversMap[provider] === undefined) throw new Error("No resolver associated with provider is found");
+        return this.identityResolversMap[provider];
+    }
+
+
+    async respondFailure(data: Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>): Promise<void> {
+        if (this.respondFrame !== undefined) {
+            await this.respondFrame.respondFailure(data);
+        }
+        await this.close();
+    }
+
+
     async clean(): Promise<void> {
         if (await this.storage.isConnected()) {
             for (const query of Object.values(AllowedQueryParams)) {
                 await this.storage.removeItem(query);
+            }
+            const removableProps = ["hasServerRequested",this.frozenStateKey, "webVersion", "data", "adapterClass" , "accounts","session"]
+            for(const prop of removableProps ){
+                await this.storage.removeItem(prop)
             }
         }
     }
@@ -96,7 +157,19 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (this.respondFrame !== undefined) {
             await this.respondFrame.close()
         }
-        
+    }
+
+
+    public getTokenHeaders(tokens: { projectIdentifier?: string, userIdentifier?: string }): Record<string, string> {
+        const headers = {};
+        if (tokens.projectIdentifier !== undefined) {
+            headers["X-PROJECT-IDENT"] = tokens.projectIdentifier
+        }
+        if (tokens.userIdentifier !== undefined) {
+            headers["X-USER-IDENT"] = tokens.userIdentifier
+        }
+        return headers
+
     }
 
 
@@ -122,7 +195,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             switch (key) {
                 case AllowedQueryParams.Provider:
                     if (this.identityResolver === undefined) {
-                        this.identityResolver = (this.constructor as any).identityResolverMap[value];
+                        this.identityResolver = this.identityResolversMap[value];
                     }
 
                     if (this.identityResolver !== undefined) this.identityResolver.delegate = this;
@@ -136,6 +209,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
                     }
 
                     break;
+                case AllowedQueryParams.TargetOrigin:
+                    if (this.respondFrame !== undefined && this.respondFrame instanceof WebOriginCommunicator) {
+                        this.respondFrame.targetOrigin = value;
+                    }
+                    break;
                 default:
                     this.storage.setItem(key, value);
                     break;
@@ -145,19 +223,23 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
             }
             this._state[key] = value;
             this.setStates(this._state);
+            this.freeze();
         }
 
+    }
+
+    setIdentityResolver(idr: IdentityResolver): void {
+        this.identityResolver = idr;
+        this.identityResolver.delegate = this;
     }
 
 
 
     async registerUser<T = UserRegistrationArgument>(data: T, tokens: { project_identifier: string, token?: string }): Promise<UserRegistrationResult> {
-        const headers: Record<string, string> = {
-            "X-PROJECT-IDENT": tokens.project_identifier
-        }
-        if (tokens.token !== undefined) {
-            headers["X-USER-IDENT"] = tokens.token
-        }
+        const headers: Record<string, string> = this.getTokenHeaders({
+            projectIdentifier: tokens.project_identifier,
+            userIdentifier: tokens.token
+        })
         const res = await authAxiosInstance.post<UserRegistrationResult>("/token", data, { headers: headers });
         return res.data;
     }
@@ -165,6 +247,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
     async handleUserRegistration(): Promise<UserRegistrationResult> {
+
         if (!(await this.storage.hasKey(AllowedQueryParams.ProjectId))) throw new Error("Project Identifier is not provided");
         const data = await this.identityResolver?.getUserRegistrationArguments();
         const tokens: { project_identifier: string, token?: string } = {
@@ -174,6 +257,7 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
         if (userIdentifier !== null) {
             tokens[AllowedQueryParams.UserIdentifier] = userIdentifier;
         }
+        // this.clean();
         return await this.registerUser<typeof data>(data, tokens);
 
     }
@@ -192,7 +276,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     async setStates(data: Record<string, any>): Promise<void> {
         if (await this.storage.isConnected()) {
             for (const [key, value] of Object.entries(data)) {
-                await this.storage.setItem(key, value);
+                if (!this.nonStorableQueryParams.includes(key as AllowedQueryParams)) {
+                    await this.storage.setItem(key, value);
+                }
             }
         }
     }
@@ -220,21 +306,11 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
     /**
-     * URL location https://example.com/page?q1=v1&q2=v2
-     * q1,q2 are query params and the function is responsible to return them as
-     * {q1: v1, q2: v2}
-     * 
-     * @returns Record of query params
+     * Get configuration data from query param or stored data
      */
     async getConfigurationData(): Promise<Record<string, string>> {
 
         throw new Error("Method not implemneted")
-        // const params = new URLSearchParams(globalThis.location.search);
-        // let query: Record<string, string> = {}
-        // for (const [param, value] of params) {
-        //     query[param] = decodeURIComponent(value)
-        // }
-        // return query;
     }
 
 
@@ -280,12 +356,10 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
     }
 
 
-    public static async fromFrozenState(): Promise<AuthenticationDelegate> {
-        const delegate = new AuthenticationDelegate();
-        const states = await delegate.getState<AuthenticationDelegateInitArgs>(delegate.frozenStateKey);
-        delegate.init(states);
-        return delegate;
-
+    public async fromFrozenState(): Promise<AuthenticationDelegate> {
+        const states = await this.getState<AuthenticationDelegateInitArgs>(this.frozenStateKey);
+        this.init(states);
+        return this;
     }
 
 
@@ -293,7 +367,9 @@ export class AuthenticationDelegate implements IAuthenticationDelegate {
 
 
 
+
 export class Web3AuthenticationDelegate extends AuthenticationDelegate {
+
 
 
     override async getConfigurationData(): Promise<Record<string, string>> {
@@ -305,5 +381,51 @@ export class Web3AuthenticationDelegate extends AuthenticationDelegate {
             }
         }
         return data
+    }
+}
+
+
+
+export class Web2AuthenticationDelegate extends AuthenticationDelegate {
+
+
+    /**
+     * URL location https://example.com/page?q1=v1&q2=v2
+     * q1,q2 are query params and the function is responsible to return them as
+     * {q1: v1, q2: v2}
+     * 
+     * @returns Record of query params
+     */
+    override async getConfigurationData(): Promise<Record<string, string>> {
+        const params = new URLSearchParams(globalThis.location.search);
+        let query: Record<string, string> = {}
+        for (const [param, value] of params) {
+            query[param] = decodeURIComponent(value)
+        }
+        return query;
+    }
+
+    async getOAuthUrl(provider: Providers | string, projectIdentifier: string): Promise<{ url: string, verifiers: Record<string, string> }> {
+
+        const idr = this.getIdentityResolver(provider);
+        if (idr.provider.webVersion !== WebVersion.Centralized) {
+            throw new Error(`Provider ${idr.provider.identityProviderName} not supported for current authentication strategy`)
+        }
+
+        if (projectIdentifier.length === 0) throw new Error("Invalid project identifier provided");
+
+
+
+        const res = await authAxiosInstance.get<{ url: string, verifiers: Record<string, string> }>(`/provider/url/${provider}`, {
+            headers: this.getTokenHeaders({ projectIdentifier: projectIdentifier })
+        });
+        return res.data;
+
+    }
+
+
+
+    override redirectTo(uri: string): void {
+        globalThis.location.replace(uri);
     }
 }

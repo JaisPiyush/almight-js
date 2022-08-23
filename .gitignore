@@ -1,7 +1,9 @@
 node_modules/
 lerna-debug.log
+asta/
 npm-debug.log
 packages/*/lib
+*/*/lib
 .idea
 .vscode
 .env
@@ -13,3 +15,4 @@ packages/*/node_modules/
 */.nyc_output
 packages/auth-delegate/
 packages/web-components/
+**/.nyc_output

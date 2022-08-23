@@ -1,44 +1,45 @@
-import { Class, META_DATA_SET, Providers } from "@almight-sdk/utils";
+import { Class,  getMetaDataSet,  IMetaDataSet,  Providers, WebVersion } from "@almight-sdk/utils";
 import { BaseChainAdapter } from "./adapter";
-import { KardiaChainAdapter } from "./adapters";
-import { MetaMaskAdapter } from "./adapters";
+
 import { BaseProviderChannel, BrowserProviderChannel, WalletConnectChannel } from "./channel";
-import { BaseProtocolDefination } from "./protocol_definition";
-import { ConnectorType, IdentityProviderInterface, IProtocolDefinition, IProviderAdapter, ProviderChannelInterface } from "./types";
+import { BaseProvider } from "./provider";
+import { ConnectionFilter, ConnectorType, IdentityProviderInterface, IProvider, IProviderAdapter, ProviderChannelInterface } from "./types";
 
 interface IdentityProviderConstructor { 
     name: string, 
     identifier: string
     webVersion: number, 
-    allowedConnectorTypes?: ConnectorType[], 
+    filter?: ConnectionFilter
     metaData?: Record<string, any>
     adapterClass: Class<BaseChainAdapter>,
     channels: Class<BaseProviderChannel>[],
-    protocolDefinition?: Class<BaseProtocolDefination>;
+    providerClass?: Class<BaseProvider>
+   
 }
 
 export class IdentityProvider implements IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
-    allowedConnectorTypes: ConnectorType[];
     identifier: string | number;
     metaData: Record<string, any>;
+    filter?: ConnectionFilter;
     adapterClass: Class<BaseChainAdapter>;
     channels: Class<BaseProviderChannel>[];
-    protocolDefinition?: Class<BaseProtocolDefination>;
+    providerClass: Class<BaseProvider>;
 
-    constructor({ allowedConnectorTypes = [], ...data }: IdentityProviderConstructor) {
+    constructor(data: IdentityProviderConstructor) {
         this.identityProviderName = data.name;
         this.identifier = data.identifier;
         this.webVersion = data.webVersion;
-        this.allowedConnectorTypes = allowedConnectorTypes;
+        this.filter = data.filter;
         this.metaData = data.metaData;
         this.adapterClass = data.adapterClass;
         this.channels = data.channels;
-        this.protocolDefinition = data.protocolDefinition;
+        this.providerClass = data.providerClass;
     }
-    getProtocolDefination(): Class<IProtocolDefinition> {
-        return this.protocolDefinition;
+    
+    getProviderClass(): Class<IProvider<ProviderChannelInterface>> {
+        return this.providerClass;
     }
 
     getAdapterClass(): Class<IProviderAdapter> {
@@ -51,29 +52,48 @@ export class IdentityProvider implements IdentityProviderInterface {
 }
 
 
+export function getConfiguredWeb3IdentityProvider(provider: Providers,{ META_DATA_SET = getMetaDataSet(),...data}: {adapterClass: Class<BaseChainAdapter>,     
+    providerClass: Class<BaseProvider>,filter?: ConnectionFilter,
+    channels?: Class<BaseProviderChannel>[], identifier?: string, 
+    allowedConnectorTypes?: ConnectorType[],
+    META_DATA_SET?: Record<string,IMetaDataSet>
+    
+}): IdentityProvider {
+    // const META_DATA_SET = getMetaDataSet()
+    return new IdentityProvider({
+        name: META_DATA_SET[provider].name,
+        webVersion:WebVersion.Decentralized,
+        identifier: data.identifier ?? provider,
+        filter: data.filter,
+        providerClass: data.providerClass,
+        metaData: META_DATA_SET[provider],
+        adapterClass: data.adapterClass,
+        channels: data.channels ?? [BrowserProviderChannel, WalletConnectChannel]
+    });
+}
 
-const IDENTITY_PROVIDERS: Record<string, IdentityProvider> = {
-    [Providers.MetaMask]: new IdentityProvider({
-        name: META_DATA_SET[Providers.MetaMask].name,
-        webVersion: 3,
-        identifier: Providers.MetaMask,
-        metaData: {
-            icon: META_DATA_SET[Providers.MetaMask].icon
 
+export class CentralizedChainAdapter extends BaseChainAdapter{}
+export class OAuthProvider extends BaseProvider {}
+
+
+export function getConfiguredWeb2IdentityProvider(provider: Providers, META_DATA_SET = getMetaDataSet()): IdentityProvider {
+    // const META_DATA_SET = getMetaDataSet()
+    return new IdentityProvider({
+        name: META_DATA_SET[provider].name,
+        filter: {
+            allowedConnectorTypes: [ConnectorType.OAuth]
         },
-        adapterClass: MetaMaskAdapter,
-        channels: [BrowserProviderChannel, WalletConnectChannel]
-    }),
-    [Providers.KardiaChain]: new IdentityProvider({
-        name: META_DATA_SET[Providers.KardiaChain].name,
-        webVersion: 3,
-        identifier: Providers.KardiaChain,
-        metaData: {
-            icon:META_DATA_SET[Providers.KardiaChain].icon
-        },
-        adapterClass: KardiaChainAdapter,
-        channels: [BrowserProviderChannel, WalletConnectChannel]
+        webVersion: WebVersion.Centralized,
+        identifier: META_DATA_SET[provider].identifier,
+        metaData: META_DATA_SET[provider],
+        adapterClass: CentralizedChainAdapter,
+        providerClass: OAuthProvider,
+        channels: []
     })
 }
 
-export {IDENTITY_PROVIDERS}
+
+
+export const IGNORED_PROVIDER = ["walletconnect"]
+

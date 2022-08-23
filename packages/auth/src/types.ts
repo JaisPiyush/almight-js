@@ -1,5 +1,5 @@
 import {BaseStorageInterface, Providers} from "@almight-sdk/utils"
-import { BaseConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct } from "@almight-sdk/connector";
+import { IConnector, BrowserSessionStruct, ConnectorType, IdentityProvider, ISession, WalletConnectSessionStruct, CurrentSessionStruct, ConnectionFilter, SessionDetailedData } from "@almight-sdk/connector";
 import {IAlmightClient} from "@almight-sdk/core"
 
 export enum AuthenticationRespondStrategy {
@@ -16,7 +16,8 @@ export enum AllowedQueryParams {
     Address = "public_key",
     Provider = "provider",
     State = "state",
-    Challenge = "challenge",
+    Verifiers = "verifiers",
+    Challenge = "code_challenge",
     Error = "error",
     ErrorCode = "error_code",
     ConnectorType = "connector_type",
@@ -29,7 +30,8 @@ export enum AllowedQueryParams {
     TargetOrigin = "target_origin",
     Code = "code",
     CauseEvent = "cause_event",
-    MessageSignRequired = "message_sign_required"
+    MessageSignRequired = "message_sign_required",
+    Sessions = "sessions"
 }
 
 
@@ -61,11 +63,17 @@ export interface ResponseMessageCallbackArgument {
     refresh?: string;
     [AllowedQueryParams.Error]?: string;
     [AllowedQueryParams.ErrorCode]?: string;
-    user?: UserData
+    user?: UserData;
+    [AllowedQueryParams.Code]?: string;
+    [AllowedQueryParams.Challenge]?: string;
+    sessions?: Partial<Record<ConnectorType, SendableSession>>;
+    provider?: Providers
 }
 
 
-export type ErrorResponseMessageCallbackArgument = Required<Omit<ResponseMessageCallbackArgument, "access" | "refresh" | "user">>
+export type ErrorResponseMessageCallbackArgument = Required<Pick<ResponseMessageCallbackArgument, AllowedQueryParams.Error | AllowedQueryParams.ErrorCode>>
+
+export type SuccessResponseMessageCallbackArgument = Omit<ResponseMessageCallbackArgument, AllowedQueryParams.Error| AllowedQueryParams.ErrorCode>
 
 export interface RespondMessageData extends ResponseMessageCallbackArgument {
     respondType?: RespondType,
@@ -74,9 +82,15 @@ export interface RespondMessageData extends ResponseMessageCallbackArgument {
 
 
 
+
+
+
+
+
 export interface IAuthenticationFrame {
     respondStrategy: AuthenticationRespondStrategy;
     app?: IAuthenticationApp
+    configs?: AuthenticationFrameConfiguration;
     initAuth(data: Record<string, string>): Promise<void>;
     bindListener(): void;
     close(): Promise<void>;
@@ -91,10 +105,7 @@ export interface ServerSentIdentityProvider {
     web_version: number,
     provider: string,
     meta_data: Record<string, string>,
-    sessions: {
-        [ConnectorType.BrowserExtension]?: BrowserSessionStruct[],
-        [ConnectorType.WalletConnector]?: WalletConnectSessionStruct[]
-    }
+    sessions: Record<ConnectorType, SendableSession[]>
 }
 export interface User<S = ISession> {
 
@@ -111,30 +122,37 @@ export interface UserData <S = ISession>{
 }
 
 
-export interface CurrentSessionStruct <S = ISession> {
-    uid: string;
-    provider: string;
-    connector_type: ConnectorType;
-    session: S;
+
+
+
+export type ChannelConfigurations = Partial<Record<ConnectorType, Record<string, any>>>;
+export interface AuthenticationFrameConfiguration {
+    filters?: ConnectionFilter,
+    channelArgs?: ChannelConfigurations
 }
+
 export interface IAuthenticationApp {
     storage: BaseStorageInterface;
-    connector?: BaseConnector;
+    connector?: IConnector;
     core: IAlmightClient
     frame?: IAuthenticationFrame;
     baseAuthenticationURL: string;
+    configs?: AuthenticationFrameConfiguration;
 
 
 
-    onSuccessCallback: (data: ResponseMessageCallbackArgument) => void;
+    onSuccessCallback: (data: UserData) => void;
     onFailureCallback: (data: ResponseMessageCallbackArgument) => void;
     getProjectIdentifier(): Promise<string>;
     getUserIdentifier(): Promise<string>;
     getUserData(token: string): Promise<UserData>;
     startAuthentication(provider: Providers): Promise<void>;
     getToken(): Promise<string>;
+    logout(): Promise<void>;
 
-    getCurrentSession<S = ISession>(): Promise<CurrentSessionStruct<S>>;
+    getCurrentSession<S extends ISession = ISession>(): Promise<CurrentSessionStruct<S>>;
+    
+    isCurrentSessionBeingUsed(cSession: CurrentSessionStruct): Promise<boolean>
     setCurrentSession<S=ISession>(data: CurrentSessionStruct<S>): Promise<void>;
 
     getIconAndNameForProvider(provider: Providers | string, connectorType?: ConnectorType | string): {icon: string, name: string} | undefined;
@@ -142,8 +160,11 @@ export interface IAuthenticationApp {
     getAccountIdpsAsCurrentSessionStructs(): Promise<CurrentSessionStruct[]>;
    
     saveUserData(userData: UserData): Promise<void>;
+    fetchAndStoreUserData(token:string): Promise<UserData>
     getIdpsFromStore(): Promise<ServerSentIdentityProvider[]>;
-
+    setupConnector(connector?: IConnector): void;
+    getIdentityProvider(provider: string): IdentityProvider
+    checkConnection(): Promise<boolean>;
     isAuthenticated(): Promise<boolean>;
 }
 
@@ -167,32 +188,33 @@ export interface IdentityResolverInterface {
     delegate?: IAuthenticationDelegate;
     isWebVersion(version: number): boolean;
     getStates(data?: Record<string, string>): Record<string, string>;
-    initAuth(): Promise<void>;
+    // initAuth(): Promise<void>;
     captureUri(data: Record<string, string>): Promise<void>;
-    generateRedirectUrl(data?: Record<string, string>): string;
+    generateRedirectUrl(data?: Record<string, string>): string | Promise<string>;
     onAuthenticationRedirect(options?: any): void;
     authenticateAndRespond(data: Record<string, string>): Promise<void>;
     getUserRegistrationArguments(): Promise<UserRegistrationArgument>;
     getItemFromStorage<T=any>(key: string): Promise<T | null>;
+    
 }
 
+
+export type SendableSession = SessionDetailedData<ISession> | {data: {[AllowedQueryParams.Provider]: Providers}}
 export interface UserRegistrationArgument{
-    
-    provider: string;
+    [AllowedQueryParams.Provider]: string;
+    sessions: Partial<Record<ConnectorType, SendableSession>>;
 }
 export interface Web3UserRegistrationArgument extends UserRegistrationArgument {
-    public_key: string;
+    [AllowedQueryParams.Address]: string;
     singature?: string;
     message_sign_required: boolean;
-    sessions: {
-        [ConnectorType.BrowserExtension]?: BrowserSessionStruct,
-        [ConnectorType.WalletConnector]?: WalletConnectSessionStruct
-    }
 }
 
 export interface Web2UserRegistrationArgument extends UserRegistrationArgument {
+    [AllowedQueryParams.Code]: string;
+    [AllowedQueryParams.Challenge]?: string;
+    [AllowedQueryParams.State]?: string
 
-    code: string;
 }
 
 
@@ -207,6 +229,10 @@ export interface IAuthenticationDelegate {
     identityResolver?: IdentityResolverInterface;
     verificationExcludedStates: string[];
     respondFrame: IOriginFrameCommunicator;
+
+
+    respondFailure(data: ErrorResponseMessageCallbackArgument): Promise<void>;
+    respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void>;
     
     handleUserRegistration<T = UserRegistrationArgument>(data: T, isWeb3: boolean, connectorType?: ConnectorType): Promise<UserRegistrationResult>;
     verifyProject(projectId: string): Promise<boolean>;
@@ -223,8 +249,8 @@ export interface IAuthenticationDelegate {
 export interface IOriginFrameCommunicator {
 
     respondStrategy: AuthenticationRespondStrategy;
-    respondSuccess(data: Record<string, string>): Promise<void>;
-    respondFailure(data: Record<string, string>): Promise<void>;
+    respondSuccess(data: SuccessResponseMessageCallbackArgument): Promise<void>;
+    respondFailure(data: ErrorResponseMessageCallbackArgument): Promise<void>;
     close(): Promise<void>;
 }
 

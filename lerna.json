@@ -1,13 +1,7 @@
 {
   "packages": [
-    "packages/*"
+    "packages/*",
+    "chain-adapters/*"
   ],
-<<<<<<< HEAD
-  "version":"0.0.1-alpha.98"
-=======
-  "version":"0.0.1-alpha.98",
-  "publishConfig": {
-    "access": "public"
-  }
->>>>>>> f78d2c2 (Prefixed)
+  "version": "0.0.1-alpha.98"
 }

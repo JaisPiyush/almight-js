@@ -12,14 +12,16 @@
         "lib": [
             "es6"
         ],
-        "baseUrl": "./packages",
+        "baseUrl": "./",
         "allowJs": true,
         "paths": {
-            "@almight-sdk/core/*": ["core/src/*"],
-            "@lamight-sdk/auth/*": ["auth/src/*"],
-            "@lamight-sdk/platform-node/*": ["paltform-node/src/*"],
-            "@almight-sdk/connector/*": ["connector/src/*"],
-            "@almight-sdk/utils/*": ["utils/src/*"]
+            "@almight-sdk/core/*": ["packages/core/src/*"],
+            "@lamight-sdk/auth/*": ["packages/auth/src/*"],
+            "@lamight-sdk/platform-node/*": ["packages/paltform-node/src/*"],
+            "@almight-sdk/connector/*": ["packages/connector/src/*"],
+            "@almight-sdk/utils/*": ["packages/utils/src/*"],
+            "@almight-sdk/ethereum-chain-adapter/*": ["chain-adapters/ethereum/src/*"],
+            "@almight-sdk/uikit/*": ["packages/uikit/src/*"]
         },
         "skipLibCheck": true
     },

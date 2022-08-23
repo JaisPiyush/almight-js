@@ -1,12 +1,12 @@
 import WalletConnect from "@walletconnect/client";
-import { Class } from "@almight-sdk/utils";
+import { Chains, Class, Providers } from "@almight-sdk/utils";
 
 export interface NetworkData {
     name?: string,
     chainId: number
 }
 
-export interface ISession { 
+export interface ISession {
     chainId: number
 }
 
@@ -33,6 +33,20 @@ export interface WalletConnectSessionStruct extends ISession {
     handshakeTopic: string
 }
 
+
+export interface HTTPSessionStruct extends ISession {
+    endpoint: string;
+}
+
+export interface SessionDetailedData<S = ISession> {
+    data: S;
+    meta?: {
+        adapter_indentifier?: string;
+        provider?: string;
+        last_interaction?: number;
+    }
+}
+
 /**
  * Session structure formats used to save and load sessions
  * SDK is based on injection based browser provider and walletconnect provider
@@ -45,7 +59,22 @@ export interface ProviderSessionStruct {
 }
 
 
+export interface CurrentSessionStruct <S = ISession> {
+    uid: string;
+    provider: string;
+    connector_type: ConnectorType;
+    session: SessionDetailedData<S>;
+}
+
 export type ExternalProvider = BasicExternalProvider | WalletConnect | any;
+
+
+
+export interface SessioUpdateArguments {
+    accounts?: Address[];
+    chainId?: number
+}
+
 
 export interface ProviderChannelInterface {
 
@@ -57,11 +86,14 @@ export interface ProviderChannelInterface {
 
     setProvider(provider: ExternalProvider): void;
     init(session?: IProviderSessionData): void;
-    checkSession(obj?: IProviderAdapter): Promise<[boolean, any | null]>;
+    checkSession(obj?: IProvider): Promise<[boolean, any | null]>;
     checkEnvironment(): Promise<boolean>;
-    connect(options?: any, obj?: IProviderAdapter): Promise<void>;
-    checkConnection(obj?: IProviderAdapter): Promise<boolean>;
-    ping(data?: { method?: string, obj?: IProviderAdapter }): Promise<boolean>;
+    connect(options?: any, obj?: IProvider): Promise<void>;
+    _onSessionUpdate(options?: SessioUpdateArguments): void;
+    bindSessionListener(obj?: IProvider): void;
+    defaultbindSessionListener(): void;
+    checkConnection(obj?: IProvider, raiseError?: boolean): Promise<boolean>;
+    ping(data?: { method?: string, obj?: IProvider }): Promise<boolean>;
     request<T = any>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>
     /**
      * Method to subscribe events 
@@ -81,95 +113,99 @@ export type BasicExternalProvider = {
 
 export type Address = string;
 
-export type IProviderSessionData = BrowserSessionStruct | WalletConnectSessionStruct
+export type IProviderSessionData = ISession;
 
 
 export enum ConnectorType {
     BrowserExtension = "browser_extension",
-    WalletConnector = "walletconnect"
+    WalletConnector = "walletconnect",
+    OAuth = "oauth",
+    JsonRpc = "jsonrpc"
 }
 
 export interface SubscriptionCallback {
-    (payload: any): void;
-    (error: Error, payload: any | null): void;
-}
-export interface IBaseProvider {
-
-
-
-    /**
-     * Check the connection of session is valid and working
-     * @param session 
-     */
-    checkConnection(): Promise<boolean>;
-
-    /**
-     * 
-     * Returns result from provider request
-     * 
-     * Makes JSON RPC request through provider using the session
-     * @param data
-     * 
-     */
-    request<T = any>(data: ProviderRequestMethodArguments): Promise<T>;
-
-    /**
-     * Method to subscribe events 
-     */
-    on(name: string, callback: SubscriptionCallback): void;
-
-
-
+    (...args: any[]): void;
 }
 
 
-export interface IProviderAdapter {
+
+export interface IProviderAdapter<C extends ProviderChannelInterface = ProviderChannelInterface, P extends IProvider<C> = IProvider<C>> extends IProtocolDefinition {
+
+    provider: P;
+
+    getSession(): ISession;
+    getChannel(): C;
+    isConnected(): boolean;
+    on(event: string, callback: SubscriptionCallback): void;
+    request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
+    checkSession<P>(): Promise<[boolean, P]>;
+    checkConnection(raiseError: boolean): Promise<boolean>
+    connect(options?: any): Promise<void>;
+    onConnect(options: any): void
+}
+
+
+
+export interface IProvider<C = ProviderChannelInterface> {
+
+    channel: C;
+    accounts?: Address[];
+    selectedAccount?: Address;
+    chainId?: number;
+    deepLinkUri?: string;
+
+    setChannel(channel: C);
+
 
     isConnected(): boolean;
 
-    protocol?: IProtocolDefinition;
-
-    bindProtocol(protocol: IProtocolDefinition): void;
-
     getSession(): ISession;
+    getProvider<T = any>(): T
+    bindChannelDelegations(): void
+    setSelectedAccount(account: Address): void
 
     channelConnect?: (options?: any) => Promise<void>;
     channelCheckSession?: (session: any) => Promise<[boolean, unknown]>;
-    channelPing? :(options?: any) => Promise<boolean>;
-    channelOnConnect?: (options?: any) => void;
+    channelPing?: (options?: any) => Promise<boolean>;
+    channelOnConnect?: (options: any) => void;
+    channelbindSessionListener?: (channel: ProviderChannelInterface) => void;
     on(event: string, callback: SubscriptionCallback): void;
+    isDeepLinkPlantable(): boolean;
+    getDeepLinkUri(): string;
 
     request<T>(data: ProviderRequestMethodArguments, timeout?: number): Promise<T>;
-
+    verifyConnectedChain(chainId: number): void;
+    getCompleteSessionForStorage(): Promise<ISession>;
     checkSession<P>(): Promise<[boolean, P]>;
+    checkConnection(raiseError: boolean): Promise<boolean>
     connect(): Promise<void>;
 }
 
 
-export interface IChannelBehaviourPlugin {
-    channelConnect?: <R = any>(options?: R, channel?: ProviderChannelInterface) => Promise<void>;
-    channelCheckSession?: <P = any, S = any>(session: S, channel?: ProviderChannelInterface) => Promise<[boolean, P]>;
-    channelOnConnect?: (options?: any, channel?: ProviderChannelInterface) => void;
-    channelVerifyPingException?: (exception: Error, channel?: ProviderChannelInterface) => boolean;
-    bind(channel: ProviderChannelInterface): void;
 
+export interface ConnectionFilter {
+    allowedConnectorTypes?: ConnectorType[];
+    allowedChains?: Array<string | number>;
+    restrictedChains?: Array<string | number>;
 }
+
+export type ProviderFilter = Omit<ConnectionFilter, "allowedConnectorTypes">;
 
 export interface IdentityProviderInterface {
     identityProviderName: string;
     webVersion: number;
 
-    allowedConnectorTypes: Array<ConnectorType>;
+    filter?: ConnectionFilter;
 
     // chainId or unique id for web2 providers
-    identifier: string | number;
+    identifier: string | number | Providers;
 
     // Meta Datas such as icon, name, url , etc
     metaData: Record<string, any>;
 
+    getProviderClass(): Class<IProvider>;
     getAdapterClass(): Class<IProviderAdapter> | null;
     getChannels(): Class<ProviderChannelInterface>[];
-    getProtocolDefination(): Class<IProtocolDefinition>;
 
 }
 
@@ -190,46 +226,50 @@ export interface IConnectorSessionFilter {
 
 export interface IConnectorConnectArguments {
     channel?: Class<ProviderChannelInterface> | ProviderChannelInterface;
-    session?: BrowserSessionStruct | WalletConnectSessionStruct;
+    session?: ISession;
     filters?: IConnectorSessionFilter
 }
 
 
-export interface IConnector {
+export interface IConnector<S = ISession> {
+    currentSession?: CurrentSessionStruct<S>;
+    session?: SessionDetailedData<S>;
+    filter?: ConnectionFilter;
+    identityProvidersMap: Record<string, IdentityProviderInterface>;
+    adapter?: IProviderAdapter;
+    onConnectCallback: (options?: {accounts: Address[], chainId: number}) => void;
 
-    findChannels(): Class<ProviderChannelInterface>[];
-    findAdapter(): Class<IProviderAdapter>;
-    connect(args: IConnectorConnectArguments): Promise<void>;
-    getChannels(): Promise<Class<ProviderChannelInterface>[]>;
-    getSessions(): ISession[];
-    validateSessionStructure(session: BrowserSessionStruct | WalletConnectSessionStruct, filters: IConnectorSessionFilter): boolean;
-    validateChannel(channel: Class<ProviderChannelInterface>): Promise<boolean>;
-    validateChannelSession(channel: Class<ProviderChannelInterface>, session?: BrowserSessionStruct | WalletConnectSessionStruct): Promise<boolean>;
-
+    isConnected(): boolean;
+    hasSession(): boolean;
+    setSession(session: SessionDetailedData<S>): void;
+    setCurrentSession(cSession: CurrentSessionStruct<S>): void;
+    getFormatedSession(): SessionDetailedData<S>;
+    getFormatedCurrentSession(): CurrentSessionStruct<S>;
+    getIdentityProvider(): IdentityProviderInterface;
+    getChainAdapter(): IProviderAdapter;
+    getProvider(): IProvider;
+    getChannel(): ProviderChannelInterface;
+    setChainAdapter(adapter: IProviderAdapter): void; 
+    checkConnection(raiseError: boolean): Promise<boolean>;
+    checkSession(): Promise<boolean>;
+    connect(options?: any): Promise<void>;
 
 }
 
-export interface TransactionData {}
+export interface TransactionData { }
 
 
-export interface SignMessageArgument {}
+export interface SignMessageArgument { }
 
 
-export interface TransactionReturnType {}
-export interface SignMessageReturnType {}
-export interface AccountsReturnType {}
-export interface BalanceReturnType {}
-export interface RequestReturnType {}
+export interface TransactionReturnType { }
+export interface SignMessageReturnType { }
+export interface BalanceReturnType { }
+export interface RequestReturnType { }
 
 
 export interface IProtocolDefinition {
 
-    adapter?: IProviderAdapter;
-    chainIds: number[];
-
-    bindAdapter(adapter: IProviderAdapter): void;
-
-    request<T = any>(args: ProviderRequestMethodArguments): Promise<T>;
 
     sendTransaction(data: TransactionData): Promise<TransactionReturnType>;
 
@@ -237,14 +277,12 @@ export interface IProtocolDefinition {
 
     signPersonalMessage(data: SignMessageArgument): Promise<SignMessageReturnType>;
 
-    sign(data: SignMessageArgument): Promise<SignMessageReturnType>;
-
-    signTypedData(data: SignMessageArgument): Promise<SignMessageReturnType>;
 
     getNetworkId(): Promise<RequestReturnType>;
-    getChainId(): Promise<RequestReturnType>;
-    getAccounts(): Promise<AccountsReturnType>;
-    getBalance(): Promise<BalanceReturnType>;
+    getChainId(): Promise<number>;
+    getAccounts(): Promise<Address[]>;
+    getBalance(account?: string, blockTag?: string): Promise<BalanceReturnType>;
+    getTransactionCount(): Promise<number>;
 
 
 
