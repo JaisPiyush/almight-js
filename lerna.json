@@ -1,8 +1,7 @@
 {
   "packages": [
     "packages/*",
-    "chain-adapters/*",
-    "asta"
+    "chain-adapters/*"
   ],
   "version": "0.0.1-alpha.98"
 }
