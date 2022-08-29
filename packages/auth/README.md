@@ -4,6 +4,8 @@
 
 ### Implementation of Authentication System on web
 
+- Docs are not updated please don't implement from this README
+
 ```ts
 import {Iframe, User} from "almight-sdk/auth";
 import {WebWalletConnector} from "almight-sdk/connector";
